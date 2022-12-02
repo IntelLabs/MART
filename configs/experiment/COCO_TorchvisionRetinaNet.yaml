@@ -1,0 +1,44 @@
+# @package _global_
+
+defaults:
+  - override /datamodule: coco
+  - override /model: torchvision_retinanet
+  - override /metric: average_precision
+  - override /optimization: super_convergence
+  - override /callbacks: [model_checkpoint, lr_monitor]
+
+task_name: "COCO_TorchvisionRetinaNet"
+tags: ["regular_training"]
+
+optimized_metric: "test_metrics/map"
+
+callbacks:
+  model_checkpoint:
+    monitor: "validation_metrics/map"
+    mode: "max"
+
+trainer:
+  gpus: ${datamodule.world_size}
+  # 117,266 training images, 6 epochs, batch_size=2, 351798
+  max_steps: 351798
+  precision: 16
+
+datamodule:
+  ims_per_batch: 2
+  world_size: 1
+
+model:
+  modules:
+    losses_and_detections:
+      model:
+        # A generic pytorch weight loading mechanism.
+        weights_fpath: null
+        model:
+          # Inferred by torchvision.
+          num_classes: null
+          weights: COCO_V1
+
+  optimizer:
+    lr: 0.0125
+    momentum: 0.9
+    weight_decay: 1e-4

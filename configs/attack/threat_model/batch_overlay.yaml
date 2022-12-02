@@ -1,0 +1,5 @@
+defaults:
+  - /attack/threat_model@threat_model: overlay
+
+_target_: mart.attack.BatchThreatModel
+threat_model: ???

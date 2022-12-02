@@ -1,79 +1,66 @@
+#
+# Copyright (C) 2022 Intel Corporation
+#
+# Licensed subject to the terms of the separately executed evaluation license
+# agreement between Intel Corporation and you.
+#
+
+import os
+from pathlib import Path
+
 import pyrootutils
 import pytest
+import torch
 from hydra import compose, initialize
 from hydra.core.global_hydra import GlobalHydra
 from omegaconf import DictConfig, open_dict
 
+root = Path(os.getcwd())
+pyrootutils.set_root(path=root, dotenv=True, pythonpath=True)
 
-@pytest.fixture(scope="package")
-def cfg_train_global() -> DictConfig:
+experiments_names = [
+    "CIFAR10_CNN",
+    "CIFAR10_CNN_Adv",
+    "CIFAR10_RobustBench",
+    "ImageNet_Timm",
+    "COCO_TorchvisionFasterRCNN",
+    "COCO_TorchvisionFasterRCNN_Adv",
+    "COCO_TorchvisionRetinaNet",
+    "ArmoryCarlaOverObjDet_TorchvisionFasterRCNN",
+]
+
+
+# Loads the configuration file from a given experiment
+def get_cfg(experiment):
     with initialize(version_base="1.2", config_path="../configs"):
-        cfg = compose(config_name="train.yaml", return_hydra_config=True, overrides=[])
-
-        # set defaults for all tests
-        with open_dict(cfg):
-            cfg.paths.root_dir = str(pyrootutils.find_root())
-            cfg.trainer.max_epochs = 1
-            cfg.trainer.limit_train_batches = 0.01
-            cfg.trainer.limit_val_batches = 0.1
-            cfg.trainer.limit_test_batches = 0.1
-            cfg.trainer.accelerator = "cpu"
-            cfg.trainer.devices = 1
-            cfg.datamodule.num_workers = 0
-            cfg.datamodule.pin_memory = False
-            cfg.extras.print_config = False
-            cfg.extras.enforce_tags = False
-            cfg.logger = None
-
+        params = "experiment=" + experiment
+        cfg = compose(config_name="lightning.yaml", return_hydra_config=True, overrides=[params])
     return cfg
 
 
-@pytest.fixture(scope="package")
-def cfg_eval_global() -> DictConfig:
-    with initialize(version_base="1.2", config_path="../configs"):
-        cfg = compose(config_name="eval.yaml", return_hydra_config=True, overrides=["ckpt_path=."])
-
-        # set defaults for all tests
-        with open_dict(cfg):
-            cfg.paths.root_dir = str(pyrootutils.find_root())
-            cfg.trainer.max_epochs = 1
-            cfg.trainer.limit_test_batches = 0.1
-            cfg.trainer.accelerator = "cpu"
-            cfg.trainer.devices = 1
-            cfg.datamodule.num_workers = 0
-            cfg.datamodule.pin_memory = False
-            cfg.extras.print_config = False
-            cfg.extras.enforce_tags = False
-            cfg.logger = None
-
-    return cfg
-
-
-# this is called by each test which uses `cfg_train` arg
-# each test generates its own temporary logging path
-@pytest.fixture(scope="function")
-def cfg_train(cfg_train_global, tmp_path) -> DictConfig:
-    cfg = cfg_train_global.copy()
-
-    with open_dict(cfg):
-        cfg.paths.output_dir = str(tmp_path)
-        cfg.paths.log_dir = str(tmp_path)
+@pytest.fixture(scope="function", params=experiments_names)
+def cfg_experiment(request) -> DictConfig:
+    cfg = get_cfg(request.param)
 
     yield cfg
 
     GlobalHydra.instance().clear()
 
 
-# this is called by each test which uses `cfg_eval` arg
-# each test generates its own temporary logging path
 @pytest.fixture(scope="function")
-def cfg_eval(cfg_eval_global, tmp_path) -> DictConfig:
-    cfg = cfg_eval_global.copy()
+def input_data():
+    image_size = (3, 32, 32)
+    return torch.randint(0, 256, image_size, dtype=torch.float)
 
-    with open_dict(cfg):
-        cfg.paths.output_dir = str(tmp_path)
-        cfg.paths.log_dir = str(tmp_path)
 
-    yield cfg
+@pytest.fixture(scope="function")
+def target_data():
+    image_size = (3, 32, 32)
+    return {"perturbable_mask": torch.ones(*image_size)}
 
-    GlobalHydra.instance().clear()
+
+@pytest.fixture(scope="function")
+def perturbation():
+    torch.manual_seed(0)
+    perturbation = torch.randint(0, 256, (3, 32, 32), dtype=torch.float)
+    return perturbation

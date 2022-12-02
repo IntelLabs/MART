@@ -1,0 +1,9 @@
+defaults:
+  - modular
+
+module:
+  _target_: autoattack.autopgd_base.APGDAttack.dlr_loss
+  # A class method needs a placeholder self as a positional argument.
+  _partial_: true
+  _args_:
+    - null

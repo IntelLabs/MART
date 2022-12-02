@@ -1,0 +1,7 @@
+_target_: mart.attack.projector.Compose
+projectors:
+  - _target_: mart.attack.projector.Mask
+  - _target_: mart.attack.projector.Range
+    quantize: false
+    min: 0
+    max: 255

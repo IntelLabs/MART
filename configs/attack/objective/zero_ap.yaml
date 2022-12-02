@@ -1,0 +1,9 @@
+_target_: mart.nn.CallWith
+module:
+  _target_: mart.attack.objective.ZeroAP
+  iou_threshold: 0.5
+  confidence_threshold: 0.0
+arg_keys:
+  - preds
+  - target
+kwarg_keys: null

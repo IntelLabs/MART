@@ -1,0 +1,29 @@
+# @package _global_
+
+defaults:
+  - COCO_TorchvisionFasterRCNN
+  - override /datamodule: armory_carla_over_objdet_perturbable_mask
+
+task_name: "ArmoryCarlaOverObjDet_TorchvisionFasterRCNN"
+tags: ["regular_training"]
+
+optimized_metric: "test_metrics/map"
+
+model:
+  modules:
+    losses_and_detections:
+      model:
+        weights_fpath: null
+        model:
+          num_classes: 3
+          weights: null
+
+  optimizer:
+    lr: 0.0125
+    momentum: 0.9
+    weight_decay: 1e-4
+
+trainer:
+  # 3,600 training images, batch_size=2, 6 epochs
+  # max_steps = 3600 / 2 * 6
+  max_steps: 10800

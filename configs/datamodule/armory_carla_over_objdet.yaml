@@ -1,0 +1,17 @@
+defaults:
+  - coco
+
+train_dataset:
+  root: ${paths.data_dir}/carla_over_obj_det/train
+  modalities: ["rgb"]
+  annFile: ${paths.data_dir}/carla_over_obj_det/train/kwcoco_annotations.json
+
+val_dataset:
+  root: ${paths.data_dir}/carla_over_obj_det/val
+  modalities: ["rgb"]
+  annFile: ${paths.data_dir}/carla_over_obj_det/val/kwcoco_annotations.json
+
+test_dataset:
+  root: ${paths.data_dir}/carla_over_obj_det/dev
+  modalities: ["rgb"]
+  annFile: ${paths.data_dir}/carla_over_obj_det/dev/kwcoco_annotations.json

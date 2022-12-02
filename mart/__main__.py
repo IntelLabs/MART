@@ -1,0 +1,50 @@
+# this file acts as a robust starting point for launching hydra runs and multiruns
+# can be run from any place
+
+import os
+from pathlib import Path
+
+import hydra
+import pyrootutils
+from omegaconf import DictConfig
+
+# project root setup
+# uses the current working directory as root.
+# sets PROJECT_ROOT environment variable (used in `configs/paths/default.yaml`)
+# loads environment variables from ".env" if exists
+# adds root dir to the PYTHONPATH (so this file can be run from any place)
+# https://github.com/ashleve/pyrootutils
+# FIXME: Get rid of pyrootutils if we don't infer config.paths.root from PROJECT_ROOT.
+root = Path(os.getcwd())
+pyrootutils.set_root(path=root, dotenv=True, pythonpath=True)
+
+
+@hydra.main(version_base="1.2", config_path=root / "configs", config_name="lightning.yaml")
+def main(cfg: DictConfig) -> float:
+
+    if "datamodule" not in cfg or "model" not in cfg:
+        print("")
+        print("Please specify an experiment to run, e.g.")
+        print("$ python -m mart experiment=CIFAR10_CNN fit=false +trainer.limit_test_batches=1")
+        print("")
+        return 0
+
+    # imports can be nested inside @hydra.main to optimize tab completion
+    # https://github.com/facebookresearch/hydra/issues/934
+    from mart.tasks.lightning import lightning
+    from mart.utils import get_metric_value
+
+    # train the model
+    metric_dict, _ = lightning(cfg)
+
+    # safely retrieve metric value for hydra-based hyperparameter optimization
+    metric_value = get_metric_value(
+        metric_dict=metric_dict, metric_name=cfg.get("optimized_metric")
+    )
+
+    # return optimized metric
+    return metric_value
+
+
+if __name__ == "__main__":
+    main()

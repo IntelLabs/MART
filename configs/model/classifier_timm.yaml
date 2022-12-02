@@ -1,0 +1,13 @@
+defaults:
+  - classifier
+
+modules:
+  preprocessor:
+    # Convert [0, 255] input to [0, 1]
+    _target_: torchvision.transforms.Normalize
+    mean: 0
+    std: 255
+
+  logits:
+    _target_: timm.models.convnext.convnext_tiny
+    pretrained: true

@@ -1,0 +1,16 @@
+defaults:
+  - classifier
+  - /model@modules.logits.model: cnn_7layer_bn2
+
+modules:
+  preprocessor:
+    # Normalize [0, 255] input.
+    _target_: torchvision.transforms.Normalize
+    mean: [125.307, 122.961, 113.8575]
+    std: [51.5865, 50.847, 51.255]
+
+  logits:
+    _target_: mart.nn.load_state_dict
+    # File path to state_dict of a pretrained model.
+    weights_fpath: null
+    model: ???

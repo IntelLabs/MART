@@ -1,0 +1,4 @@
+_target_: mart.attack.projector.Range
+quantize: false
+min: 0
+max: 255

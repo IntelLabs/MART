@@ -1,0 +1,37 @@
+# @package _global_
+
+defaults:
+  - override /datamodule: cifar10
+  - override /model: classifier_cifar10_cnn
+  - override /metric: accuracy
+  - override /optimization: super_convergence
+  - override /callbacks: [model_checkpoint, lr_monitor]
+
+task_name: "CIFAR10_CNN"
+tags: ["benign"]
+
+optimized_metric: "test_metrics/acc"
+
+callbacks:
+  model_checkpoint:
+    monitor: "validation_metrics/acc"
+    mode: "max"
+
+trainer:
+  gpus: ${datamodule.world_size}
+  # 50K training images, batch_size=128, drop_last, 15 epochs.
+  max_steps: 5850
+  precision: 32
+
+datamodule:
+  ims_per_batch: 128
+  world_size: 1
+  num_workers: 8
+
+model:
+  weights_fpath: null
+
+  optimizer:
+    lr: 0.1
+    momentum: 0.9
+    weight_decay: 1e-4

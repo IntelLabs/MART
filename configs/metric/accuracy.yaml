@@ -1,0 +1,13 @@
+# @package model
+
+training_metrics:
+  _target_: torchmetrics.MetricCollection
+  _convert_: partial # metrics must be a dict
+  metrics:
+    acc:
+      _target_: torchmetrics.Accuracy
+      compute_on_step: false
+
+validation_metrics: ${.training_metrics}
+
+test_metrics: ${.validation_metrics}

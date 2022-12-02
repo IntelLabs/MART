@@ -1,0 +1,72 @@
+# Adapted from https://github.com/shizhouxing/Fast-Certified-Robust-Training/
+_target_: torch.nn.Sequential
+_args_:
+  # layer1
+  - _target_: torch.nn.Conv2d
+    in_channels: 3
+    out_channels: 64 # width
+    kernel_size: 3
+    stride: 1
+    padding: 1
+  - _target_: torch.nn.BatchNorm2d
+    num_features: 64 # width
+  - _target_: torch.nn.ReLU
+
+  # layer2
+  - _target_: torch.nn.Conv2d
+    in_channels: 64 # width
+    out_channels: 64 # width
+    kernel_size: 3
+    stride: 1
+    padding: 1
+  - _target_: torch.nn.BatchNorm2d
+    num_features: 64 # width
+  - _target_: torch.nn.ReLU
+
+  # layer3
+  - _target_: torch.nn.Conv2d
+    in_channels: 64 # width
+    out_channels: 128 # 2*width
+    kernel_size: 3
+    stride: 2
+    padding: 1
+  - _target_: torch.nn.BatchNorm2d
+    num_features: 128 # 2*width
+  - _target_: torch.nn.ReLU
+
+  # layer4
+  - _target_: torch.nn.Conv2d
+    in_channels: 128 # 2*width
+    out_channels: 128 # 2*width
+    kernel_size: 3
+    stride: 1
+    padding: 1
+  - _target_: torch.nn.BatchNorm2d
+    num_features: 128 # 2*width
+  - _target_: torch.nn.ReLU
+
+  # layer5
+  - _target_: torch.nn.Conv2d
+    in_channels: 128 # 2*width
+    out_channels: 128 # 2*width
+    kernel_size: 3
+    stride: 1
+    padding: 1
+  - _target_: torch.nn.BatchNorm2d
+    num_features: 128
+  - _target_: torch.nn.ReLU
+
+  - _target_: torch.nn.Flatten
+
+  # layer 6
+  - _target_: torch.nn.Linear
+    in_features: 32768 # (input_width=32 // 2)*(input_height=32 // 2) * 2 * width
+    out_features: 512 # linear_size
+  - _target_: torch.nn.BatchNorm1d
+    num_features: 512 # linear_size
+  - _target_: torch.nn.ReLU
+
+  # layer 7
+  - _target_: torch.nn.Linear
+    in_features: 512 # linear_size
+    out_features: 10 # num_class

@@ -1,0 +1,35 @@
+# @package _global_
+
+defaults:
+  - override /datamodule: imagenet
+  - override /model: classifier_timm
+  - override /metric: accuracy
+  - override /optimization: super_convergence
+
+task_name: "ImageNet_Timm"
+tags: ["regular_training"]
+
+optimized_metric: "test_metrics/acc"
+
+callbacks:
+  model_checkpoint:
+    monitor: "validation_metrics/acc"
+
+trainer:
+  gpus: ${datamodule.world_size}
+  # 1.2M training images, 15 epochs, batch_size=128, max_steps=1.2e6*15/128=140625
+  max_steps: 140625
+  precision: 16
+
+datamodule:
+  ims_per_batch: 128
+  world_size: 1
+  num_workers: 8
+
+model:
+  weights_fpath: null
+
+  optimizer:
+    lr: 0.1
+    momentum: 0.9
+    weight_decay: 1e-4

@@ -1,0 +1,45 @@
+# 50K Training examples and 10K validation/test shared examples.
+_target_: mart.datamodules.LitDataModule
+
+train_dataset:
+  _target_: torchvision.datasets.CIFAR10
+  root: ${paths.data_dir} # paths.data_dir is specified in configs/paths/???.yaml
+  train: true
+  transform:
+    _target_: torchvision.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.RandomCrop
+        size: 32
+        padding: 4
+        pad_if_needed: false
+        fill: 0
+        padding_mode: reflect
+      - _target_: torchvision.transforms.RandomHorizontalFlip
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.Denormalize
+        center: 0
+        scale: 255
+  target_transform: null
+  download: true
+
+val_dataset:
+  _target_: torchvision.datasets.CIFAR10
+  root: ${paths.data_dir} # paths.data_dir is specified in configs/paths/???.yaml
+  train: false
+  transform:
+    _target_: torchvision.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.Denormalize
+        center: 0
+        scale: 255
+  target_transform: null
+  download: true
+
+test_dataset: ${.val_dataset}
+
+num_workers: 4
+collate_fn: null
+
+ims_per_batch: ???
+world_size: ???

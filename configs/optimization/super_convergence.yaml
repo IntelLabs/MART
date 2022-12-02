@@ -1,0 +1,21 @@
+# @package model
+optimizer:
+  _target_: mart.optim.OptimizerFactory
+  optimizer:
+    _target_: hydra.utils.get_method
+    path: torch.optim.SGD
+  lr: ???
+  momentum: 0
+  weight_decay: 0
+  bias_decay: 0
+  norm_decay: 0
+
+lr_scheduler:
+  scheduler:
+    _target_: torch.optim.lr_scheduler.OneCycleLR
+    _partial_: true
+    total_steps: ${trainer.max_steps}
+    max_lr: ${model.optimizer.lr}
+    anneal_strategy: cos
+  interval: step
+  frequency: 1

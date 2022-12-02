@@ -1,0 +1,12 @@
+defaults:
+  - modular
+
+module:
+  _target_: mart.attack.gain.RoIHeadTargetClass
+  # Try to classify as background.
+  class_index: 0
+  targeted: true
+arg_keys:
+  - box_head.class_logits
+  - rpn_predictor.boxes
+kwarg_keys: null

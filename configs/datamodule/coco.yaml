@@ -1,0 +1,50 @@
+_target_: mart.datamodules.LitDataModule
+
+train_dataset:
+  _target_: mart.datamodules.coco.CocoDetection
+  root: ${paths.data_dir}/coco/train2017
+  annFile: ${paths.data_dir}/coco/annotations/instances_train2017.json
+  transforms:
+    _target_: mart.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.ConvertCocoPolysToMask
+      - _target_: mart.transforms.RandomHorizontalFlip
+        p: 0.5
+      - _target_: mart.transforms.Denormalize
+        center: 0
+        scale: 255
+
+val_dataset:
+  _target_: mart.datamodules.coco.CocoDetection
+  root: ${paths.data_dir}/coco/val2017
+  annFile: ${paths.data_dir}/coco/annotations/instances_val2017.json
+  transforms:
+    _target_: mart.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.ConvertCocoPolysToMask
+      - _target_: mart.transforms.Denormalize
+        center: 0
+        scale: 255
+
+test_dataset:
+  _target_: mart.datamodules.coco.CocoDetection
+  root: ${paths.data_dir}/coco/val2017
+  annFile: ${paths.data_dir}/coco/annotations/instances_val2017.json
+  transforms:
+    _target_: mart.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.ConvertCocoPolysToMask
+      - _target_: mart.transforms.Denormalize
+        center: 0
+        scale: 255
+
+num_workers: 2
+collate_fn:
+  _target_: hydra.utils.get_method
+  path: mart.datamodules.coco.collate_fn
+
+ims_per_batch: ???
+world_size: ???

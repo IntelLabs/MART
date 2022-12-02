@@ -1,0 +1,39 @@
+_target_: mart.datamodules.LitDataModule
+# _convert_: all
+
+train_dataset:
+  _target_: torchvision.datasets.ImageNet
+
+  root: ${paths.data_dir}/imagenet/2012/
+  split: train
+  transform:
+    _target_: torchvision.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.RandomResizedCrop
+        size: 224
+      - _target_: torchvision.transforms.RandomHorizontalFlip
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.Denormalize
+        center: 0
+        scale: 255
+
+val_dataset:
+  _target_: torchvision.datasets.ImageNet
+  root: ${paths.data_dir}/imagenet/2012/
+  split: val
+  transform:
+    _target_: torchvision.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.CenterCrop
+        size: 224
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.Denormalize
+        center: 0
+        scale: 255
+
+test_dataset: ${.val_dataset}
+
+num_workers: 0
+
+ims_per_batch: ???
+world_size: ???

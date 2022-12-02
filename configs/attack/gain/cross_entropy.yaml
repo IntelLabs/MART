@@ -1,0 +1,6 @@
+defaults:
+  - modular
+
+module:
+  _target_: torch.nn.CrossEntropyLoss
+  reduction: none

@@ -1,0 +1,80 @@
+defaults:
+  - modular
+
+# All three sequences of training/validation/test are (almost, except for the training loss) equivalent but in different syntax.
+
+# The verbose version.
+training_sequence:
+  - input_adv_training:
+      _call_with_args_: ["input", "target"]
+      model: model
+      step: step
+  - preprocessor:
+      _call_with_args_: ["input_adv_training"]
+  - logits:
+      _call_with_args_: ["preprocessor"]
+  - loss:
+      _call_with_args_: ["logits", "target"]
+  - preds:
+      _call_with_args_: ["logits"]
+  - output:
+      {
+        "preds": "preds",
+        "target": "target",
+        "logits": "logits",
+        "loss": "loss",
+      }
+
+# The kwargs-centric version.
+# We may use *args as **kwargs to avoid the lengthy _call_with_args_.
+#   The drawback is that we would need to lookup the *args names from the code.
+validation_sequence:
+  - input_adv_validation:
+      _call_with_args_: ["input", "target"]
+      model: model
+      step: step
+  - preprocessor:
+      tensor: input_adv_validation
+  - logits: ["preprocessor"]
+  - preds:
+      input: logits
+  - output:
+      preds: preds
+      target: target
+      logits: logits
+
+# The simplified version.
+#   We treat a list as the `_call_with_args_` parameter.
+test_sequence:
+  - input_adv_test:
+      _call_with_args_: ["input", "target"]
+      model: model
+      step: step
+  - preprocessor: ["input_adv_test"]
+  - logits: ["preprocessor"]
+  - preds: ["logits"]
+  - output: { preds: preds, target: target, logits: logits }
+
+modules:
+  input_adv_training:
+    _target_: mart.attack.NoAdversary
+
+  input_adv_validation:
+    _target_: mart.attack.NoAdversary
+
+  input_adv_test:
+    _target_: mart.attack.NoAdversary
+
+  preprocessor: ???
+
+  logits: ???
+
+  loss:
+    _target_: torch.nn.CrossEntropyLoss
+
+  preds:
+    _target_: torch.nn.Softmax
+    dim: 1
+
+  output:
+    _target_: mart.nn.ReturnKwargs

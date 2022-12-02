@@ -1,0 +1,7 @@
+_target_: mart.nn.CallWith
+module:
+  _target_: ???
+arg_keys:
+  - logits
+  - target
+kwarg_keys: null

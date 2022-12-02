@@ -50,7 +50,14 @@ repos:
     rev: 4.0.1
     hooks:
       - id: flake8
-        args: ["--ignore", "E501,F401,F841,W504", "--exclude", "logs/*,data/*"]
+        # ignore E203 because black is used for formatting.
+        args:
+          [
+            "--ignore",
+            "E203,E501,F401,F403,F841,W504",
+            "--exclude",
+            "logs/*,data/*",
+          ]
 
   # python security linter
   - repo: https://github.com/PyCQA/bandit
@@ -92,4 +99,4 @@ repos:
       - id: codespell
         args:
           - --skip=logs/**,data/**
-          # - --ignore-words-list=abc,def
+          - --ignore-words-list=abc,def,gard

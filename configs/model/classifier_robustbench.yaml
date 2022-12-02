@@ -1,0 +1,16 @@
+defaults:
+  - classifier
+
+modules:
+  preprocessor:
+    # Convert [0, 255] input to [0, 1]
+    _target_: torchvision.transforms.Normalize
+    mean: 0
+    std: 255
+
+  logits:
+    _target_: robustbench.utils.load_model
+    model_name: Gowal2021Improving_R18_ddpm_100m
+    model_dir: ${paths.data_dir}
+    dataset: cifar10
+    threat_model: Linf

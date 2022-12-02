@@ -1,0 +1,49 @@
+# @package _global_
+
+# specify here default training configuration
+defaults:
+  - _self_
+  - datamodule: null
+  - model: null
+  - metric: null
+  - optimization: null
+  - callbacks: default.yaml
+  - logger: [csv, tensorboard] # set logger here or use command line (e.g. `python run.py logger=wandb`)
+  - trainer: default.yaml
+  - paths: default.yaml
+  - extras: default.yaml
+  - hydra: default.yaml
+
+  - experiment: null
+
+  - hparams_search: null
+
+  # optional local config for machine/user specific settings
+  # it's optional since it doesn't need to exist and is excluded from version control
+  - optional local: default.yaml
+
+  # debugging config (enable through command line, e.g. `python train.py debug=default)
+  - debug: null
+
+# task name, determines output directory path
+task_name: "lightning"
+
+# tags to help you identify your experiments
+# you can overwrite this in experiment configs
+# overwrite from command line with `python -m mart tags="[first_tag, second_tag]"`
+# appending lists from command line is currently not supported :(
+# https://github.com/facebookresearch/hydra/issues/1547
+tags: ["dev"]
+
+# Train it or not.
+fit: True
+
+# check performance on test set, using the best model achieved during training
+# lightning chooses best model based on metric specified in checkpoint callback
+test: True
+
+# Whether to resume training using configuration and checkpoint in specified directory
+resume: null
+
+# seed for random number generators in pytorch, numpy and python.random
+seed: null
