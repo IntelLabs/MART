@@ -24,7 +24,7 @@ sh==1.14.3              # for running bash commands in some tests
 timm==0.6.11            # pytorch image models
 
 # ----- object detection----- #
-pycocotools==2.0.5
+pycocotools==2.0.6
 
 
 # -------- Adversary ---------#
