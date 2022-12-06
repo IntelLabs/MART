@@ -36,26 +36,20 @@ conda activate myenv
 python3.9 -m venv .venv
 source .venv/bin/activate
 
-# install requirements
-# you can ignore the [false alarm](https://github.com/tensorflow/tensorboard/pull/5922):
-#   ERROR: tensorboard 2.10.1 has requirement protobuf<3.20,>=3.9.2, but you'll have protobuf 3.20.1 which is incompatible.
-# we haven't encountered any issue with this progress bar dependency error either:
-#   ERROR: pytorch-lightning 1.6.5 has requirement tqdm>=4.57.0, but you'll have tqdm 4.56.2 which is incompatible.
-pip install -r requirements.txt
-
-# If your CUDA version is not 10.2, you need to uninstall pytorch and torchvision from requirements.txt,
-# then reinstall them according to platform instructions at https://pytorch.org/get-started/
-# FYI, this is what we do:
-#   $ pip uninstall torch torchvision
-#   $ pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 --extra-index-url https://download.pytorch.org/whl/cu116
-
 # [OPTIONAL] install pre-commit hooks
 # this will trigger the pre-commit checks in each `git commit` command.
 pre-commit install
 
 
-# [OPTIONAL] install Modular Adversarial Robustness Toolkit, if you plan to create your own `configs` folder elsewhere.
+# Install Modular Adversarial Robustness Toolkit, if you plan to create your own `configs` folder elsewhere.
 pip install -e .
+
+# If your CUDA version is not 10.2, you need to uninstall pytorch and torchvision, and
+# then reinstall them according to platform instructions at https://pytorch.org/get-started/
+# FYI, this is what we do:
+#   $ pip uninstall torch torchvision
+#   $ pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 --extra-index-url https://download.pytorch.org/whl/cu116
+
 ```
 
 ## How to run
