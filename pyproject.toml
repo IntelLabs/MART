@@ -56,12 +56,15 @@ developer = [
   "wheel"
 ]
 
+#[tool.setuptools.packages.find]
+#include = ["mart*", "configs*"]
+
 [tool.setuptools.package-dir]
 "mart" = "mart"
 "mart.configs" = "configs"
 
 [tool.setuptools.package-data]
-"mart.configs" = ["*.yaml"]
+"*" = ["*.yaml"]
 
 [tool.pytest.ini_options]
 addopts = [
