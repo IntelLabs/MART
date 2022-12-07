@@ -18,8 +18,12 @@ from omegaconf import DictConfig
 root = Path(os.getcwd())
 pyrootutils.set_root(path=root, dotenv=True, pythonpath=True)
 
+config_path = root / "configs"
+if not config_path.exists():
+    print(f"No config directory found at {config_path}!")
+    config_path = "configs"
 
-@hydra.main(version_base="1.2", config_path=root / "configs", config_name="lightning.yaml")
+@hydra.main(version_base="1.2", config_path=config_path, config_name="lightning.yaml")
 def main(cfg: DictConfig) -> float:
 
     if "datamodule" not in cfg or "model" not in cfg:
