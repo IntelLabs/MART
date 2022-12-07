@@ -57,7 +57,11 @@ developer = [
 ]
 
 [tool.setuptools.packages.find]
+include = ["mart*", "configs*"]
 exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml"]
 
 [tool.pytest.ini_options]
 addopts = [
