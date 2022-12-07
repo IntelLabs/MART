@@ -28,7 +28,8 @@ class PerturbedImageVisualizer(Callback):
             os.makedirs(self.folder)
 
     def on_run_end(self, adversary, input, target, model, **kwargs):
-        adv_input = adversary.perturber(input, target)
+        perturbation = adversary.perturber(input, target)
+        adv_input = adversary.threat_model(input, target, perturbation, **kwargs)
 
         for img, tgt in zip(adv_input, target):
             fname = tgt["file_name"]

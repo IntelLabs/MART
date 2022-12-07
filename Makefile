@@ -99,6 +99,6 @@ carla_attack: $(CARLA_OVERHEAD_DATASET_TRAIN) $(CARLA_OVERHEAD_DATASET_DEV) ## E
 	fit=false \
 	model.modules.losses_and_detections.model.weights_fpath=null \
 	+attack@model.modules.input_adv_test=object_detection_mask_adversary \
-	model.modules.input_adv_test.generator.optimizer.lr=5 \
-	model.modules.input_adv_test.generator.max_iters=50 \
+	model.modules.input_adv_test.optimizer.lr=5 \
+	model.modules.input_adv_test.max_iters=50 \
 	tags=["MaskPGD50_LR5"]
