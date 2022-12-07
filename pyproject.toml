@@ -59,9 +59,8 @@ developer = [
 [tool.setuptools]
 zip-safe = false
 
-[tool.setuptools.packages.find]
-include = ["mart*", "configs*"]
-exclude = ["tests*"]
+[tool.setuptools.packages]
+find = {}
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml"]
