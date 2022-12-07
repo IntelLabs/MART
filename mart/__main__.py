@@ -19,7 +19,7 @@ root = Path(os.getcwd())
 pyrootutils.set_root(path=root, dotenv=True, pythonpath=True)
 
 
-@hydra.main(version_base="1.2", config_path=root / "configs", config_name="lightning.yaml")
+@hydra.main(version_base="1.2", config_path="configs", config_name="lightning.yaml")
 def main(cfg: DictConfig) -> float:
 
     if "datamodule" not in cfg or "model" not in cfg:
