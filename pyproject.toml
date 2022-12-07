@@ -56,8 +56,14 @@ developer = [
   "wheel"
 ]
 
-[tool.setuptools.packages]
-find = {}
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+include = ["mart*", "hydra_plugins*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml"]
 
 [tool.pytest.ini_options]
 addopts = [

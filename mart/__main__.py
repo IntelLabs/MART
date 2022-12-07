@@ -8,6 +8,10 @@ import hydra
 import pyrootutils
 from omegaconf import DictConfig
 
+from mart import utils
+
+log = utils.get_pylogger(__name__)
+
 # project root setup
 # uses the current working directory as root.
 # sets PROJECT_ROOT environment variable (used in `configs/paths/default.yaml`)
@@ -18,15 +22,22 @@ from omegaconf import DictConfig
 root = Path(os.getcwd())
 pyrootutils.set_root(path=root, dotenv=True, pythonpath=True)
 
+config_path = root / "configs"
+if not config_path.exists():
+    log.warning(f"No config directory found at {config_path}!")
+    config_path = "configs"
 
-@hydra.main(version_base="1.2", config_path=root / "configs", config_name="lightning.yaml")
+
+@hydra.main(version_base="1.2", config_path=config_path, config_name="lightning.yaml")
 def main(cfg: DictConfig) -> float:
 
     if "datamodule" not in cfg or "model" not in cfg:
-        print("")
-        print("Please specify an experiment to run, e.g.")
-        print("$ python -m mart experiment=CIFAR10_CNN fit=false +trainer.limit_test_batches=1")
-        print("")
+        log.fatal("")
+        log.fatal("Please specify an experiment to run, e.g.")
+        log.fatal(
+            "$ python -m mart experiment=CIFAR10_CNN fit=false +trainer.limit_test_batches=1"
+        )
+        log.fatal("")
         return 0
 
     # imports can be nested inside @hydra.main to optimize tab completion
