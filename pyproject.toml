@@ -59,8 +59,8 @@ developer = [
 [tool.setuptools]
 zip-safe = false
 
-[tool.setuptools.packages]
-find = {}
+[tool.setuptools.packages.find]
+include = ["mart*", "hydra_plugins*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml"]
