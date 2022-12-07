@@ -9,8 +9,8 @@ from unittest.mock import Mock
 
 import pytest
 import torch
-from PIL import Image
-from torchvision import transforms
+from PIL import Image, ImageChops
+from torchvision.transforms import ToPILImage
 
 from mart.attack.callbacks import PerturbedImageVisualizer
 
@@ -37,3 +37,14 @@ def test_visualizer_run_end(input_data, target_data, perturbation, tmp_path):
     assert expected_output_path.exists()
     adversary.perturber.assert_called_once_with(input_list, target_list)
     adversary.threat_model.assert_called_once_with(input_list, target_list, perturbation)
+
+    # verify image file content
+    perturbed_img = input_data + perturbation
+    converter = ToPILImage()
+    expected_img = converter(perturbed_img / 255)
+    expected_img.save(folder / "test_expected.jpg")
+
+    stored_img = Image.open(expected_output_path)
+    expected_stored_img = Image.open(folder / "test_expected.jpg")
+    diff = ImageChops.difference(expected_stored_img, stored_img)
+    assert not diff.getbbox()
