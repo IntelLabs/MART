@@ -56,12 +56,10 @@ developer = [
   "wheel"
 ]
 
-#[tool.setuptools.packages.find]
-#include = ["mart*", "configs*"]
 
-[tool.setuptools.package-dir]
-"mart" = "mart"
-"mart.configs" = "configs"
+[tool.setuptools.packages.find]
+include = ["mart*", "configs*"]
+exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml"]
