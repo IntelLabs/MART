@@ -56,8 +56,8 @@ developer = [
   "wheel"
 ]
 
-[tool.setuptools.packages]
-find = {}
+[tool.setuptools.packages.find]
+exclude = ["tests*"]
 
 [tool.pytest.ini_options]
 addopts = [
