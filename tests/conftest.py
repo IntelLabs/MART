@@ -56,7 +56,7 @@ def input_data():
 @pytest.fixture(scope="function")
 def target_data():
     image_size = (3, 32, 32)
-    return {"perturbable_mask": torch.ones(*image_size)}
+    return {"perturbable_mask": torch.ones(*image_size), "file_name": "test.jpg"}
 
 
 @pytest.fixture(scope="function")
