@@ -10,6 +10,7 @@ from unittest.mock import Mock
 from PIL import Image, ImageChops
 from torchvision.transforms import ToPILImage
 
+from mart.attack import Adversary
 from mart.attack.callbacks import PerturbedImageVisualizer
 
 
@@ -19,12 +20,12 @@ def test_visualizer_run_end(input_data, target_data, perturbation, tmp_path):
     target_list = [target_data]
 
     # simulate an addition perturbation
-    def perturb(input, target):
+    def perturb(input, target, model):
         result = [sample + perturbation for sample in input]
         return result
 
     model = Mock()
-    adversary = Mock(side_effect=perturb)
+    adversary = Mock(spec=Adversary, side_effect=perturb)
 
     visualizer = PerturbedImageVisualizer(folder)
     visualizer.on_run_end(adversary, input_list, target_list, model)
