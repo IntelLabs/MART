@@ -171,6 +171,8 @@ class LitModular(LightningModule):
     # Utilities
     #
     def flatten_metrics(self, metrics):
+        # torchmetrics==0.6.0 does not flatten group metrics such as mAP (which includes mAP and mAP-50, etc),
+        # while later versions do. We add this for forward compatibility while we downgrade to 0.6.0.
         flat_metrics = {}
 
         for k, v in metrics.items():
