@@ -10,7 +10,6 @@ from typing import Dict, List, Optional
 
 import torch
 from torch import Tensor
-from torchmetrics.detection.mean_ap import _input_validator
 from torchmetrics.metric import Metric
 from torchvision.ops import box_convert
 
@@ -82,7 +81,6 @@ class CocoPredictionJSON(Metric):
             ValueError:
                 If any score is not type float and of length 1
         """
-        _input_validator(preds, target)
 
         for item in preds:
             self.detection_boxes.append(item["boxes"])

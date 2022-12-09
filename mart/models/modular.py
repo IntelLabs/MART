@@ -110,6 +110,7 @@ class LitModular(LightningModule):
         if self.training_metrics is not None:
             # Some models only return loss in the training mode.
             metrics = self.training_metrics.compute()
+            metrics = self.flatten_metrics(metrics)
             self.training_metrics.reset()
 
             self.log_metrics(metrics, prefix="training_metrics")
@@ -135,6 +136,7 @@ class LitModular(LightningModule):
 
     def validation_epoch_end(self, outputs):
         metrics = self.validation_metrics.compute()
+        metrics = self.flatten_metrics(metrics)
         self.validation_metrics.reset()
 
         self.log_metrics(metrics, prefix="validation_metrics")
@@ -160,6 +162,7 @@ class LitModular(LightningModule):
 
     def test_epoch_end(self, outputs):
         metrics = self.test_metrics.compute()
+        metrics = self.flatten_metrics(metrics)
         self.test_metrics.reset()
 
         self.log_metrics(metrics, prefix="test_metrics")
@@ -167,6 +170,29 @@ class LitModular(LightningModule):
     #
     # Utilities
     #
+    def flatten_metrics(self, metrics):
+        # torchmetrics==0.6.0 does not flatten group metrics such as mAP (which includes mAP and mAP-50, etc),
+        # while later versions do. We add this for forward compatibility while we downgrade to 0.6.0.
+        flat_metrics = {}
+
+        for k, v in metrics.items():
+            if isinstance(v, dict):
+                # recursively flatten metrics
+                v = self.flatten_metrics(v)
+                for k2, v2 in v.items():
+                    if k2 in flat_metrics:
+                        logger.warn(f"{k}/{k2} overrides existing metric!")
+
+                    flat_metrics[k2] = v2
+            else:
+                # assume raw metric
+                if k in flat_metrics:
+                    logger.warn(f"{k} overrides existing metric!")
+
+                flat_metrics[k] = v
+
+        return flat_metrics
+
     def log_metrics(self, metrics, prefix="", prog_bar=False):
         metrics_dict = {}
 
