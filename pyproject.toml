@@ -14,7 +14,7 @@ dependencies = [
   "torch ~= 1.12.1",
   "torchvision ~= 0.13.1",
   "pytorch-lightning ~= 1.6.5",
-  "torchmetrics ~= 0.10.1",
+  "torchmetrics ~= 0.6.0",
 
   # --------- hydra --------- #
   "hydra-core ~= 1.2.0",
