@@ -7,6 +7,9 @@ defaults:
 
 trainer:
   max_epochs: 1
-  profiler: "simple"
-  # profiler: "advanced"
-  # profiler: "pytorch"
+  profiler:
+    _target_: pytorch_lightning.profiler.SimpleProfiler
+    # _target_: pytorch_lightning.profiler.AdvancedProfiler
+    # _target_: pytorch_lightning.profiler.PyTorchProfiler
+    dirpath: ${paths.output_dir}
+    filename: profiler_log
