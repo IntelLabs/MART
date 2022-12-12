@@ -23,6 +23,14 @@
 
 ## Installation
 
+### Using pip
+
+```bash
+pip install https://github.com/IntelLabs/MART/archive/refs/tags/v0.2.1.zip
+```
+
+### Manual installation
+
 ```bash
 # clone project
 git clone https://github.com/IntelLabs/MART
