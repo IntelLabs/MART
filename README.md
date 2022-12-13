@@ -70,6 +70,17 @@ python -m mart experiment=CIFAR10_RobustBench \
 	fit=false \
 	+trainer.limit_test_batches=1 \
 	+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1
+
+# train on 1 GPU
+python -m mart experiment=ArmoryCarlaOverObjDet_TorchvisionFasterRCNN \
+	trainer=gpu \
+	fit=true
+
+# train on multiple GPUs using Distributed Data Parallel
+python -m mart experiment=ArmoryCarlaOverObjDet_TorchvisionFasterRCNN \
+	trainer=ddp \
+	trainer.devices=2 \
+	fit=true
 ```
 
 You can also install the repository as a package, then run `python -m mart` from anywhere with your own `configs` folder.
