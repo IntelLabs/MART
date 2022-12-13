@@ -18,7 +18,6 @@ callbacks:
     mode: "max"
 
 trainer:
-  gpus: ${datamodule.world_size}
   # 117,266 training images, 6 epochs, batch_size=2, 351798
   max_steps: 351798
   # FIXME: "nms_kernel" not implemented for 'BFloat16', torch.ops.torchvision.nms().
