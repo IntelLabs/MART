@@ -5,6 +5,8 @@
 # agreement between Intel Corporation and you.
 #
 
+from typing import Any, Optional
+
 import torch
 
 __all__ = ["Gain"]
@@ -20,14 +22,14 @@ class RoIHeadTargetClass(Gain):
     """The gain function encourages logits being classified as a particular class, e.g. background
     (class_index==0 in RCNN)."""
 
-    def __init__(self, class_index=0, targeted=True) -> None:
+    def __init__(self, class_index: Optional[int] = 0, targeted: Optional[bool] = True) -> None:
         super().__init__()
 
         self.gain = torch.nn.CrossEntropyLoss()
         self.class_index = class_index
         self.targeted = targeted
 
-    def forward(self, roi_heads_class_logits, proposals):
+    def forward(self, roi_heads_class_logits: torch.Tensor, proposals: Any) -> torch.Tensor:
         """
 
         Args:
@@ -64,13 +66,13 @@ class RegionProposalScore(Gain):
     rpn_objectness is the sigmoid input. The lower value, the more likely to be background.
     """
 
-    def __init__(self, background=True) -> None:
+    def __init__(self, background: Optional[bool] = True) -> None:
         """"""
         super().__init__()
 
         self.background = background
 
-    def forward(self, rpn_objectness):
+    def forward(self, rpn_objectness: torch.Tensor) -> torch.Tensor:
         logits = torch.cat([logits.reshape(-1) for logits in rpn_objectness])
         # TODO: We may remove sigmoid.
         probs = torch.sigmoid(logits)
