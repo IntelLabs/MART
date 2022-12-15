@@ -10,12 +10,11 @@ from typing import Any, Dict, Optional, Union
 
 import torch
 
-from mart.attack.perturber import BatchPerturber, Perturber
-from mart.nn import SequentialDict
-
+from ..nn import SequentialDict
 from .callbacks import Callback
 from .gain import Gain
 from .objective import Objective
+from .perturber import BatchPerturber, Perturber
 from .threat_model import ThreatModel
 
 __all__ = ["Adversary", "NoAdversary"]
