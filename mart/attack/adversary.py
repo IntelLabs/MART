@@ -124,8 +124,8 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         optimizer: torch.optim.Optimizer,
         max_iters: Union[int, float],
         gain: Gain,
-        objective: Objective = None,
-        callbacks: Dict[str, Any] = None,
+        objective: Optional[Objective] = None,
+        callbacks: Optional[Dict[str, Any]] = None,
     ):
         """_summary_
 
