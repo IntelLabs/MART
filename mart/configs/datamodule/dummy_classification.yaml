@@ -1,5 +1,5 @@
-_target_: mart.datamodules.LitDataModule
-# _convert_: all
+defaults:
+  - default.yaml
 
 train_dataset:
   _target_: torchvision.datasets.FakeData
@@ -15,8 +15,3 @@ train_dataset:
 
 val_dataset: ${.train_dataset}
 test_dataset: ${.val_dataset}
-
-num_workers: 0
-
-ims_per_batch: ???
-world_size: ???

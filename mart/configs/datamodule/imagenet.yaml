@@ -1,5 +1,5 @@
-_target_: mart.datamodules.LitDataModule
-# _convert_: all
+defaults:
+  - default.yaml
 
 train_dataset:
   _target_: torchvision.datasets.ImageNet
@@ -32,8 +32,3 @@ val_dataset:
         scale: 255
 
 test_dataset: ${.val_dataset}
-
-num_workers: 0
-
-ims_per_batch: ???
-world_size: ???

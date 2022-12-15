@@ -1,0 +1,11 @@
+_target_: mart.datamodules.LitDataModule
+# _convert_: all
+
+train_dataset: ???
+val_dataset: ???
+test_dataset: ???
+
+num_workers: 0
+
+ims_per_batch: ???
+world_size: ${trainer.devices}
