@@ -6,10 +6,17 @@
 #
 
 from collections import OrderedDict
+from typing import Any, Dict, Optional, Union
 
 import torch
 
+from mart.attack.perturber import BatchPerturber, Perturber
+from mart.nn import SequentialDict
+
 from .callbacks import Callback
+from .gain import Gain
+from .objective import Objective
+from .threat_model import ThreatModel
 
 __all__ = ["Adversary", "NoAdversary"]
 
@@ -19,29 +26,71 @@ class AdversaryCallbackHookMixin(Callback):
 
     callbacks = {}
 
-    def on_run_start(self, adversary, input, target, model, **kwargs):
+    def on_run_start(
+        self,
+        adversary: Callback,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: SequentialDict,
+        **kwargs
+    ) -> None:
         """Prepare the attack loop state."""
         for _name, callback in self.callbacks.items():
             # FIXME: Skip incomplete callback instance.
             callback.on_run_start(adversary, input, target, model, **kwargs)
 
-    def on_examine_start(self, adversary, input, target, model, **kwargs):
+    def on_examine_start(
+        self,
+        adversary: Callback,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: SequentialDict,
+        **kwargs
+    ) -> None:
         for _name, callback in self.callbacks.items():
             callback.on_examine_start(adversary, input, target, model, **kwargs)
 
-    def on_examine_end(self, adversary, input, target, model, **kwargs):
+    def on_examine_end(
+        self,
+        adversary: Callback,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: SequentialDict,
+        **kwargs
+    ) -> None:
         for _name, callback in self.callbacks.items():
             callback.on_examine_end(adversary, input, target, model, **kwargs)
 
-    def on_advance_start(self, adversary, input, target, model, **kwargs):
+    def on_advance_start(
+        self,
+        adversary: Callback,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: SequentialDict,
+        **kwargs
+    ) -> None:
         for _name, callback in self.callbacks.items():
             callback.on_advance_start(adversary, input, target, model, **kwargs)
 
-    def on_advance_end(self, adversary, input, target, model, **kwargs):
+    def on_advance_end(
+        self,
+        adversary: Callback,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: SequentialDict,
+        **kwargs
+    ) -> None:
         for _name, callback in self.callbacks.items():
             callback.on_advance_end(adversary, input, target, model, **kwargs)
 
-    def on_run_end(self, adversary, input, target, model, **kwargs):
+    def on_run_end(
+        self,
+        adversary: Callback,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: SequentialDict,
+        **kwargs
+    ) -> None:
         for _name, callback in self.callbacks.items():
             callback.on_run_end(adversary, input, target, model, **kwargs)
 
@@ -72,12 +121,12 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
     def __init__(
         self,
-        perturber,
-        optimizer,
-        max_iters,
-        gain,
-        objective=None,
-        callbacks=None,
+        perturber: Union[BatchPerturber, Perturber],
+        optimizer: torch.optim.Optimizer,
+        max_iters: Union[int, float],
+        gain: Gain,
+        objective: Objective = None,
+        callbacks: Dict[str, Any] = None,
     ):
         """_summary_
 
@@ -153,7 +202,13 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     #   since we haven't implemented it yet.
     @torch.autocast("cuda", enabled=False)
     @torch.autocast("cpu", enabled=False)
-    def forward(self, input, target, model, **kwargs):
+    def forward(
+        self,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: SequentialDict,
+        **kwargs
+    ):
         """_summary_
 
         Args:
@@ -189,7 +244,13 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     #   https://github.com/Lightning-AI/lightning/pull/12715
     @torch.enable_grad()
     @torch.inference_mode(False)
-    def examine(self, input, target, model, **kwargs):
+    def examine(
+        self,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: SequentialDict,
+        **kwargs
+    ):
         """Examine current perturbation, update self.gain and self.found."""
 
         # Clone tensors for autograd, in case it was created in the inference mode.
@@ -221,7 +282,13 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     # Make sure we can do autograd.
     @torch.enable_grad()
     @torch.inference_mode(False)
-    def advance(self, input, target, model, **kwargs):
+    def advance(
+        self,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: SequentialDict,
+        **kwargs
+    ):
         """Run one attack iteration."""
 
         self.opt.zero_grad()
@@ -235,7 +302,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 class Adversary(IterativeGenerator):
     """An adversary module which generates and applies perturbation to input."""
 
-    def __init__(self, threat_model, *args, **kwargs):
+    def __init__(self, threat_model: ThreatModel, *args, **kwargs):
         """_summary_
 
         Args:
@@ -245,7 +312,13 @@ class Adversary(IterativeGenerator):
 
         self.threat_model = threat_model
 
-    def forward(self, input, target, model=None, **kwargs):
+    def forward(
+        self,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: Optional[SequentialDict] = None,
+        **kwargs
+    ):
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturber.
         if model is not None:
@@ -259,5 +332,11 @@ class Adversary(IterativeGenerator):
 
 
 class NoAdversary(torch.nn.Module):
-    def forward(self, input, target, model=None, **kwargs):
+    def forward(
+        self,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: Optional[SequentialDict] = None,
+        **kwargs
+    ):
         return input
