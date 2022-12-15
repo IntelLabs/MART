@@ -5,6 +5,8 @@
 # agreement between Intel Corporation and you.
 #
 
+from typing import Any, Dict, Union
+
 import torch
 from hydra.utils import instantiate
 
@@ -19,7 +21,7 @@ class BatchPerturber(Callback, torch.nn.Module):
     We split input into individual examples and run different perturbers accordingly.
     """
 
-    def __init__(self, perturber_factory, *perturber_args, **perturber_kwargs):
+    def __init__(self, perturber_factory: Any, *perturber_args, **perturber_kwargs):
         super().__init__()
 
         self.perturber_factory = perturber_factory
@@ -41,7 +43,7 @@ class BatchPerturber(Callback, torch.nn.Module):
             perturber = self.perturber_factory(*self.perturber_args, **self.perturber_kwargs)
             self.perturbers[f"input_{i}_perturber"] = perturber
 
-    def forward(self, input, target):
+    def forward(self, input: torch.Tensor, target: Union[torch.Tensor, Dict[str, Any]]) -> None:
         output = []
         for i, (input_i, target_i) in enumerate(zip(input, target)):
             perturber = self.perturbers[f"input_{i}_perturber"]
