@@ -12,7 +12,7 @@ requires-python = ">=3.9"
 
 dependencies = [
   "torch ~= 1.12.1",
-  "torchvision ~= 0.13.1",
+  "torchvision ~= 0.14.1",
   "pytorch-lightning ~= 1.6.5",
   "torchmetrics == 0.6.0",
 
