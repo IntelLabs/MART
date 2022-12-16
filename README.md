@@ -26,8 +26,10 @@
 ### Using pip
 
 ```bash
-pip install https://github.com/IntelLabs/MART/archive/refs/tags/v0.2.1.zip
+pip install https://github.com/IntelLabs/MART/archive/refs/tags/<VERSION>.zip
 ```
+
+Replace `<VERSION>` with the MART's version you want to install.
 
 ### Manual installation
 
