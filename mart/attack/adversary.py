@@ -128,8 +128,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         return False
 
     def on_run_start(self, adversary, input, target, model, **kwargs):
-        super().on_run_start(adversary, input, target, model, **kwargs)
-
         # FIXME: We should probably just register IterativeAdversary as a callback.
         # Set up the optimizer.
         self.cur_iter = 0
@@ -137,11 +135,17 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         # We could be at the inference/no-grad mode here.
         # Initialize lazy module
         # FIXME: Perturbers can just use on_run_start/on_run_end to initialize
-        self.perturber(input, target)
+        # self.perturber(input, target)
+        # Initialize the Uninitialized parameters here, because self.opt needs perturber.params.
+        adversary.perturber.on_run_start(adversary, input, target, model, **kwargs)
 
         # Split param groups by input elements, so that we can schedule optimizers individually.
         param_groups = [{"params": [param]} for param in self.perturber.parameters()]
         self.opt = self.optimizer_fn(param_groups)
+
+        # Run callbacks.on_run_start() later, so that everything above is usable.
+        #   lr_scheduler needs self.opt.
+        super().on_run_start(adversary, input, target, model, **kwargs)
 
     def on_run_end(self, adversary, input, target, model, **kwargs):
         super().on_run_end(adversary, input, target, model, **kwargs)

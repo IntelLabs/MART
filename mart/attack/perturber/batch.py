@@ -13,7 +13,7 @@ from mart.attack.callbacks import Callback
 __all__ = ["BatchPerturber"]
 
 
-class BatchPerturber(Callback, torch.nn.Module):
+class BatchPerturber(torch.nn.Module):
     """The batch input could be a list or a NCHW tensor.
 
     We split input into individual examples and run different perturbers accordingly.
