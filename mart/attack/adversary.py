@@ -10,7 +10,6 @@ from typing import Any, Dict, Optional, Union
 
 import torch
 
-from ..nn import SequentialDict
 from .callbacks import Callback
 from .gain import Gain
 from .objective import Objective
@@ -30,7 +29,7 @@ class AdversaryCallbackHookMixin(Callback):
         adversary: Callback,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ) -> None:
         """Prepare the attack loop state."""
@@ -43,7 +42,7 @@ class AdversaryCallbackHookMixin(Callback):
         adversary: Callback,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ) -> None:
         for _name, callback in self.callbacks.items():
@@ -54,7 +53,7 @@ class AdversaryCallbackHookMixin(Callback):
         adversary: Callback,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ) -> None:
         for _name, callback in self.callbacks.items():
@@ -65,7 +64,7 @@ class AdversaryCallbackHookMixin(Callback):
         adversary: Callback,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ) -> None:
         for _name, callback in self.callbacks.items():
@@ -76,7 +75,7 @@ class AdversaryCallbackHookMixin(Callback):
         adversary: Callback,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ) -> None:
         for _name, callback in self.callbacks.items():
@@ -87,7 +86,7 @@ class AdversaryCallbackHookMixin(Callback):
         adversary: Callback,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ) -> None:
         for _name, callback in self.callbacks.items():
@@ -205,7 +204,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         self,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ):
         """_summary_
@@ -247,7 +246,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         self,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ):
         """Examine current perturbation, update self.gain and self.found."""
@@ -285,7 +284,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         self,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ):
         """Run one attack iteration."""
@@ -315,7 +314,7 @@ class Adversary(IterativeGenerator):
         self,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: Optional[SequentialDict] = None,
+        model: Optional[torch.nn.Module] = None,
         **kwargs
     ):
         # Generate a perturbation only if we have a model. This will update
@@ -335,7 +334,7 @@ class NoAdversary(torch.nn.Module):
         self,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: Optional[SequentialDict] = None,
+        model: Optional[torch.nn.Module] = None,
         **kwargs
     ):
         return input

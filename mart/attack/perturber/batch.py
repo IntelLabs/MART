@@ -5,6 +5,7 @@
 # agreement between Intel Corporation and you.
 #
 
+import functools
 from typing import Any, Dict, Union
 
 import torch
@@ -21,7 +22,7 @@ class BatchPerturber(Callback, torch.nn.Module):
     We split input into individual examples and run different perturbers accordingly.
     """
 
-    def __init__(self, perturber_factory: Any, *perturber_args, **perturber_kwargs):
+    def __init__(self, perturber_factory: functools.partial, *perturber_args, **perturber_kwargs):
         super().__init__()
 
         self.perturber_factory = perturber_factory

@@ -21,8 +21,8 @@ class ZeroAP(Objective):
 
     def __init__(
         self,
-        iou_threshold: Optional[Union[int, float]] = 0.5,
-        confidence_threshold: Optional[Union[int, float]] = 0.5,
+        iou_threshold: Optional[float] = 0.5,
+        confidence_threshold: Optional[float] = 0.5,
     ) -> None:
         super().__init__()
 
@@ -67,7 +67,7 @@ class Missed(Objective):
     """The objective of the adversary is to make all AP errors as the missed error, i.e. no object
     is detected, nor false positive."""
 
-    def __init__(self, confidence_threshold: Optional[Union[int, float]] = 0.5) -> None:
+    def __init__(self, confidence_threshold: Optional[float] = 0.5) -> None:
         super().__init__()
 
         self.confidence_threshold = confidence_threshold

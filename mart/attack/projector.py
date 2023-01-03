@@ -50,7 +50,10 @@ class Range(Projector):
     """Clamp the perturbation so that the output is range-constrained."""
 
     def __init__(
-        self, quantize: Optional[bool] = False, min: Optional[int] = 0, max: Optional[int] = 255
+        self,
+        quantize: Optional[bool] = False,
+        min: Optional[Union[int, float]] = 0,
+        max: Optional[Union[int, float]] = 255,
     ):
         self.quantize = quantize
         self.min = min
@@ -79,7 +82,10 @@ class RangeAdditive(Projector):
     """
 
     def __init__(
-        self, quantize: Optional[bool] = False, min: Optional[int] = 0, max: Optional[int] = 255
+        self,
+        quantize: Optional[bool] = False,
+        min: Optional[Union[int, float]] = 0,
+        max: Optional[Union[int, float]] = 255,
     ):
         self.quantize = quantize
         self.min = min
@@ -131,7 +137,12 @@ class LinfAdditiveRange(Projector):
     """Make sure the perturbation is within the Linf norm ball, and "input + perturbation" is
     within the [min, max] range."""
 
-    def __init__(self, eps: float, min: Optional[int] = 0, max: Optional[int] = 255):
+    def __init__(
+        self,
+        eps: float,
+        min: Optional[Union[int, float]] = 0,
+        max: Optional[Union[int, float]] = 255,
+    ):
         self.eps = eps
         self.min = min
         self.max = max

@@ -10,8 +10,6 @@ from typing import Any, Dict, Union
 
 import torch
 
-from mart.nn import SequentialDict
-
 __all__ = ["Callback"]
 
 
@@ -23,7 +21,7 @@ class Callback(abc.ABC):
         adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ):
         pass
@@ -33,7 +31,7 @@ class Callback(abc.ABC):
         adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ):
         pass
@@ -43,7 +41,7 @@ class Callback(abc.ABC):
         adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ):
         pass
@@ -53,7 +51,7 @@ class Callback(abc.ABC):
         adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ):
         pass
@@ -63,7 +61,7 @@ class Callback(abc.ABC):
         adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ):
         pass
@@ -73,7 +71,7 @@ class Callback(abc.ABC):
         adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: SequentialDict,
+        model: torch.nn.Module,
         **kwargs
     ):
         pass

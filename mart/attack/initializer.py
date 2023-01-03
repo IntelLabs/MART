@@ -30,7 +30,7 @@ class Constant(Initializer):
 
 
 class Uniform(Initializer):
-    def __init__(self, min: int, max: int):
+    def __init__(self, min: Union[int, float], max: Union[int, float]):
         self.min = min
         self.max = max
 

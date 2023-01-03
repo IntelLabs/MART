@@ -5,7 +5,7 @@
 # agreement between Intel Corporation and you.
 #
 
-from typing import Any, Optional
+from typing import Optional
 
 import torch
 
@@ -29,7 +29,9 @@ class RoIHeadTargetClass(Gain):
         self.class_index = class_index
         self.targeted = targeted
 
-    def forward(self, roi_heads_class_logits: torch.Tensor, proposals: Any) -> torch.Tensor:
+    def forward(
+        self, roi_heads_class_logits: torch.Tensor, proposals: torch.Tensor
+    ) -> torch.Tensor:
         """
 
         Args:
