@@ -5,8 +5,7 @@
 # agreement between Intel Corporation and you.
 #
 
-import functools
-from typing import Any, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 import torch
 
@@ -21,7 +20,9 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
     External adversaries commonly take input of NCWH-[0,1] and return input_adv in the same format.
     """
 
-    def __init__(self, external_adversary: functools.partial):
+    def __init__(
+        self, external_adversary: Callable[[torch.Tensor, torch.Tensor, torch.nn.Module], None]
+    ):
         """
 
         Args:

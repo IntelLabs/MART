@@ -5,13 +5,17 @@
 # agreement between Intel Corporation and you.
 #
 
-import functools
-from typing import Any, Dict, Union
+from typing import Any, Callable, Dict, Union
 
 import torch
 from hydra.utils import instantiate
 
 from mart.attack.callbacks import Callback
+
+from ..gradient_modifier import GradientModifier
+from ..initializer import Initializer
+from ..projector import Projector
+from .perturber import Perturber
 
 __all__ = ["BatchPerturber"]
 
@@ -22,7 +26,12 @@ class BatchPerturber(Callback, torch.nn.Module):
     We split input into individual examples and run different perturbers accordingly.
     """
 
-    def __init__(self, perturber_factory: functools.partial, *perturber_args, **perturber_kwargs):
+    def __init__(
+        self,
+        perturber_factory: Callable[[Initializer, GradientModifier, Projector], Perturber],
+        *perturber_args,
+        **perturber_kwargs,
+    ):
         super().__init__()
 
         self.perturber_factory = perturber_factory

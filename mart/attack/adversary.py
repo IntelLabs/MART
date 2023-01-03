@@ -26,7 +26,7 @@ class AdversaryCallbackHookMixin(Callback):
 
     def on_run_start(
         self,
-        adversary: Callback,
+        adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         model: torch.nn.Module,
@@ -39,7 +39,7 @@ class AdversaryCallbackHookMixin(Callback):
 
     def on_examine_start(
         self,
-        adversary: Callback,
+        adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         model: torch.nn.Module,
@@ -50,7 +50,7 @@ class AdversaryCallbackHookMixin(Callback):
 
     def on_examine_end(
         self,
-        adversary: Callback,
+        adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         model: torch.nn.Module,
@@ -61,7 +61,7 @@ class AdversaryCallbackHookMixin(Callback):
 
     def on_advance_start(
         self,
-        adversary: Callback,
+        adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         model: torch.nn.Module,
@@ -72,7 +72,7 @@ class AdversaryCallbackHookMixin(Callback):
 
     def on_advance_end(
         self,
-        adversary: Callback,
+        adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         model: torch.nn.Module,
@@ -83,7 +83,7 @@ class AdversaryCallbackHookMixin(Callback):
 
     def on_run_end(
         self,
-        adversary: Callback,
+        adversary: torch.nn.Module,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         model: torch.nn.Module,
