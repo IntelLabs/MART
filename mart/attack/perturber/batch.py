@@ -31,7 +31,7 @@ class BatchPerturber(Callback, torch.nn.Module):
 
         self.perturbers = torch.nn.ModuleDict()
 
-    def on_run_start(self, adversary, input, target, model, **kwargs):
+    def on_run_start(self, input, target, model, **kwargs):
         # Remove old perturbers
         # FIXME: Can we do this in on_run_end instead?
         self.perturbers.clear()

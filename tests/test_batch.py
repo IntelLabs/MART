@@ -45,10 +45,9 @@ def test_batch_run_start(perturber_batch, input_data_batch):
     assert isinstance(perturber_batch, BatchPerturber)
 
     # start perturber batch
-    adversary = Mock()
     model = Mock()
     perturber_batch.on_run_start(
-        adversary, input_data_batch["image_batch"], input_data_batch["target"], model
+        input_data_batch["image_batch"], input_data_batch["target"], model
     )
 
     batch_size, _, _, _ = input_data_batch["image_batch"].shape
@@ -59,10 +58,9 @@ def test_batch_forward(perturber_batch, input_data_batch):
     assert isinstance(perturber_batch, BatchPerturber)
 
     # start perturber batch
-    adversary = Mock()
     model = Mock()
     perturber_batch.on_run_start(
-        adversary, input_data_batch["image_batch"], input_data_batch["target"], model
+        input_data_batch["image_batch"], input_data_batch["target"], model
     )
 
     perturbed_images = perturber_batch(input_data_batch["image_batch"], input_data_batch["target"])
@@ -74,10 +72,9 @@ def test_tuple_batch_forward(perturber_batch, input_data_batch):
     assert isinstance(perturber_batch, BatchPerturber)
 
     # start perturber batch
-    adversary = Mock()
     model = Mock()
     perturber_batch.on_run_start(
-        adversary, input_data_batch["image_batch_list"], input_data_batch["target"], model
+        input_data_batch["image_batch_list"], input_data_batch["target"], model
     )
 
     perturbed_images = perturber_batch(

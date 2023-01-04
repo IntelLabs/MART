@@ -5,45 +5,44 @@
 # agreement between Intel Corporation and you.
 #
 
+import abc
 from collections import OrderedDict
 
 import torch
 
-from .callbacks import Callback
-
 __all__ = ["Adversary", "NoAdversary"]
 
 
-class AdversaryCallbackHookMixin(Callback):
+class AdversaryCallbackHookMixin(abc.ABC):
     """Define event hooks in the Adversary Loop for callbacks."""
 
     callbacks = {}
 
-    def on_run_start(self, adversary, input, target, model, **kwargs):
+    def on_run_start(self, input, target, model, **kwargs):
         """Prepare the attack loop state."""
         for _name, callback in self.callbacks.items():
             # FIXME: Skip incomplete callback instance.
-            callback.on_run_start(adversary, input, target, model, **kwargs)
+            callback.on_run_start(input, target, model, **kwargs)
 
-    def on_examine_start(self, adversary, input, target, model, **kwargs):
+    def on_examine_start(self, input, target, model, **kwargs):
         for _name, callback in self.callbacks.items():
-            callback.on_examine_start(adversary, input, target, model, **kwargs)
+            callback.on_examine_start(input, target, model, **kwargs)
 
-    def on_examine_end(self, adversary, input, target, model, **kwargs):
+    def on_examine_end(self, input, target, model, **kwargs):
         for _name, callback in self.callbacks.items():
-            callback.on_examine_end(adversary, input, target, model, **kwargs)
+            callback.on_examine_end(input, target, model, **kwargs)
 
-    def on_advance_start(self, adversary, input, target, model, **kwargs):
+    def on_advance_start(self, input, target, model, **kwargs):
         for _name, callback in self.callbacks.items():
-            callback.on_advance_start(adversary, input, target, model, **kwargs)
+            callback.on_advance_start(input, target, model, **kwargs)
 
-    def on_advance_end(self, adversary, input, target, model, **kwargs):
+    def on_advance_end(self, input, target, model, **kwargs):
         for _name, callback in self.callbacks.items():
-            callback.on_advance_end(adversary, input, target, model, **kwargs)
+            callback.on_advance_end(input, target, model, **kwargs)
 
-    def on_run_end(self, adversary, input, target, model, **kwargs):
+    def on_run_end(self, input, target, model, **kwargs):
         for _name, callback in self.callbacks.items():
-            callback.on_run_end(adversary, input, target, model, **kwargs)
+            callback.on_run_end(input, target, model, **kwargs)
 
 
 class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
@@ -97,12 +96,19 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         self.max_iters = max_iters
         self.callbacks = OrderedDict()
 
+        # Import Callback type here to avoid circular import issues.
+        from .callbacks import Callback
+
         # Register perturber as callback if it implements Callback interface
         if isinstance(self.perturber, Callback):
             # FIXME: Use self.perturber.__class__.__name__ as key?
             self.callbacks["_perturber"] = self.perturber
 
         if callbacks is not None:
+            # Register adversary reference to callbacks
+            for _, callback in callbacks.items():
+                callback.adversary = self
+
             self.callbacks.update(callbacks)
 
         self.objective_fn = objective
@@ -127,8 +133,8 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
         return False
 
-    def on_run_start(self, adversary, input, target, model, **kwargs):
-        super().on_run_start(adversary, input, target, model, **kwargs)
+    def on_run_start(self, input, target, model, **kwargs):
+        super().on_run_start(input, target, model, **kwargs)
 
         # FIXME: We should probably just register IterativeAdversary as a callback.
         # Set up the optimizer.
@@ -143,8 +149,8 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         param_groups = [{"params": [param]} for param in self.perturber.parameters()]
         self.opt = self.optimizer_fn(param_groups)
 
-    def on_run_end(self, adversary, input, target, model, **kwargs):
-        super().on_run_end(adversary, input, target, model, **kwargs)
+    def on_run_end(self, input, target, model, **kwargs):
+        super().on_run_end(input, target, model, **kwargs)
 
         # Release optimization resources
         del self.opt
@@ -162,19 +168,19 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
             model (_type_): _description_
         """
 
-        self.on_run_start(self, input, target, model, **kwargs)
+        self.on_run_start(input, target, model, **kwargs)
 
         while True:
             try:
-                self.on_examine_start(self, input, target, model, **kwargs)
+                self.on_examine_start(input, target, model, **kwargs)
                 self.examine(input, target, model, **kwargs)
-                self.on_examine_end(self, input, target, model, **kwargs)
+                self.on_examine_end(input, target, model, **kwargs)
 
                 # Check the done condition here, so that every update of perturbation is examined.
                 if not self.done:
-                    self.on_advance_start(self, input, target, model, **kwargs)
+                    self.on_advance_start(input, target, model, **kwargs)
                     self.advance(input, target, model, **kwargs)
-                    self.on_advance_end(self, input, target, model, **kwargs)
+                    self.on_advance_end(input, target, model, **kwargs)
                     # Update cur_iter at the end so that all hooks get the correct cur_iter.
                     self.cur_iter += 1
                 else:
@@ -182,7 +188,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
             except StopIteration:
                 break
 
-        self.on_run_end(self, input, target, model, **kwargs)
+        self.on_run_end(input, target, model, **kwargs)
 
     # Make sure we can do autograd.
     # Earlier Pytorch Lightning uses no_grad(), but later PL uses inference_mode():
