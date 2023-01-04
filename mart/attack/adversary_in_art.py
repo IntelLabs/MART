@@ -10,6 +10,7 @@ from typing import Any, List, Optional
 import hydra
 import numpy
 import torch
+from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from omegaconf import OmegaConf
 
 from ..nn import SequentialDict
@@ -24,11 +25,11 @@ class MartToArtAttackAdapter:
     but it should be reusable for other models with slight modifications.
     """
 
-    def __init__(self, target_model: torch.nn.Module, mart_exp_config_yaml: str, **kwargs):
+    def __init__(self, target_model: ObjectDetectorMixin, mart_exp_config_yaml: str, **kwargs):
         """Run MART attacks in ART.
 
         Args:
-            target_model (<class 'art.estimators.object_detection.pytorch_faster_rcnn.PyTorchFasterRCNN'>): The target model to attack.
+            target_model (<class 'art.estimators.object_detection.object_detector.ObjectDetectorMixin'>): The target model to attack.
             mart_exp_config_yaml (str): File path to the yaml configuration of MART experiments.
         """
         exp_cfg = OmegaConf.load(mart_exp_config_yaml)
@@ -49,7 +50,7 @@ class MartToArtAttackAdapter:
         self,
         x: Optional[numpy.ndarray] = None,
         y: Optional[numpy.ndarray] = None,
-        y_patch_metadata: List = None,
+        y_patch_metadata: Optional[List] = None,
     ):
         """ART invokes this method to produce x_adv.
 
