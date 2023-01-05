@@ -18,7 +18,6 @@ callbacks:
     mode: "max"
 
 trainer:
-  gpus: ${datamodule.world_size}
   # 50K training images, batch_size=128, drop_last, 15 epochs.
   max_steps: 5850
   precision: 32

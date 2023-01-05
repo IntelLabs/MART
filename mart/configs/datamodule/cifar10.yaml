@@ -1,5 +1,6 @@
 # 50K Training examples and 10K validation/test shared examples.
-_target_: mart.datamodules.LitDataModule
+defaults:
+  - default.yaml
 
 train_dataset:
   _target_: torchvision.datasets.CIFAR10
@@ -40,6 +41,3 @@ test_dataset: ${.val_dataset}
 
 num_workers: 4
 collate_fn: null
-
-ims_per_batch: ???
-world_size: ???

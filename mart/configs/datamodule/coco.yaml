@@ -1,4 +1,5 @@
-_target_: mart.datamodules.LitDataModule
+defaults:
+  - default.yaml
 
 train_dataset:
   _target_: mart.datamodules.coco.CocoDetection
@@ -45,6 +46,3 @@ num_workers: 2
 collate_fn:
   _target_: hydra.utils.get_method
   path: mart.datamodules.coco.collate_fn
-
-ims_per_batch: ???
-world_size: ???

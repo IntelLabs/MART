@@ -16,7 +16,6 @@ callbacks:
     monitor: "validation_metrics/acc"
 
 trainer:
-  gpus: ${datamodule.world_size}
   # 1.2M training images, 15 epochs, batch_size=128, max_steps=1.2e6*15/128=140625
   max_steps: 140625
   precision: 16
