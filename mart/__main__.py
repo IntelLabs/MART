@@ -6,7 +6,7 @@ from pathlib import Path
 
 import hydra
 import pyrootutils
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from mart import utils
 
@@ -39,6 +39,9 @@ def main(cfg: DictConfig) -> float:
         )
         log.fatal("")
         return 0
+
+    # Dump interpolated configs.
+    OmegaConf.save(cfg, "config.yaml", resolve=True)
 
     # imports can be nested inside @hydra.main to optimize tab completion
     # https://github.com/facebookresearch/hydra/issues/934
