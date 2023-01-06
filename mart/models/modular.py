@@ -32,6 +32,7 @@ class LitModular(LightningModule):
         test_sequence=None,
         test_step_log=None,
         test_metrics=None,
+        prediction_sequence=None,
         weights_fpath=None,
         strict=True,
     ):
@@ -44,6 +45,7 @@ class LitModular(LightningModule):
             "training": training_sequence,
             "validation": validation_sequence,
             "test": test_sequence,
+            "prediction": prediction_sequence,
         }
         self.model = SequentialDict(modules, sequences)
 
