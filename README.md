@@ -23,26 +23,40 @@
 
 ## Installation
 
+### Using pip
+
+```bash
+pip install https://github.com/IntelLabs/MART/archive/refs/tags/<VERSION>.zip
+```
+
+Replace `<VERSION>` with the MART's version you want to install. For example:
+
+```bash
+pip install https://github.com/IntelLabs/MART/archive/refs/tags/v0.2.1.zip
+```
+
+### Manual installation
+
 ```bash
 # clone project
 git clone https://github.com/IntelLabs/MART
 cd MART
 
 # [OPTIONAL] create conda environment
+# Recommended Python versions: 3.9 and 3.10
 conda create -n myenv python=3.9
 conda activate myenv
 
 # [OPTIONAL] or create virtualenv environment
-python3.9 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
+
+# Install Modular Adversarial Robustness Toolkit, if you plan to create your own `configs` folder elsewhere.
+pip install -e .
 
 # [OPTIONAL] install pre-commit hooks
 # this will trigger the pre-commit checks in each `git commit` command.
 pre-commit install
-
-
-# Install Modular Adversarial Robustness Toolkit, if you plan to create your own `configs` folder elsewhere.
-pip install -e .
 
 # If your CUDA version is not 10.2, you need to uninstall pytorch and torchvision, and
 # then reinstall them according to platform instructions at https://pytorch.org/get-started/
