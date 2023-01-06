@@ -43,11 +43,12 @@ git clone https://github.com/IntelLabs/MART
 cd MART
 
 # [OPTIONAL] create conda environment
+# Recommended Python versions: 3.9 and 3.10
 conda create -n myenv python=3.9
 conda activate myenv
 
 # [OPTIONAL] or create virtualenv environment
-python3.9 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 
 # Install Modular Adversarial Robustness Toolkit, if you plan to create your own `configs` folder elsewhere.
