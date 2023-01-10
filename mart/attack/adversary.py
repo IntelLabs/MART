@@ -24,71 +24,29 @@ class AdversaryCallbackHookMixin(Callback):
 
     callbacks = {}
 
-    def on_run_start(
-        self,
-        adversary: torch.nn.Module,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: torch.nn.Module,
-        **kwargs
-    ) -> None:
+    def on_run_start(self, adversary, input, target, model, **kwargs) -> None:
         """Prepare the attack loop state."""
         for _name, callback in self.callbacks.items():
             # FIXME: Skip incomplete callback instance.
             callback.on_run_start(adversary, input, target, model, **kwargs)
 
-    def on_examine_start(
-        self,
-        adversary: torch.nn.Module,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: torch.nn.Module,
-        **kwargs
-    ) -> None:
+    def on_examine_start(self, adversary, input, target, model, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
             callback.on_examine_start(adversary, input, target, model, **kwargs)
 
-    def on_examine_end(
-        self,
-        adversary: torch.nn.Module,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: torch.nn.Module,
-        **kwargs
-    ) -> None:
+    def on_examine_end(self, adversary, input, target, model, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
             callback.on_examine_end(adversary, input, target, model, **kwargs)
 
-    def on_advance_start(
-        self,
-        adversary: torch.nn.Module,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: torch.nn.Module,
-        **kwargs
-    ) -> None:
+    def on_advance_start(self, adversary, input, target, model, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
             callback.on_advance_start(adversary, input, target, model, **kwargs)
 
-    def on_advance_end(
-        self,
-        adversary: torch.nn.Module,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: torch.nn.Module,
-        **kwargs
-    ) -> None:
+    def on_advance_end(self, adversary, input, target, model, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
             callback.on_advance_end(adversary, input, target, model, **kwargs)
 
-    def on_run_end(
-        self,
-        adversary: torch.nn.Module,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: torch.nn.Module,
-        **kwargs
-    ) -> None:
+    def on_run_end(self, adversary, input, target, model, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
             callback.on_run_end(adversary, input, target, model, **kwargs)
 
@@ -124,7 +82,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         max_iters: Union[int, float],
         gain: Gain,
         objective: Optional[Objective] = None,
-        callbacks: Optional[Dict[str, Any]] = None,
+        callbacks: Optional[Dict[str, Callback]] = None,
     ):
         """_summary_
 
