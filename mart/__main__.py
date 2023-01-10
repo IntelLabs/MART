@@ -31,12 +31,14 @@ if not config_path.exists():
 @hydra.main(version_base="1.2", config_path=config_path, config_name="lightning.yaml")
 def main(cfg: DictConfig) -> float:
 
-    if "datamodule" not in cfg or "model" not in cfg:
+    if cfg.resume is None and ("datamodule" not in cfg or "model" not in cfg):
         log.fatal("")
         log.fatal("Please specify an experiment to run, e.g.")
         log.fatal(
             "$ python -m mart experiment=CIFAR10_CNN fit=false +trainer.limit_test_batches=1"
         )
+        log.fatal("or specify a checkpoint to resume, e.g.")
+        log.fatal("$ python -m mart resume=logs/my_task_name/checkpoints/last.ckpt")
         log.fatal("")
         return 0
 
