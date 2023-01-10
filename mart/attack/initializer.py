@@ -6,6 +6,7 @@
 #
 
 import abc
+from typing import Optional, Union
 
 import torch
 
@@ -16,33 +17,33 @@ class Initializer(abc.ABC):
     """Initializer base class."""
 
     @abc.abstractmethod
-    def __call__(self, perturbation):
+    def __call__(self, perturbation: torch.Tensor) -> None:
         pass
 
 
 class Constant(Initializer):
-    def __init__(self, constant=0):
+    def __init__(self, constant: Optional[Union[int, float]] = 0):
         self.constant = constant
 
-    def __call__(self, perturbation):
+    def __call__(self, perturbation: torch.Tensor) -> None:
         torch.nn.init.constant_(perturbation, self.constant)
 
 
 class Uniform(Initializer):
-    def __init__(self, min, max):
+    def __init__(self, min: Union[int, float], max: Union[int, float]):
         self.min = min
         self.max = max
 
-    def __call__(self, perturbation):
+    def __call__(self, perturbation: torch.Tensor) -> None:
         torch.nn.init.uniform_(perturbation, self.min, self.max)
 
 
 class UniformLp(Initializer):
-    def __init__(self, eps, p=torch.inf):
+    def __init__(self, eps: Union[int, float], p: Optional[Union[int, float]] = torch.inf):
         self.eps = eps
         self.p = p
 
-    def __call__(self, perturbation):
+    def __call__(self, perturbation: torch.Tensor) -> None:
         torch.nn.init.uniform_(perturbation, -self.eps, self.eps)
         # TODO: make sure the first dim is the batch dim.
         if self.p is not torch.inf:

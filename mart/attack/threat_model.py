@@ -6,6 +6,7 @@
 #
 
 import abc
+from typing import Any, Dict, Union
 
 import torch
 
@@ -14,17 +15,29 @@ __all__ = ["BatchThreatModel"]
 
 class ThreatModel(torch.nn.Module, abc.ABC):
     @abc.abstractmethod
-    def forward(self, input, target, perturbation, **kwargs):
+    def forward(
+        self,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        perturbation: Union[torch.Tensor, tuple],
+        **kwargs
+    ) -> Union[torch.Tensor, tuple]:
         raise NotImplementedError
 
 
 class BatchThreatModel(ThreatModel):
-    def __init__(self, threat_model):
+    def __init__(self, threat_model: ThreatModel):
         super().__init__()
 
         self.threat_model = threat_model
 
-    def forward(self, input, target, perturbation, **kwargs):
+    def forward(
+        self,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        perturbation: Union[torch.Tensor, tuple],
+        **kwargs
+    ) -> Union[torch.Tensor, tuple]:
         output = []
 
         for input_i, target_i, perturbation_i in zip(input, target, perturbation):
@@ -42,14 +55,26 @@ class BatchThreatModel(ThreatModel):
 class Additive(ThreatModel):
     """We assume an adversary adds perturbation to the input."""
 
-    def forward(self, input, target, perturbation, **kwargs):
+    def forward(
+        self,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        perturbation: Union[torch.Tensor, tuple],
+        **kwargs
+    ) -> Union[torch.Tensor, tuple]:
         return input + perturbation
 
 
 class Overlay(ThreatModel):
     """We assume an adversary overlays a patch to the input."""
 
-    def forward(self, input, target, perturbation, **kwargs):
+    def forward(
+        self,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        perturbation: Union[torch.Tensor, tuple],
+        **kwargs
+    ) -> Union[torch.Tensor, tuple]:
         # True is mutable, False is immutable.
         mask = target["perturbable_mask"]
 

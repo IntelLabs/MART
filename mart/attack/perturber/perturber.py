@@ -5,7 +5,13 @@
 # agreement between Intel Corporation and you.
 #
 
+from typing import Any, Dict, Optional, Union
+
 import torch
+
+from ..gradient_modifier import GradientModifier
+from ..initializer import Initializer
+from ..projector import Projector
 
 __all__ = ["Perturber"]
 
@@ -18,7 +24,12 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
     parameter, and how to project the values of the parameter.
     """
 
-    def __init__(self, initializer, gradient_modifier=None, projector=None):
+    def __init__(
+        self,
+        initializer: Initializer,
+        gradient_modifier: Optional[GradientModifier] = None,
+        projector: Optional[Projector] = None,
+    ):
         """_summary_
 
         Args:
@@ -45,7 +56,9 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
         if projector is not None:
             self.register_forward_pre_hook(projector_wrapper)
 
-    def initialize_parameters(self, input, target):
+    def initialize_parameters(
+        self, input: torch.Tensor, target: Union[torch.Tensor, Dict[str, Any]]
+    ) -> None:
         assert isinstance(self.perturbation, torch.nn.UninitializedParameter)
 
         self.perturbation.materialize(input.shape, device=input.device)
@@ -56,7 +69,9 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
 
         self.initializer(self.perturbation)
 
-    def forward(self, input, target):
+    def forward(
+        self, input: torch.Tensor, target: Union[torch.Tensor, Dict[str, Any]]
+    ) -> torch.Tensor:
         return self.perturbation
 
     def extra_repr(self):
