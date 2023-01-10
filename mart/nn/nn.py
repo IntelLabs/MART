@@ -14,7 +14,7 @@ from typing import OrderedDict  # noqa: E402
 import torch  # noqa: E402
 from omegaconf.dictconfig import DictConfig  # noqa: E402
 
-__all__ = ["SequentialDict", "ReturnKwargs", "CallWith", "Sum", "load_state_dict"]
+__all__ = ["GroupNorm32", "SequentialDict", "ReturnKwargs", "CallWith", "Sum", "load_state_dict"]
 
 
 class SequentialDict(torch.nn.ModuleDict):
