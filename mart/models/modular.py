@@ -37,6 +37,7 @@ class LitModular(LightningModule):
     ):
         super().__init__()
 
+        # FIXME: Why not just make these required arguments?
         assert training_sequence is not None
         assert validation_sequence is not None
         assert test_sequence is not None
