@@ -37,10 +37,11 @@ class LitModular(LightningModule):
     ):
         super().__init__()
 
-        # FIXME: Why not just make these required arguments?
-        assert training_sequence is not None
-        assert validation_sequence is not None
-        assert test_sequence is not None
+        # FIXME: Why not just make these required arguments? Update: these are allowed to be None
+        #        in which case they default to the order of the modules. I think this is bad behavior.
+        # assert training_sequence is not None
+        # assert validation_sequence is not None
+        # assert test_sequence is not None
 
         # Convert dict sequences to list sequences by sorting keys
         if isinstance(training_sequence, dict):
