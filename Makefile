@@ -98,7 +98,11 @@ carla_attack: $(CARLA_OVERHEAD_DATASET_TRAIN) $(CARLA_OVERHEAD_DATASET_DEV) ## E
 	trainer=gpu \
 	fit=false \
 	model.modules.losses_and_detections.model.weights_fpath=null \
-	+attack@model.modules.input_adv_test=object_detection_mask_adversary \
-	model.modules.input_adv_test.optimizer.lr=5 \
-	model.modules.input_adv_test.max_iters=50 \
+	+attack@model.modules.input_adv=object_detection_mask_adversary \
+	model.modules.input_adv.optimizer.lr=5 \
+	model.modules.input_adv.max_iters=50 \
+	+model.test_sequence.seq001.input_adv._call_with_args_=[input,target] \
+	+model.test_sequence.seq001.input_adv.model=model \
+	+model.test_sequence.seq001.input_adv.step=step \
+	model.test_sequence.seq010.preprocessor=[input_adv] \
 	tags=["MaskPGD50_LR5"]

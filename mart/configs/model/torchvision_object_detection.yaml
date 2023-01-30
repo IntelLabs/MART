@@ -2,24 +2,7 @@
 defaults:
   - modular
 
-training_step_log: ???
-
-training_sequence: ???
-
-validation_sequence: ???
-
-test_sequence: ???
-
 modules:
-  input_adv_training:
-    _target_: mart.attack.NoAdversary
-
-  input_adv_validation:
-    _target_: mart.attack.NoAdversary
-
-  input_adv_test:
-    _target_: mart.attack.NoAdversary
-
   preprocessor:
     _target_: mart.transforms.TupleTransforms
     transforms:
