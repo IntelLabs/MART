@@ -89,7 +89,9 @@ class SequentialDict(torch.nn.ModuleDict):
             kwarg_keys = module_cfg
 
             module = self[module_name]
-            module = CallWith(module, arg_keys, kwarg_keys, return_keys)
+            module = CallWith(
+                module, arg_keys=arg_keys, kwarg_keys=kwarg_keys, return_keys=return_keys
+            )
             module_dict[return_name] = module
         return module_dict
 
@@ -116,10 +118,13 @@ class ReturnKwargs(torch.nn.Module):
 
 
 class CallWith(torch.nn.Module):
-    def __init__(self, module, arg_keys, kwarg_keys, return_keys=None) -> None:
+    def __init__(
+        self, module, *, named_args=None, arg_keys=None, kwarg_keys=None, return_keys=None
+    ) -> None:
         super().__init__()
 
         self.module = module
+        self.named_args = named_args
         self.arg_keys = arg_keys or []
         self.kwarg_keys = kwarg_keys or {}
         self.return_keys = return_keys
@@ -129,6 +134,21 @@ class CallWith(torch.nn.Module):
         arg_keys = self.arg_keys
         kwarg_keys = self.kwarg_keys
         kwargs = DotDict(kwargs)
+
+        # If named args are specified, add args to kwargs using those names
+        if self.named_args is not None:
+            if len(self.named_args) > len(args):
+                raise Exception(
+                    f"The number of args passed ({len(args)}) does not match the number of named args ({len(self.named_args)})"
+                )
+            named_args = dict(zip(self.named_args, args))
+
+            for name, arg in named_args.items():
+                if name in kwargs:
+                    raise Exception("named arg {name} would replace kwarg!")
+                kwargs[name] = arg
+
+            args = args[len(self.named_args) :]
 
         # Sometimes we receive positional arguments because some modules use nn.Sequential
         # which has a __call__ function that passes positional args. So we pass along args
