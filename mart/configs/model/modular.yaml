@@ -4,6 +4,6 @@ _convert_: all
 modules: ???
 optimizer: ???
 
-training_sequence: ???
-validation_sequence: ???
-test_sequence: ???
+validation_metrics: ${.training_metrics}
+# We may use different metrics in test.
+# test_metrics: ${.training_metrics}

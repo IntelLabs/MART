@@ -2,6 +2,14 @@
 defaults:
   - modular
 
+training_step_log: ???
+
+training_sequence: ???
+
+validation_sequence: ???
+
+test_sequence: ???
+
 modules:
   preprocessor:
     _target_: mart.transforms.TupleTransforms
