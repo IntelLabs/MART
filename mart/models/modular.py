@@ -37,6 +37,14 @@ class LitModular(LightningModule):
     ):
         super().__init__()
 
+        # Convert dict sequences to list sequences by sorting keys
+        if isinstance(training_sequence, dict):
+            training_sequence = [training_sequence[key] for key in sorted(training_sequence)]
+        if isinstance(validation_sequence, dict):
+            validation_sequence = [validation_sequence[key] for key in sorted(validation_sequence)]
+        if isinstance(test_sequence, dict):
+            test_sequence = [test_sequence[key] for key in sorted(test_sequence)]
+
         # *_step() functions make some assumptions about the type of Module it can call.
         # That is, injecting a nn.Module generally won't work, so better to hardcode ModuleDict.
         # It also gets rid of an indentation level in the configs.

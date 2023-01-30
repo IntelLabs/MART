@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 from typing import OrderedDict  # noqa: E402
 
 import torch  # noqa: E402
-from omegaconf.dictconfig import DictConfig  # noqa: E402
 
 __all__ = ["GroupNorm32", "SequentialDict", "ReturnKwargs", "CallWith", "Sum", "load_state_dict"]
 
@@ -68,14 +67,14 @@ class SequentialDict(torch.nn.ModuleDict):
 
         module_dict = OrderedDict()
         for module_info in sequence:
-            if not isinstance(module_info, DictConfig) or len(module_info) != 1:
+            if not isinstance(module_info, dict) or len(module_info) != 1:
                 raise ValueError(
-                    f"Each module config in the sequence list should be a length-one DictConfig: {module_info}"
+                    f"Each module config in the sequence list should be a length-one dict: {module_info}"
                 )
 
             module_name, module_cfg = list(module_info.items())[0]
 
-            if not isinstance(module_cfg, DictConfig):
+            if not isinstance(module_cfg, dict):
                 # We can omit the key of _call_with_args_ if it is the only config.
                 module_cfg = {"_call_with_args_": module_cfg}
 

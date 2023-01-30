@@ -1,8 +1,9 @@
 _target_: mart.models.LitModular
+_convert_: all
 
 modules: ???
 optimizer: ???
 
-validation_metrics: ${.training_metrics}
-# We may use different metrics in test.
-# test_metrics: ${.training_metrics}
+training_sequence: ???
+validation_sequence: ???
+test_sequence: ???
