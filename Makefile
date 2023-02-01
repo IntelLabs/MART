@@ -101,4 +101,8 @@ carla_attack: $(CARLA_OVERHEAD_DATASET_TRAIN) $(CARLA_OVERHEAD_DATASET_DEV) ## E
 	+attack@model.modules.input_adv_test=object_detection_mask_adversary \
 	model.modules.input_adv_test.optimizer.lr=5 \
 	model.modules.input_adv_test.max_iters=50 \
+	+model.test_sequence.seq001.input_adv_test._call_with_args_=[input,target] \
+	+model.test_sequence.seq001.input_adv_test.model=model \
+	+model.test_sequence.seq001.input_adv_test.step=step \
+	model.test_sequence.seq010.preprocessor=[input_adv_test] \
 	tags=["MaskPGD50_LR5"]

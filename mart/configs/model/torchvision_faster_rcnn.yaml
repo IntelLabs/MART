@@ -13,13 +13,14 @@ training_step_log:
   ]
 
 training_sequence:
-  - input_adv_training:
-      _call_with_args_: ["input", "target"]
-      model: model
-      step: step
-  - preprocessor: ["input_adv_training"]
-  - losses_and_detections: ["preprocessor", "target"]
-  - loss:
+  seq010:
+    preprocessor: ["input"]
+
+  seq020:
+    losses_and_detections: ["preprocessor", "target"]
+
+  seq030:
+    loss:
       # Sum up the losses.
       [
         "losses_and_detections.training.loss_objectness",
@@ -27,7 +28,9 @@ training_sequence:
         "losses_and_detections.training.loss_classifier",
         "losses_and_detections.training.loss_box_reg",
       ]
-  - output:
+
+  seq040:
+    output:
       # Output all losses for logging, defined in model.training_step_log
       {
         "preds": "losses_and_detections.eval",
@@ -40,13 +43,14 @@ training_sequence:
       }
 
 validation_sequence:
-  - input_adv_validation:
-      _call_with_args_: ["input", "target"]
-      model: model
-      step: step
-  - preprocessor: ["input_adv_validation"]
-  - losses_and_detections: ["preprocessor", "target"]
-  - output:
+  seq010:
+    preprocessor: ["input"]
+
+  seq020:
+    losses_and_detections: ["preprocessor", "target"]
+
+  seq030:
+    output:
       {
         "preds": "losses_and_detections.eval",
         "target": "target",
@@ -57,13 +61,14 @@ validation_sequence:
       }
 
 test_sequence:
-  - input_adv_test:
-      _call_with_args_: ["input", "target"]
-      model: model
-      step: step
-  - preprocessor: ["input_adv_test"]
-  - losses_and_detections: ["preprocessor", "target"]
-  - output:
+  seq010:
+    preprocessor: ["input"]
+
+  seq020:
+    losses_and_detections: ["preprocessor", "target"]
+
+  seq030:
+    output:
       {
         "preds": "losses_and_detections.eval",
         "target": "target",
