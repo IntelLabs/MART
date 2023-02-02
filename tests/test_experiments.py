@@ -7,7 +7,14 @@ from tests.helpers.dataset_generator import FakeCOCODataset
 from tests.helpers.run_if import RunIf
 from tests.helpers.run_sh_command import run_sh_command
 
-module = "mart"
+MODULE = "mart"
+
+
+def run_mart_command(*args):
+    return run_sh_command(
+        ["-m", MODULE, "++trainer.fast_dev_run=3", "hydra.sweep.dir=/tmp", *args]
+    )
+
 
 coco_ds = {
     "train": {
@@ -54,188 +61,113 @@ carla_ds = {
 
 # common configuration for classification related tests.
 @pytest.fixture(scope="function")
-def classification_cfg() -> Dict:
-    cfg = {
-        "trainer": [
-            "++trainer.fast_dev_run=3",
-        ],
-        "datamodel": [
-            "datamodule=dummy_classification",
-            "datamodule.ims_per_batch=2",
-            "datamodule.num_workers=0",
-        ],
-    }
-    yield cfg
+def classification_overrides(tmp_path) -> Dict:
+    yield [
+        "datamodule=dummy_classification",
+        "datamodule.ims_per_batch=2",
+        "datamodule.num_workers=0",
+        "++datamodule.train_dataset.image_size=[3,32,32]",
+        "++datamodule.train_dataset.num_classes=10",
+    ]
 
     GlobalHydra.instance().clear()
 
 
 # common configuration for detection related tests.
 @pytest.fixture(scope="function")
-def coco_cfg(tmp_path) -> Dict:
+def coco_overrides(tmp_path) -> Dict:
     # Generate fake COCO dataset on disk at tmp_path
     dataset = FakeCOCODataset(tmp_path, config=coco_ds)
     dataset.generate(num_images=2, num_annotations_per_image=2)
 
-    cfg = {
-        "trainer": [
-            "++trainer.fast_dev_run=1",
-        ],
-        "datamodel": [
-            "++paths.data_dir=" + str(tmp_path),
-            "datamodule.num_workers=0",
-        ],
-    }
-    yield cfg
+    yield [
+        "++paths.data_dir=" + str(tmp_path),
+        "datamodule.num_workers=0",
+    ]
 
     GlobalHydra.instance().clear()
 
 
 @pytest.fixture(scope="function")
-def carla_cfg(tmp_path) -> Dict:
+def carla_overrides(tmp_path) -> Dict:
     # Generate fake CARLA dataset on disk at tmp_path
     dataset = FakeCOCODataset(tmp_path, config=carla_ds, name="carla_over_obj_det")
     dataset.generate(num_images=2, num_annotations_per_image=2)
 
-    cfg = {
-        "trainer": [
-            "++trainer.fast_dev_run=3",
-        ],
-        "datamodel": [
-            "++paths.data_dir=" + str(tmp_path),
-            "datamodule.num_workers=0",
-        ],
-    }
-    yield cfg
+    yield [
+        "++paths.data_dir=" + str(tmp_path),
+        "datamodule.num_workers=0",
+    ]
 
     GlobalHydra.instance().clear()
 
 
 @RunIf(sh=True)
-def test_cifar10_cnn_adv_experiment(classification_cfg, tmp_path):
+def test_cifar10_cnn_adv_experiment(classification_overrides):
     """Test CIFAR10 CNN experiment."""
-    overrides = classification_cfg["trainer"] + classification_cfg["datamodel"]
-    command = [
-        module,
-        "-m",
+    run_mart_command(
         "experiment=CIFAR10_CNN_Adv",
-        "hydra.sweep.dir=" + str(tmp_path),
-        "model.modules.input_adv_test.max_iters=10",
-        "optimized_metric=training_metrics/acc",
-        "++datamodule.train_dataset.image_size=[3,32,32]",
-        "++datamodule.train_dataset.num_classes=10",
-    ] + overrides
-    run_sh_command(command)
+        "model.modules.input_adv_test.max_iters=3",
+        *classification_overrides
+    )
 
 
 @RunIf(sh=True)
-def test_cifar10_cnn_experiment(classification_cfg, tmp_path):
+def test_cifar10_cnn_experiment(classification_overrides):
     """Test CIFAR10 CNN experiment."""
-    overrides = classification_cfg["trainer"] + classification_cfg["datamodel"]
-    command = [
-        module,
-        "-m",
-        "experiment=CIFAR10_CNN",
-        "hydra.sweep.dir=" + str(tmp_path),
-        "optimized_metric=training_metrics/acc",
-        "++datamodule.train_dataset.image_size=[3,32,32]",
-        "++datamodule.train_dataset.num_classes=10",
-    ] + overrides
-    run_sh_command(command)
+    run_mart_command("experiment=CIFAR10_CNN", *classification_overrides)
 
 
 @RunIf(sh=True)
-def test_cifar10_robust_bench_experiment(classification_cfg, tmp_path):
+def test_cifar10_robust_bench_experiment(classification_overrides):
     """Test CIFAR10 Robust Bench experiment."""
-    overrides = classification_cfg["trainer"] + classification_cfg["datamodel"]
-    command = [
-        module,
-        "-m",
-        "experiment=CIFAR10_RobustBench",
-        "hydra.sweep.dir=" + str(tmp_path),
-        "+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1",
-        "optimized_metric=training_metrics/acc",
-        "++datamodule.train_dataset.image_size=[3,32,32]",
-        "++datamodule.train_dataset.num_classes=10",
-    ] + overrides
-    run_sh_command(command)
+    run_mart_command("experiment=CIFAR10_RobustBench", *classification_overrides)
 
 
 @RunIf(sh=True)
 @pytest.mark.slow
-def test_imagenet_timm_experiment(classification_cfg, tmp_path):
+def test_imagenet_timm_experiment(classification_overrides):
     """Test ImageNet Timm experiment."""
-    overrides = classification_cfg["trainer"] + classification_cfg["datamodel"]
-    command = [
-        module,
-        "-m",
+    run_mart_command(
         "experiment=ImageNet_Timm",
-        "hydra.sweep.dir=" + str(tmp_path),
-        "++trainer.precision=32",
-        "optimized_metric=training_metrics/acc",
         "++datamodule.train_dataset.image_size=[3,469,387]",
         "++datamodule.train_dataset.num_classes=200",
-    ] + overrides
-    run_sh_command(command)
+        "trainer.precision=32",  # CPU only supports 32-bit
+        *classification_overrides
+    )
 
 
 @RunIf(sh=True)
 @pytest.mark.slow
-def test_coco_fasterrcnn_experiment(coco_cfg, tmp_path):
+def test_coco_fasterrcnn_experiment(coco_overrides):
     """Test TorchVision FasterRCNN experiment."""
-    overrides = coco_cfg["trainer"] + coco_cfg["datamodel"]
-    command = [
-        module,
-        "-m",
-        "experiment=COCO_TorchvisionFasterRCNN",
-        "hydra.sweep.dir=" + str(tmp_path),
-        "optimized_metric=training/rpn_loss.loss_objectness",
-    ] + overrides
-    run_sh_command(command)
+    run_mart_command("experiment=COCO_TorchvisionFasterRCNN", *coco_overrides)
 
 
 @RunIf(sh=True)
 @pytest.mark.slow
-def test_coco_fasterrcnn_adv_experiment(coco_cfg, tmp_path):
+def test_coco_fasterrcnn_adv_experiment(coco_overrides):
     """Test TorchVision FasterRCNN Adv experiment."""
-    overrides = coco_cfg["trainer"] + coco_cfg["datamodel"]
-    command = [
-        module,
-        "-m",
+    run_mart_command(
         "experiment=COCO_TorchvisionFasterRCNN_Adv",
-        "hydra.sweep.dir=" + str(tmp_path),
-        "optimized_metric=training/rpn_loss.loss_objectness",
-    ] + overrides
-    run_sh_command(command)
+        "model.modules.input_adv_test.max_iters=3",
+        *coco_overrides
+    )
 
 
 @RunIf(sh=True)
 @pytest.mark.slow
-def test_coco_retinanet_experiment(coco_cfg, tmp_path):
+def test_coco_retinanet_experiment(coco_overrides):
     """Test TorchVision RetinaNet experiment."""
-    overrides = coco_cfg["trainer"] + coco_cfg["datamodel"]
-    command = [
-        module,
-        "-m",
+    run_mart_command(
         "experiment=COCO_TorchvisionRetinaNet",
-        "hydra.sweep.dir=" + str(tmp_path),
-        "trainer.precision=32",
-        "optimized_metric=training/loss_box_reg",
-    ] + overrides
-    run_sh_command(command)
+        "trainer.precision=32",  # CPU only supports 32-bit
+        *coco_overrides
+    )
 
 
 @RunIf(sh=True)
 @pytest.mark.slow
-def test_armory_carla_fasterrcnn_experiment(carla_cfg, tmp_path):
+def test_armory_carla_fasterrcnn_experiment(carla_overrides):
     """Test Armory CARLA TorchVision FasterRCNN experiment."""
-    overrides = carla_cfg["trainer"] + carla_cfg["datamodel"]
-    command = [
-        module,
-        "-m",
-        "experiment=ArmoryCarlaOverObjDet_TorchvisionFasterRCNN",
-        "+attack@model.modules.input_adv_test=object_detection_mask_adversary",
-        "hydra.sweep.dir=" + str(tmp_path),
-        "optimized_metric=training/rpn_loss.loss_objectness",
-    ] + overrides
-    run_sh_command(command)
+    run_mart_command("experiment=ArmoryCarlaOverObjDet_TorchvisionFasterRCNN", *carla_overrides)
