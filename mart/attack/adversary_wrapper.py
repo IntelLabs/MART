@@ -5,7 +5,11 @@
 # agreement between Intel Corporation and you.
 #
 
+from typing import Any, Callable, Dict, Optional, Union
+
 import torch
+
+from .callbacks import Callback
 
 __all__ = ["NormalizedAdversaryAdapter"]
 
@@ -16,17 +20,25 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
     External adversaries commonly take input of NCWH-[0,1] and return input_adv in the same format.
     """
 
-    def __init__(self, adversary):
+    def __init__(
+        self, external_adversary: Callable[[torch.Tensor, torch.Tensor, torch.nn.Module], None]
+    ):
         """
 
         Args:
-            adversary (functools.partial): A partial of an adversary object which awaits model.
+            external_adversary (functools.partial): A partial of an adversary object which awaits model.
         """
         super().__init__()
 
-        self.adversary = adversary
+        self.adversary = external_adversary
 
-    def forward(self, input, target, model=None, **kwargs):
+    def forward(
+        self,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: Optional[torch.nn.Module] = None,
+        **kwargs
+    ):
 
         # Shortcut. Input is already updated in the attack loop.
         if model is None:
