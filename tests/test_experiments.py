@@ -1,3 +1,5 @@
+import os
+import re
 from typing import Dict
 
 import pytest
@@ -270,9 +272,14 @@ def test_resume(tmpdir):
                 "- datamodule.train_dataset.num_classes=10",
                 "- fit=false",  # Don't train or test the model, because the checkpoint is invalid.
                 "- test=false",
+                "- optimized_metric=null",  # No metric to retrieve.
+                "- extras.print_config=false",  # Test if print_config is turned off after resume.
             ]
         )
     )
 
     command = [module, "-m", "resume=" + str(ckpt)]
-    run_sh_command(command)
+    stdout_buf = run_sh_command(command)
+
+    output_dir = re.search("Output dir: (?P<path>.*?)\x1b", stdout_buf).group("path")
+    assert not os.path.isfile(os.path.join(output_dir, "config_tree.log"))
