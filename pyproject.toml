@@ -53,8 +53,7 @@ mart = "mart.__main__:main"
 developer = [
   "pre-commit",
   "pytest",
-  "wheel",
-  "strip_ansi"
+  "wheel"
 ]
 
 [tool.setuptools]
