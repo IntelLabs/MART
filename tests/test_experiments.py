@@ -281,5 +281,5 @@ def test_resume(tmpdir):
     command = [module, "-m", "resume=" + str(ckpt)]
     stdout_buf = run_sh_command(command)
 
-    output_dir = re.search("Output dir: (?P<path>.*?)\x1b", stdout_buf).group("path")
+    output_dir = re.search("Output dir: (?P<path>.*?)\n", stdout_buf).group("path")
     assert not os.path.isfile(os.path.join(output_dir, "config_tree.log"))

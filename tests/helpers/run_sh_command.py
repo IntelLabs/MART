@@ -2,6 +2,7 @@ from io import StringIO
 from typing import List
 
 import pytest
+from strip_ansi import strip_ansi
 
 from tests.helpers.package_available import _SH_AVAILABLE
 
@@ -16,6 +17,8 @@ def run_sh_command(command: List[str]):
         with StringIO() as buf:
             sh.python(command, _out=buf)
             output = buf.getvalue()
+            # Remove color.
+            output = strip_ansi(output)
         return output
     except sh.ErrorReturnCode as e:
         msg = e.stderr.decode()
