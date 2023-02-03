@@ -268,10 +268,11 @@ def test_resume(tmpdir):
                 "- datamodule.train_dataset.size=2",
                 "- datamodule.train_dataset.image_size=[3,32,32]",
                 "- datamodule.train_dataset.num_classes=10",
+                "- fit=false",  # Don't train or test the model, because the checkpoint is invalid.
+                "- test=false",
             ]
         )
     )
 
-    # Don't train or test the model, because the checkpoint is invalid.
-    command = [module, "-m", "resume=" + str(ckpt), "fit=false", "test=false"]
+    command = [module, "-m", "resume=" + str(ckpt)]
     run_sh_command(command)
