@@ -40,7 +40,7 @@ def main(cfg: DictConfig) -> float:
         log.fatal("or specify a checkpoint to resume, e.g.")
         log.fatal("$ python -m mart resume=logs/my_task_name/checkpoints/last.ckpt")
         log.fatal("")
-        return 0
+        raise ValueError()
 
     # imports can be nested inside @hydra.main to optimize tab completion
     # https://github.com/facebookresearch/hydra/issues/934
