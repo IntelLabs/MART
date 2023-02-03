@@ -47,6 +47,10 @@ def main(cfg: DictConfig) -> float:
     from mart.tasks.lightning import lightning
     from mart.utils import get_metric_value
 
+    # Resume and modify configs at the earliest point.
+    # The actual checkpoint path is in cfg.ckpt_path
+    cfg = utils.get_resume_checkpoint(cfg)
+
     # train the model
     metric_dict, _ = lightning(cfg)
 
