@@ -10,10 +10,10 @@ if _SH_AVAILABLE:
 
 def run_sh_command(command: List[str]):
     """Default method for executing shell commands with pytest and sh package."""
-    msg = None
     try:
-        sh.python(command, _out=lambda log: print(log.strip()))
+        # Return stdout to help debug failed tests.
+        return sh.python(command)
     except sh.ErrorReturnCode as e:
         msg = e.stderr.decode()
-    if msg:
+        # The error message could be empty.
         pytest.fail(msg=msg)

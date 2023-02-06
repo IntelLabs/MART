@@ -1,4 +1,5 @@
 _target_: mart.models.LitModular
+_convert_: all
 
 modules: ???
 optimizer: ???

@@ -5,8 +5,12 @@
 # agreement between Intel Corporation and you.
 #
 
+from typing import Any, List, Optional
+
 import hydra
+import numpy
 import torch
+from art.estimators.object_detection.object_detector import ObjectDetector
 from omegaconf import OmegaConf
 
 from ..nn import SequentialDict
@@ -21,11 +25,11 @@ class MartToArtAttackAdapter:
     but it should be reusable for other models with slight modifications.
     """
 
-    def __init__(self, target_model, mart_exp_config_yaml, **kwargs):
+    def __init__(self, target_model: ObjectDetector, mart_exp_config_yaml: str, **kwargs):
         """Run MART attacks in ART.
 
         Args:
-            target_model (<class 'art.estimators.object_detection.pytorch_faster_rcnn.PyTorchFasterRCNN'>): The target model to attack.
+            target_model (<class 'art.estimators.object_detection.object_detector.ObjectDetector'>): The target model to attack.
             mart_exp_config_yaml (str): File path to the yaml configuration of MART experiments.
         """
         exp_cfg = OmegaConf.load(mart_exp_config_yaml)
@@ -42,7 +46,12 @@ class MartToArtAttackAdapter:
 
         self._device = target_model.device
 
-    def generate(self, x=None, y=None, y_patch_metadata=None):
+    def generate(
+        self,
+        x: Optional[numpy.ndarray] = None,
+        y: Optional[numpy.ndarray] = None,
+        y_patch_metadata: Optional[List] = None,
+    ):
         """ART invokes this method to produce x_adv.
 
         1. Convert ART's data `x`, `y` and `y_patch_metadata` to MART's data format `input` and `target`.
@@ -67,7 +76,7 @@ class MartToArtAttackAdapter:
 
         return x_adv
 
-    def convert_input_art_to_mart(self, x):
+    def convert_input_art_to_mart(self, x: numpy.ndarray):
         """Convert ART input to the MART's format.
 
         Args:
@@ -80,7 +89,7 @@ class MartToArtAttackAdapter:
         input = tuple(inp_ for inp_ in input)
         return input
 
-    def convert_input_mart_to_art(self, input):
+    def convert_input_mart_to_art(self, input: tuple):
         """Convert MART input to the ART's format.
 
         Args:
@@ -93,7 +102,7 @@ class MartToArtAttackAdapter:
         x = x.cpu().numpy()
         return x
 
-    def convert_target_art_to_mart(self, y, y_patch_metadata):
+    def convert_target_art_to_mart(self, y: numpy.ndarray, y_patch_metadata: List):
         """Convert ART's target to the MART's format.
         1. np.ndarray -> torch.Tensor on self._device;
         2. Add "perturbable_mask" from `y_patch_metadata`;
