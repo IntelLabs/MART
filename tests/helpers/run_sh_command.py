@@ -10,11 +10,9 @@ if _SH_AVAILABLE:
 
 def run_sh_command(command: List[str]):
     """Default method for executing shell commands with pytest and sh package."""
-    msg = None
     try:
         sh.python(command, _out=lambda log: print(log.strip()))
     except sh.ErrorReturnCode as e:
         msg = e.stderr.decode()
-    # The error message could be empty.
-    if msg is not None:
+        # The error message could be empty.
         pytest.fail(msg=msg)
