@@ -264,6 +264,7 @@ def get_resume_checkpoint(config: DictConfig) -> Tuple[DictConfig]:
         resume_checkpoint = resume_checkpoint[0]
         log.info(f"Resuming from {resume_checkpoint}")
         # Save the ckpt_path in cfg for fit() and test().
+        # This override won't be written to disk .hydra/overrides.yaml
         overrides += [f"+ckpt_path={resume_checkpoint}"]
 
         # Load hydra.conf and use job config name to load original config with overrides
