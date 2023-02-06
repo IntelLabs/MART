@@ -22,5 +22,6 @@ def run_sh_command(command: List[str]):
         return output
     except sh.ErrorReturnCode as e:
         msg = e.stderr.decode()
-    if msg:
+    # The error message could be empty.
+    if msg is not None:
         pytest.fail(msg=msg)
