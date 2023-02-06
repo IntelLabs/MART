@@ -2,6 +2,7 @@
 # can be run from any place
 
 import os
+import sys
 from pathlib import Path
 
 import hydra
@@ -31,19 +32,25 @@ if not config_path.exists():
 @hydra.main(version_base="1.2", config_path=config_path, config_name="lightning.yaml")
 def main(cfg: DictConfig) -> float:
 
-    if "datamodule" not in cfg or "model" not in cfg:
+    if cfg.resume is None and ("datamodule" not in cfg or "model" not in cfg):
         log.fatal("")
         log.fatal("Please specify an experiment to run, e.g.")
         log.fatal(
             "$ python -m mart experiment=CIFAR10_CNN fit=false +trainer.limit_test_batches=1"
         )
+        log.fatal("or specify a checkpoint to resume, e.g.")
+        log.fatal("$ python -m mart resume=logs/my_task_name/checkpoints/last.ckpt")
         log.fatal("")
-        return 0
+        return -1
 
     # imports can be nested inside @hydra.main to optimize tab completion
     # https://github.com/facebookresearch/hydra/issues/934
     from mart.tasks.lightning import lightning
-    from mart.utils import get_metric_value
+    from mart.utils import get_metric_value, get_resume_checkpoint
+
+    # Resume and modify configs at the earliest point.
+    # The actual checkpoint path is in cfg.ckpt_path
+    cfg = get_resume_checkpoint(cfg)
 
     # train the model
     metric_dict, _ = lightning(cfg)
@@ -58,4 +65,8 @@ def main(cfg: DictConfig) -> float:
 
 
 if __name__ == "__main__":
-    main()
+    ret = main()
+    if ret is not None and ret < 0:
+        sys.exit(ret)
+    else:
+        sys.exit(0)

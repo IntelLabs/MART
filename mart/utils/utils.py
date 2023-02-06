@@ -220,7 +220,7 @@ def close_loggers() -> None:
             wandb.finish()
 
 
-def get_resume_checkpoint(config: DictConfig) -> Tuple[DictConfig, str]:
+def get_resume_checkpoint(config: DictConfig) -> Tuple[DictConfig]:
     """Resume a task from an existing checkpoint along with the config."""
 
     resume_checkpoint = None
@@ -263,12 +263,13 @@ def get_resume_checkpoint(config: DictConfig) -> Tuple[DictConfig, str]:
 
         resume_checkpoint = resume_checkpoint[0]
         log.info(f"Resuming from {resume_checkpoint}")
+        # Save the ckpt_path in cfg for fit() and test().
+        # This override won't be written to disk .hydra/overrides.yaml
+        overrides += [f"+ckpt_path={resume_checkpoint}"]
 
         # Load hydra.conf and use job config name to load original config with overrides
         hydra_config = OmegaConf.load(os.path.join(resume_dir, ".hydra", "hydra.yaml"))
         config_name = hydra_config.hydra.job.config_name
         config = hydra.compose(config_name, overrides=overrides)
 
-    ckpt_path = config.get("ckpt_path", resume_checkpoint)
-
-    return config, ckpt_path
+    return config

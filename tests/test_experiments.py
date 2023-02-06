@@ -1,3 +1,4 @@
+import os
 from typing import Dict
 
 import pytest
@@ -239,3 +240,51 @@ def test_armory_carla_fasterrcnn_experiment(carla_cfg, tmp_path):
         "optimized_metric=training/rpn_loss.loss_objectness",
     ] + overrides
     run_sh_command(command)
+
+
+@RunIf(sh=True)
+@pytest.mark.slow
+def test_resume(tmpdir):
+    # Create a pseudo folder to resume from.
+    ckpt = tmpdir.mkdir("checkpoints").join("last.ckpt")
+    yaml_dir = tmpdir.mkdir(".hydra")
+    config_yaml = yaml_dir.join("config.yaml")
+    hydra_yaml = yaml_dir.join("hydra.yaml")
+    overrides_yaml = yaml_dir.join("overrides.yaml")
+
+    ckpt.write("")
+    config_yaml.write("")
+    # hdra.job.config_name is required to compose an experiment.
+    hydra_yaml.write("hydra:\n  job:\n    config_name: lightning.yaml")
+    # The experiment is usually specified in the original configuration in overrides,
+    #   so we should not require experiment=? when resume=? is used.
+    # We also replace with a dummy dataset to avoid downloading CIFAR-10.
+    overrides_yaml.write(
+        "\n".join(
+            [
+                "- experiment=CIFAR10_RobustBench",
+                "- datamodule=dummy_classification",
+                "- datamodule.ims_per_batch=2",
+                "- datamodule.num_workers=0",
+                "- datamodule.train_dataset.size=2",
+                "- datamodule.train_dataset.image_size=[3,32,32]",
+                "- datamodule.train_dataset.num_classes=10",
+                "- fit=false",  # Don't train or test the model, because the checkpoint is invalid.
+                "- test=false",
+                "- optimized_metric=null",  # No metric to retrieve.
+                "- extras.print_config=false",  # Test if print_config is turned off after resume.
+            ]
+        )
+    )
+
+    # Disable timestamp in the output path so we can find it easily.
+    output_dir = tmpdir.mkdir("output")
+
+    command = [module, "resume=" + str(ckpt), f"hydra.run.dir={output_dir}"]
+    run_sh_command(command)
+
+    # Test if the job is executed.
+    assert os.path.isfile(os.path.join(output_dir, "__main__.log"))
+
+    # Test if print_config is turned off after resume.
+    assert not os.path.isfile(os.path.join(output_dir, "config_tree.log"))

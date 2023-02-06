@@ -27,8 +27,6 @@ def lightning(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         Optional[float]: Metric score for hyperparameter optimization.
     """
 
-    cfg, ckpt_path = utils.get_resume_checkpoint(cfg)
-
     # Set seed for random number generators in pytorch, numpy and python.random
     if cfg.get("seed"):
         seed_everything(cfg.seed, workers=True)
@@ -67,6 +65,9 @@ def lightning(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if logger:
         log.info("Logging hyperparameters!")
         utils.log_hyperparameters(object_dict)
+
+    # ckpt_path could be None if resume=null.
+    ckpt_path = cfg.get("ckpt_path", None)
 
     # Train the model
     if cfg.get("fit"):
