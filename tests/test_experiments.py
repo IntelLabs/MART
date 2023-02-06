@@ -278,8 +278,16 @@ def test_resume(tmpdir):
         )
     )
 
-    command = [module, "-m", "resume=" + str(ckpt)]
-    stdout_buf = run_sh_command(command)
+    # Disable timestamp in the output path so we can find it easily.
+    output_dir = tmpdir.mkdir("output")
 
-    output_dir = re.search("Output dir: (?P<path>.*?)\n", stdout_buf).group("path")
+    command = [module, "-m", "resume=" + str(ckpt), f"hydra.sweep.dir={output_dir}"]
+    # MULTIRUN will add a number to the sweep.dir.
+    output_dir = os.path.join(output_dir, "0")
+    run_sh_command(command)
+
+    # Test if the job is executed.
+    assert os.path.isfile(os.path.join(output_dir, "__main__.log"))
+
+    # Test if print_config is turned off after resume.
     assert not os.path.isfile(os.path.join(output_dir, "config_tree.log"))
