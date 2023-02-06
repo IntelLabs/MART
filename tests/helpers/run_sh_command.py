@@ -15,5 +15,6 @@ def run_sh_command(command: List[str]):
         sh.python(command, _out=lambda log: print(log.strip()))
     except sh.ErrorReturnCode as e:
         msg = e.stderr.decode()
-    if msg:
+    # The error message could be empty.
+    if msg is not None:
         pytest.fail(msg=msg)
