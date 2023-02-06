@@ -281,9 +281,7 @@ def test_resume(tmpdir):
     # Disable timestamp in the output path so we can find it easily.
     output_dir = tmpdir.mkdir("output")
 
-    command = [module, "-m", "resume=" + str(ckpt), f"hydra.sweep.dir={output_dir}"]
-    # MULTIRUN will add a number to the sweep.dir.
-    output_dir = os.path.join(output_dir, "0")
+    command = [module, "resume=" + str(ckpt), f"hydra.run.dir={output_dir}"]
     run_sh_command(command)
 
     # Test if the job is executed.
