@@ -41,7 +41,7 @@ def main(cfg: DictConfig) -> float:
         log.fatal("or specify a checkpoint to resume, e.g.")
         log.fatal("$ python -m mart resume=logs/my_task_name/checkpoints/last.ckpt")
         log.fatal("")
-        sys.exit(-1)
+        return -1
 
     # imports can be nested inside @hydra.main to optimize tab completion
     # https://github.com/facebookresearch/hydra/issues/934
@@ -65,4 +65,8 @@ def main(cfg: DictConfig) -> float:
 
 
 if __name__ == "__main__":
-    main()
+    ret = main()
+    if ret is not None and ret < 0:
+        sys.exit(ret)
+    else:
+        sys.exit(0)
