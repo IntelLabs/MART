@@ -1,4 +1,3 @@
-from io import StringIO
 from typing import List
 
 import pytest
@@ -13,12 +12,8 @@ def run_sh_command(command: List[str]):
     """Default method for executing shell commands with pytest and sh package."""
     msg = None
     try:
-        with StringIO() as buf:
-            sh.python(command, _out=buf, _env={"NO_COLOR": "1"})
-            output = buf.getvalue()
-        return output
+        sh.python(command, _out=lambda log: print(log.strip()))
     except sh.ErrorReturnCode as e:
         msg = e.stderr.decode()
-    # The error message could be empty.
-    if msg is not None:
+    if msg:
         pytest.fail(msg=msg)
