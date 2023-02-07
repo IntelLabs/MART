@@ -23,7 +23,7 @@ class Mispredict(Objective):
 
 
 class RandomTarget(Objective):
-    def __init__(self, nb_classes: int, gain_fn: Callable[torch.Tensor, torch.Tensor]) -> None:
+    def __init__(self, nb_classes: int, gain_fn: Callable[[torch.Tensor], torch.Tensor]) -> None:
         self.nb_classes = nb_classes
         self.gain_fn = gain_fn
 
