@@ -43,7 +43,7 @@ git clone https://github.com/IntelLabs/MART
 cd MART
 
 # [OPTIONAL] create conda environment
-# Recommended Python versions: 3.9 and 3.10
+# Recommend Python 3.9
 conda create -n myenv python=3.9
 conda activate myenv
 
