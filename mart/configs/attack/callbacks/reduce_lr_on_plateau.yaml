@@ -1,0 +1,11 @@
+reduce_lr_on_plateau:
+  _target_: mart.attack.callbacks.LearningRateScheduler
+  scheduler:
+    _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+    _partial_: true
+    mode: max
+    factor: 0.5
+    min_lr: 1
+    patience: 1
+    verbose: true
+  monitor_gain: true

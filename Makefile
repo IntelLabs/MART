@@ -46,13 +46,17 @@ debug: ## Enter debugging mode with pdb, an example.
 	#
 	python -m pdb -m mart experiment=CIFAR10_CNN debug=default
 
+# No LR scheduleing: 0.65625
+# LR Scheduling:     0.59375
 .PHONY: cifar_attack
 cifar_attack: ## Evaluate adversarial robustness of a CIFAR-10 model from robustbench.
 	python -m mart experiment=CIFAR10_RobustBench \
 	trainer=gpu \
 	fit=false \
 	+trainer.limit_test_batches=1 \
-	+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1
+	+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1 \
+	model.modules.input_adv_test.optimizer.lr=8 \
+	+attack/callbacks@model.modules.input_adv_test.callbacks=[progress_bar,reduce_lr_on_plateau]
 
 .PHONY: cifar_train
 cifar_train: ## Adversarial training for a CIFAR-10 model.
