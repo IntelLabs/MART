@@ -34,6 +34,7 @@ class LitModular(LightningModule):
         test_metrics=None,
         weights_fpath=None,
         strict=True,
+        other_sequences=None,
     ):
         super().__init__()
 
@@ -43,22 +44,21 @@ class LitModular(LightningModule):
         # assert validation_sequence is not None
         # assert test_sequence is not None
 
-        # Convert dict sequences to list sequences by sorting keys
-        if isinstance(training_sequence, dict):
-            training_sequence = [training_sequence[key] for key in sorted(training_sequence)]
-        if isinstance(validation_sequence, dict):
-            validation_sequence = [validation_sequence[key] for key in sorted(validation_sequence)]
-        if isinstance(test_sequence, dict):
-            test_sequence = [test_sequence[key] for key in sorted(test_sequence)]
-
         # *_step() functions make some assumptions about the type of Module it can call.
         # That is, injecting a nn.Module generally won't work, so better to hardcode SequentialDict.
         # It also gets rid of an indentation level in the configs.
-        sequences = {
-            "training": training_sequence,
-            "validation": validation_sequence,
-            "test": test_sequence,
-        }
+
+        sequences = other_sequences or {}
+        sequences["training"] = training_sequence
+        sequences["validation"] = validation_sequence
+        sequences["test"] = test_sequence
+
+        # Convert dict sequences to list sequences by sorting keys
+        for name in sequences:
+            seq = sequences[name]
+            if isinstance(seq, dict):
+                sequences[name] = [seq[key] for key in sorted(seq)]
+
         self.model = SequentialDict(modules, sequences)
 
         if weights_fpath is not None:
