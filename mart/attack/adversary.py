@@ -258,37 +258,30 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 class Adversary(IterativeGenerator):
     """An adversary module which generates and applies perturbation to input."""
 
-    def __init__(self, threat_model: ThreatModel, *args, step=None, **kwargs):
+    def __init__(self, threat_model: ThreatModel, *args, **kwargs):
         """_summary_
 
         Args:
             threat_model (torch.nn.Module): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
-            step (str, optional): The name of model sequence for attack. Defaults to None.
         """
         super().__init__(*args, **kwargs)
 
         self.threat_model = threat_model
-        self.step = step
 
     def forward(
         self,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         model: Optional[torch.nn.Module] = None,
-        step=None,
         **kwargs
     ):
-        # To enable adversary to run custom sequence, we prefer the step specified at Adversary's initialization.
-        step = self.step or step
-
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturber.
         if model is not None:
-            super().forward(input, target, model, step=step, **kwargs)
+            super().forward(input, target, model, **kwargs)
 
         # Get perturbation and apply threat model
         perturbation = self.perturber(input, target)
-        # FIXME: Remove **kwargs for threat model.
         output = self.threat_model(input, target, perturbation, **kwargs)
 
         return output
