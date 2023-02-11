@@ -142,7 +142,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         # We could be at the inference/no-grad mode here.
         # Initialize lazy module
         # FIXME: Perturbers can just use on_run_start/on_run_end to initialize
-        self.perturber(input, target)
+        self.perturber(self.benign_input, target)
 
         # Split param groups by input elements, so that we can schedule optimizers individually.
         param_groups = [{"params": [param]} for param in self.perturber.parameters()]
@@ -159,11 +159,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     @torch.autocast("cuda", enabled=False)
     @torch.autocast("cpu", enabled=False)
     def forward(
-        self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: torch.nn.Module,
-        **kwargs
+        self, target: Union[torch.Tensor, Dict[str, Any], tuple], model: torch.nn.Module, **kwargs
     ):
         """_summary_
 
@@ -172,6 +168,9 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
             target (_type_): _description_
             model (_type_): _description_
         """
+
+        # FIXME: We may get rid of this by exclusively using **kwargs.
+        input = kwargs.pop("input")
 
         self.on_run_start(self, input, target, model, **kwargs)
 
@@ -218,6 +217,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
         # Set model as None, because no need to update perturbation.
         # Save everything to self.outputs so that callbacks have access to them.
+        # FIXME: rgb_depth_to_linear is re-computed in every run. Can we skip modules that have already been executed?
         self.outputs = model(input=input, target=target, model=None, **kwargs)
 
         # Use CallWith to dispatch **outputs.
@@ -258,19 +258,20 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 class Adversary(IterativeGenerator):
     """An adversary module which generates and applies perturbation to input."""
 
-    def __init__(self, threat_model: ThreatModel, *args, **kwargs):
+    def __init__(self, threat_model: ThreatModel, *args, benign_input_key="input", **kwargs):
         """_summary_
 
         Args:
             threat_model (torch.nn.Module): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
+            benign_input_key (str, optional): The key of benign input in **kwargs. Defaults to "input".
         """
         super().__init__(*args, **kwargs)
 
         self.threat_model = threat_model
+        self.benign_input_key = benign_input_key
 
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         model: Optional[torch.nn.Module] = None,
         **kwargs
@@ -278,11 +279,14 @@ class Adversary(IterativeGenerator):
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturber.
         if model is not None:
-            super().forward(input, target, model, **kwargs)
+            # The benign input to an adversary is not necessarily the model input.
+            # It could be activations of other modules.
+            self.benign_input = kwargs[self.benign_input_key]
+            super().forward(target, model, **kwargs)
 
         # Get perturbation and apply threat model
-        perturbation = self.perturber(input, target)
-        output = self.threat_model(input, target, perturbation, **kwargs)
+        perturbation = self.perturber(self.benign_input, target)
+        output = self.threat_model(self.benign_input, target, perturbation)
 
         return output
 
