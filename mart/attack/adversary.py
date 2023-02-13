@@ -167,9 +167,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
             model (_type_): _description_
         """
 
-        # FIXME: We may get rid of this by exclusively using **kwargs.
-        # input = kwargs.pop("input")
-
         self.on_run_start(self, **kwargs)
 
         while True:
