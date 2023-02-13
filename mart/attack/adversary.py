@@ -164,7 +164,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         """_summary_
 
         Args:
-            input (_type_): _description_
             target (_type_): _description_
             model (_type_): _description_
         """
