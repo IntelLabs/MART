@@ -272,19 +272,24 @@ class Adversary(IterativeGenerator):
 
     def forward(
         self,
+        input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         model: Optional[torch.nn.Module] = None,
         **kwargs
     ):
+        # Backward compatible: earlier configs have two unnamed arguments [input, target].
+        kwargs["input"] = input
+        self.benign_input = kwargs[self.benign_input_key]
+
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturber.
         if model is not None:
             # The benign input to an adversary is not necessarily the model input.
             # It could be activations of other modules.
-            self.benign_input = kwargs[self.benign_input_key]
             super().forward(target, model, **kwargs)
 
         # Get perturbation and apply threat model
+        # The mask projector in perturber may require information from target.
         perturbation = self.perturber(self.benign_input, target)
         output = self.threat_model(self.benign_input, target, perturbation)
 
