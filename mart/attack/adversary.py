@@ -279,13 +279,14 @@ class Adversary(IterativeGenerator):
     ):
         # Backward compatible: earlier configs have two unnamed arguments [input, target].
         kwargs["input"] = input
+
+        # The benign input to an adversary is not necessarily the model input.
+        # It could be activations of other modules.
         self.benign_input = kwargs[self.benign_input_key]
 
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturber.
         if model is not None:
-            # The benign input to an adversary is not necessarily the model input.
-            # It could be activations of other modules.
             super().forward(target, model, **kwargs)
 
         # Get perturbation and apply threat model
