@@ -16,12 +16,14 @@ class AttackInEvalMode(Callback):
     def __init__(self):
         self.training_mode_status = None
 
-    def on_run_start(self, adversary, input, target, model, **kwargs):
+    def on_run_start(self, adversary, **kwargs):
+        model = kwargs["model"]
         self.training_mode_status = model.training
         model.train(False)
 
-    def on_run_end(self, adversary, input, target, model, **kwargs):
+    def on_run_end(self, adversary, **kwargs):
         assert self.training_mode_status is not None
 
         # Resume the previous training status of the model.
+        model = kwargs["model"]
         model.train(self.training_mode_status)
