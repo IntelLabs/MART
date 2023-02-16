@@ -5,6 +5,8 @@
 # agreement between Intel Corporation and you.
 #
 
+import functools
+
 __all__ = ["CallableAdapter"]
 
 
@@ -31,6 +33,11 @@ class CallableAdapter:
             args (Any): values to use in the callable method.
             kwargs (Any): keyword values to use in the callable method.
         """
+        # First make a partial to a function.
+        if isinstance(self.instance, functools.partial):
+            self.instance = self.instance(*args, **kwargs)
+            return self
+
         function = getattr(self.instance, self.redirecting_fn)
 
         assert callable(function)
