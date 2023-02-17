@@ -53,7 +53,7 @@ developer = [
   "sh ~= 1.14.3",              # for running bash commands in some tests
   "wheel",                     # support setup.py
   "pytest-cov[toml]",
-  "protobuf==3.20.0"
+  "protobuf==4.22.0"
 ]
 
 [tool.setuptools]
