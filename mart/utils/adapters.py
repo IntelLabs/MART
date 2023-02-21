@@ -5,41 +5,51 @@
 # agreement between Intel Corporation and you.
 #
 
-import functools
+from typing import Any, Callable
 
-__all__ = ["CallableAdapter"]
+__all__ = ["CallableAdapter", "PartialAdapter"]
 
 
 class CallableAdapter:
     """Adapter to make an object callable."""
 
-    def __init__(self, instance, redirecting_fn):
+    def __init__(self, redirecting_fn):
+        """
+
+        Args:
+            redirecting_fn (str): name of the function that will be invoked in the `__call__` method.
+        """
+        assert redirecting_fn != ""
+
+        self.redirecting_fn = redirecting_fn
+
+    def __call__(self, instance):
         """
 
         Args:
             instance (object): instance to make callable.
-            redirecting_fn (str): name of the function that will be invoked in the `__call__` method.
         """
-        assert instance is not None
-        assert redirecting_fn != ""
 
-        self.instance = instance
-        self.redirecting_fn = redirecting_fn
+        function = getattr(instance, self.redirecting_fn)
+        assert callable(function)
+        return function
 
-    def __call__(self, *args, **kwargs):
+
+class PartialAdapter:
+    """Make a partial class object callable."""
+
+    def __init__(self, partial: Callable, adapter: Callable):
         """
 
         Args:
-            args (Any): values to use in the callable method.
-            kwargs (Any): keyword values to use in the callable method.
+            partial (Callable): A partial of a class object.
+            adapter (Callable): An adapter to make an object callable.
         """
-        # First make a partial to a function.
-        if isinstance(self.instance, functools.partial):
-            self.instance = self.instance(*args, **kwargs)
-            return self
+        self.partial = partial
+        self.adapter = adapter
 
-        function = getattr(self.instance, self.redirecting_fn)
-
-        assert callable(function)
-
-        return function(*args, **kwargs)
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        # Turn a partial to a class object.
+        instance = self.partial(*args, **kwargs)
+        # Make the object callable.
+        return self.adapter(instance)
