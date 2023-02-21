@@ -1,5 +1,5 @@
 _target_: mart.attack.NormalizedAdversaryAdapter
-external_adversary:
+adversary:
   _target_: mart.utils.adapters.CallableAdapter
   instance:
     _target_: autoattack.AutoAttack

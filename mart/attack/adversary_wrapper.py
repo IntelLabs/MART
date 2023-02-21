@@ -20,17 +20,15 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
     External adversaries commonly take input of NCWH-[0,1] and return input_adv in the same format.
     """
 
-    def __init__(
-        self, external_adversary: Callable[[torch.Tensor, torch.Tensor, torch.nn.Module], None]
-    ):
+    def __init__(self, adversary: Callable[[torch.Tensor, torch.Tensor, torch.nn.Module], None]):
         """
 
         Args:
-            external_adversary (functools.partial): A partial of an adversary object which awaits model.
+            adversary (functools.partial): A partial of an adversary object which awaits model.
         """
         super().__init__()
 
-        self.adversary = external_adversary
+        self.adversary = adversary
 
     def forward(
         self,
