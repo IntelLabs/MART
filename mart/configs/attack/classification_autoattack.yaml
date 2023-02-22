@@ -1,6 +1,6 @@
 _target_: mart.attack.NormalizedAdversaryAdapter
 adversary:
-  _target_: mart.utils.adapters.PartialAdapter
+  _target_: mart.utils.adapters.PartialInstanceWrapper
   partial:
     _target_: autoattack.AutoAttack
     _partial_: true
@@ -10,6 +10,4 @@ adversary:
     version: custom
     attacks_to_run:
       - apgd-dlr
-  adapter:
-    _target_: mart.utils.adapters.CallableAdapter
-    redirecting_fn: run_standard_evaluation
+  redirecting_fn: run_standard_evaluation
