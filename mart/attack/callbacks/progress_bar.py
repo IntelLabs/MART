@@ -30,6 +30,6 @@ class ProgressBar(Callback):
         self.pbar.set_description(msg)
         self.pbar.update(1)
 
-    def on_run_end(self, adversary, **kwargs):
+    def on_run_end(self, **kwargs):
         self.pbar.close()
         del self.pbar
