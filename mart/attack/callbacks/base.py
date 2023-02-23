@@ -21,42 +21,36 @@ class Callback(abc.ABC):
 
     def on_run_start(
         self,
-        adversary: Adversary,
         **kwargs,
     ):
         pass
 
     def on_examine_start(
         self,
-        adversary: Adversary,
         **kwargs,
     ):
         pass
 
     def on_examine_end(
         self,
-        adversary: Adversary,
         **kwargs,
     ):
         pass
 
     def on_advance_start(
         self,
-        adversary: Adversary,
         **kwargs,
     ):
         pass
 
     def on_advance_end(
         self,
-        adversary: Adversary,
         **kwargs,
     ):
         pass
 
     def on_run_end(
         self,
-        adversary: Adversary,
         **kwargs,
     ):
         pass
