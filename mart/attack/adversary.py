@@ -161,7 +161,13 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     #   since we haven't implemented it yet.
     @torch.autocast("cuda", enabled=False)
     @torch.autocast("cpu", enabled=False)
-    def forward(self, **kwargs):
+    def forward(
+        self,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: Optional[torch.nn.Module] = None,
+        **kwargs,
+    ):
         """_summary_
 
         Args:
@@ -169,19 +175,19 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
             model (_type_): _description_
         """
 
-        self.on_run_start(**kwargs)
+        self.on_run_start(input=input, target=target, model=model, **kwargs)
 
         while True:
             try:
-                self.on_examine_start(**kwargs)
-                self.examine(**kwargs)
-                self.on_examine_end(**kwargs)
+                self.on_examine_start(input=input, target=target, model=model, **kwargs)
+                self.examine(input=input, target=target, model=model, **kwargs)
+                self.on_examine_end(input=input, target=target, model=model, **kwargs)
 
                 # Check the done condition here, so that every update of perturbation is examined.
                 if not self.done:
-                    self.on_advance_start(**kwargs)
-                    self.advance(**kwargs)
-                    self.on_advance_end(**kwargs)
+                    self.on_advance_start(input=input, target=target, model=model, **kwargs)
+                    self.advance()
+                    self.on_advance_end(input=input, target=target, model=model, **kwargs)
                     # Update cur_iter at the end so that all hooks get the correct cur_iter.
                     self.cur_iter += 1
                 else:
@@ -189,18 +195,15 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
             except StopIteration:
                 break
 
-        self.on_run_end(**kwargs)
+        self.on_run_end(input=input, target=target, model=model, **kwargs)
 
     # Make sure we can do autograd.
     # Earlier Pytorch Lightning uses no_grad(), but later PL uses inference_mode():
     #   https://github.com/Lightning-AI/lightning/pull/12715
     @torch.enable_grad()
     @torch.inference_mode(False)
-    def examine(self, **kwargs):
+    def examine(self, input=None, target=None, model=None, **kwargs):
         """Examine current perturbation, update self.gain and self.found."""
-
-        input = kwargs["input"]
-        target = kwargs["target"]
 
         # Clone tensors for autograd, in case it was created in the inference mode.
         # FIXME: object detection uses non-pure-tensor data, but it may have cloned somewhere else implicitly?
@@ -211,8 +214,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
         # Set model as None, because no need to update perturbation.
         # Save everything to self.outputs so that callbacks have access to them.
-        model = kwargs.pop("model")
-        self.outputs = model(model=None, **kwargs)
+        self.outputs = model(input=input, target=target, model=None, **kwargs)
 
         # Use CallWith to dispatch **outputs.
         self.gain = self.gain_fn(**self.outputs)
@@ -232,7 +234,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     # Make sure we can do autograd.
     @torch.enable_grad()
     @torch.inference_mode(False)
-    def advance(self, **kwargs):
+    def advance(self):
         """Run one attack iteration."""
 
         self.opt.zero_grad()
@@ -261,17 +263,12 @@ class Adversary(IterativeGenerator):
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         model: Optional[torch.nn.Module] = None,
-        **kwargs
+        **kwargs,
     ):
-        # Backward compatible: earlier configs have two unnamed arguments [input, target].
-        kwargs["input"] = input
-        kwargs["target"] = target
-        kwargs["model"] = model
-
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturber.
         if model is not None:
-            super().forward(**kwargs)
+            super().forward(input=input, target=target, model=model, **kwargs)
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
@@ -287,6 +284,6 @@ class NoAdversary(torch.nn.Module):
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         model: Optional[torch.nn.Module] = None,
-        **kwargs
+        **kwargs,
     ):
         return input
