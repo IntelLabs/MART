@@ -98,14 +98,25 @@ class SequentialDict(torch.nn.ModuleDict):
 
     def forward(self, step=None, **kwargs):
         # Try to fetch the customized architectural graph.
-        sequence = self._sequences[step]
+        if "sequence" not in kwargs:
+            # Backward compatible. We may get rid of step in the future.
+            sequence = self._sequences[step]
+        else:
+            sequence = kwargs["sequence"]
 
-        for key, module in sequence.items():
+        while len(sequence) > 0:
+            # Don't pop the first element yet, because it may be used to re-evaluate the model.
+            key, module = next(iter(sequence.items()))
+            kwargs["sequence"] = sequence
+
             output = module(step=step, **kwargs)
 
             if key in kwargs:
                 logger.warn(f"Module {module} replaces kwargs key {key}!")
             kwargs[key] = output
+
+            # Pop the executed module to proceed with the sequence
+            sequence.popitem(last=False)
 
         return kwargs["output"]
 

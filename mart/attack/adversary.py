@@ -142,8 +142,9 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         # We could be at the inference/no-grad mode here.
         # Initialize lazy module
         # FIXME: Perturbers can just use on_run_start/on_run_end to initialize
+        input = kwargs["input"]
         target = kwargs["target"]
-        self.perturber(self.benign_input, target)
+        self.perturber(input, target)
 
         # Split param groups by input elements, so that we can schedule optimizers individually.
         param_groups = [{"params": [param]} for param in self.perturber.parameters()]
@@ -207,9 +208,11 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         if isinstance(target, torch.Tensor):
             target = target.clone()
 
+        # Make a copy of sequence, so that we can repeatedly evaluate the model here.
+        kwargs["sequence"] = kwargs["sequence"].copy()
+
         # Set model as None, because no need to update perturbation.
         # Save everything to self.outputs so that callbacks have access to them.
-        # FIXME: rgb_depth_to_linear is re-computed in every run. Can we skip modules that have already been executed?
         model = kwargs.pop("model")
         self.outputs = model(model=None, **kwargs)
 
@@ -245,17 +248,15 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 class Adversary(IterativeGenerator):
     """An adversary module which generates and applies perturbation to input."""
 
-    def __init__(self, threat_model: ThreatModel, *args, benign_input_key="input", **kwargs):
+    def __init__(self, threat_model: ThreatModel, *args, **kwargs):
         """_summary_
 
         Args:
             threat_model (torch.nn.Module): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
-            benign_input_key (str, optional): The key of benign input in **kwargs. Defaults to "input".
         """
         super().__init__(*args, **kwargs)
 
         self.threat_model = threat_model
-        self.benign_input_key = benign_input_key
 
     def forward(
         self,
@@ -269,10 +270,6 @@ class Adversary(IterativeGenerator):
         kwargs["target"] = target
         kwargs["model"] = model
 
-        # The benign input to an adversary is not necessarily the model input.
-        # It could be activations of other modules.
-        self.benign_input = kwargs[self.benign_input_key]
-
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturber.
         if model is not None:
@@ -280,8 +277,8 @@ class Adversary(IterativeGenerator):
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
-        perturbation = self.perturber(self.benign_input, target)
-        output = self.threat_model(self.benign_input, target, perturbation)
+        perturbation = self.perturber(input, target)
+        output = self.threat_model(input, target, perturbation)
 
         return output
 
