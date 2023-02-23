@@ -73,7 +73,6 @@ class SequentialDict(torch.nn.ModuleDict):
                 )
 
             module_name, module_cfg = list(module_info.items())[0]
-            module = self[module_name]
 
             if not isinstance(module_cfg, dict):
                 # We can omit the key of _call_with_args_ if it is the only config.
@@ -81,18 +80,15 @@ class SequentialDict(torch.nn.ModuleDict):
 
             # The return name could be different from module_name when a module is used more than once.
             return_name = module_cfg.pop("_name_", module_name)
+            # The module would be called with these *args.
+            arg_keys = module_cfg.pop("_call_with_args_", None)
+            # The module would return a dictionary with these keys instead of a tuple.
+            return_keys = module_cfg.pop("_return_as_dict", None)
+            # The module would be called with these **kwargs.
+            kwarg_keys = module_cfg
 
-            # A module can be configured to receive specific *args and **kwargs.
-            # If not configured, it receives everything in **kwargs.
-            if len(module_cfg) > 0:
-                # The module would be called with these *args.
-                arg_keys = module_cfg.pop("_call_with_args_", None)
-                # The module would return a dictionary with these keys instead of a tuple.
-                return_keys = module_cfg.pop("_return_as_dict", None)
-                # The module would be called with these **kwargs.
-                kwarg_keys = module_cfg
-
-                module = CallWith(module, arg_keys, kwarg_keys, return_keys)
+            module = self[module_name]
+            module = CallWith(module, arg_keys, kwarg_keys, return_keys)
             module_dict[return_name] = module
         return module_dict
 
