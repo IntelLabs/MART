@@ -100,6 +100,9 @@ class SequentialDict(torch.nn.ModuleDict):
         else:
             sequence = kwargs["sequence"]
 
+        # Make a copy of sequence, because it will be destructed in the while loop.
+        sequence = sequence.copy()
+
         while len(sequence) > 0:
             # Don't pop the first element yet, because it may be used to re-evaluate the model.
             key, module = next(iter(sequence.items()))

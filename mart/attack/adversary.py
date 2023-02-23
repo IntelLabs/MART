@@ -208,9 +208,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         if isinstance(target, torch.Tensor):
             target = target.clone()
 
-        # Make a copy of sequence, so that we can repeatedly evaluate the model here.
-        kwargs["sequence"] = kwargs["sequence"].copy()
-
         # Set model as None, because no need to update perturbation.
         # Save everything to self.outputs so that callbacks have access to them.
         model = kwargs.pop("model")
