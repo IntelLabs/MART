@@ -13,7 +13,7 @@ adversary:
     version: custom
     attacks_to_run:
       - apgd-dlr
-  adapter:
+  wrapper:
     _target_: mart.utils.adapters.CallableAdapter
     _partial_: true
     redirecting_fn: run_standard_evaluation

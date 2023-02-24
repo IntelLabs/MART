@@ -43,18 +43,18 @@ class CallableAdapter:
 class PartialInstanceWrapper:
     """Make a partial class object callable."""
 
-    def __init__(self, partial: Callable, adapter):
+    def __init__(self, partial: Callable, wrapper: Callable):
         """
 
         Args:
             partial (Callable): A partial of a class object.
-            adapter (CallableAdapter): An adapter that creates the `__call__` method.
+            adapter (Callable): An adapter that creates the `__call__` method.
         """
         self.partial = partial
-        self.adapter = adapter
+        self.wrapper = wrapper
 
     def __call__(self, *args: Any, **kwargs: Any) -> Callable:
         # Turn a partial to a class object.
         instance = self.partial(*args, **kwargs)
         # Make the object callable.
-        return self.adapter(instance)
+        return self.wrapper(instance)
