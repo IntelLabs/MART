@@ -90,12 +90,12 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         """_summary_
 
         Args:
-            perturber (Union[BatchPerturber, Perturber]): _description_.
+            perturber (BatchPerturber | Perturber): _description_.
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
-            objective (Objective): A function for computing adversarial objective, which returns True or False.
-            callbacks (dict): A dict of callback objects.
+            objective (Objective | None): A function for computing adversarial objective, which returns True or False.
+            callbacks (dict[str, Callback] | None): A dict of callback objects.
         """
         super().__init__()
 
