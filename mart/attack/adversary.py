@@ -133,8 +133,17 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
         return False
 
-    def on_run_start(self, **kwargs):
-        super().on_run_start(**kwargs)
+    def on_run_start(
+        self,
+        adversary: Optional[torch.nn.Module] = None,
+        input: Optional[Union[torch.Tensor, tuple]] = None,
+        target: Optional[Union[torch.Tensor, Dict[str, Any], tuple]] = None,
+        model: Optional[torch.nn.Module] = None,
+        **kwargs,
+    ):
+        super().on_run_start(
+            adversary=adversary, input=input, target=target, model=model, **kwargs
+        )
 
         # FIXME: We should probably just register IterativeAdversary as a callback.
         # Set up the optimizer.
@@ -143,16 +152,21 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         # We could be at the inference/no-grad mode here.
         # Initialize lazy module
         # FIXME: Perturbers can just use on_run_start/on_run_end to initialize
-        input = kwargs["input"]
-        target = kwargs["target"]
         self.perturber(input, target)
 
         # Split param groups by input elements, so that we can schedule optimizers individually.
         param_groups = [{"params": [param]} for param in self.perturber.parameters()]
         self.opt = self.optimizer_fn(param_groups)
 
-    def on_run_end(self, **kwargs):
-        super().on_run_end(**kwargs)
+    def on_run_end(
+        self,
+        adversary: Optional[torch.nn.Module] = None,
+        input: Optional[Union[torch.Tensor, tuple]] = None,
+        target: Optional[Union[torch.Tensor, Dict[str, Any], tuple]] = None,
+        model: Optional[torch.nn.Module] = None,
+        **kwargs,
+    ):
+        super().on_run_end(adversary=adversary, input=input, target=target, model=model, **kwargs)
 
         # Release optimization resources
         del self.opt
@@ -190,11 +204,19 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
                 # Check the done condition here, so that every update of perturbation is examined.
                 if not self.done:
                     self.on_advance_start(
-                        adversary=self, input=input, target=target, model=model, **kwargs
+                        adversary=self,
+                        input=input,
+                        target=target,
+                        model=model,
+                        **kwargs,
                     )
                     self.advance()
                     self.on_advance_end(
-                        adversary=self, input=input, target=target, model=model, **kwargs
+                        adversary=self,
+                        input=input,
+                        target=target,
+                        model=model,
+                        **kwargs,
                     )
                     # Update cur_iter at the end so that all hooks get the correct cur_iter.
                     self.cur_iter += 1
@@ -210,7 +232,14 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     #   https://github.com/Lightning-AI/lightning/pull/12715
     @torch.enable_grad()
     @torch.inference_mode(False)
-    def examine(self, input=None, target=None, model=None, **kwargs):
+    def examine(
+        self,
+        adversary: Optional[torch.nn.Module] = None,
+        input: Optional[Union[torch.Tensor, tuple]] = None,
+        target: Optional[Union[torch.Tensor, Dict[str, Any], tuple]] = None,
+        model: Optional[torch.nn.Module] = None,
+        **kwargs,
+    ):
         """Examine current perturbation, update self.gain and self.found."""
 
         # Clone tensors for autograd, in case it was created in the inference mode.
@@ -242,7 +271,14 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     # Make sure we can do autograd.
     @torch.enable_grad()
     @torch.inference_mode(False)
-    def advance(self):
+    def advance(
+        self,
+        adversary: Optional[torch.nn.Module] = None,
+        input: Optional[Union[torch.Tensor, tuple]] = None,
+        target: Optional[Union[torch.Tensor, Dict[str, Any], tuple]] = None,
+        model: Optional[torch.nn.Module] = None,
+        **kwargs,
+    ):
         """Run one attack iteration."""
 
         self.opt.zero_grad()
