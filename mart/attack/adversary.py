@@ -210,7 +210,13 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
                         model=model,
                         **kwargs,
                     )
-                    self.advance()
+                    self.advance(
+                        adversary=self,
+                        input=input,
+                        target=target,
+                        model=model,
+                        **kwargs,
+                    )
                     self.on_advance_end(
                         adversary=self,
                         input=input,
