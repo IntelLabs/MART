@@ -4,6 +4,9 @@ adversary:
   partial:
     _target_: autoattack.AutoAttack
     _partial_: true
+    # AutoAttack needs to specify device for PyTorch tensors: cpu/cuda
+    # We can not use ${trainer.accelerator} because the vocabulary is different: cpu/gpu
+    # device: cpu
     norm: Linf
     # 8/255
     eps: 0.03137254901960784
