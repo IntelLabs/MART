@@ -179,9 +179,9 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     @torch.autocast("cpu", enabled=False)
     def forward(
         self,
+        *,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        *,
         model: torch.nn.Module,
         **kwargs,
     ):
