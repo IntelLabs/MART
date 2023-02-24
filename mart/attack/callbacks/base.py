@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Dict, Union
+from typing import TYPE_CHECKING, Any
 
 import torch
 
@@ -23,6 +23,7 @@ class Callback(abc.ABC):
 
     def on_run_start(
         self,
+        *,
         adversary: Adversary,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
@@ -33,6 +34,7 @@ class Callback(abc.ABC):
 
     def on_examine_start(
         self,
+        *,
         adversary: Adversary,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
@@ -43,6 +45,7 @@ class Callback(abc.ABC):
 
     def on_examine_end(
         self,
+        *,
         adversary: Adversary,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
@@ -53,6 +56,7 @@ class Callback(abc.ABC):
 
     def on_advance_start(
         self,
+        *,
         adversary: Adversary,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
@@ -63,6 +67,7 @@ class Callback(abc.ABC):
 
     def on_advance_end(
         self,
+        *,
         adversary: Adversary,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
@@ -73,6 +78,7 @@ class Callback(abc.ABC):
 
     def on_run_end(
         self,
+        *,
         adversary: Adversary,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
