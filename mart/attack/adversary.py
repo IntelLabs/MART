@@ -196,7 +196,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
                 self.on_examine_start(
                     adversary=self, input=input, target=target, model=model, **kwargs
                 )
-                self.examine(adversary=self, input=input, target=target, model=model, **kwargs)
+                self.examine(input=input, target=target, model=model, **kwargs)
                 self.on_examine_end(
                     adversary=self, input=input, target=target, model=model, **kwargs
                 )
@@ -211,7 +211,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
                         **kwargs,
                     )
                     self.advance(
-                        adversary=self,
                         input=input,
                         target=target,
                         model=model,
@@ -240,7 +239,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     @torch.inference_mode(False)
     def examine(
         self,
-        adversary: Optional[torch.nn.Module] = None,
         input: Optional[Union[torch.Tensor, tuple]] = None,
         target: Optional[Union[torch.Tensor, Dict[str, Any], tuple]] = None,
         model: Optional[torch.nn.Module] = None,
@@ -279,7 +277,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     @torch.inference_mode(False)
     def advance(
         self,
-        adversary: Optional[torch.nn.Module] = None,
         input: Optional[Union[torch.Tensor, tuple]] = None,
         target: Optional[Union[torch.Tensor, Dict[str, Any], tuple]] = None,
         model: Optional[torch.nn.Module] = None,
