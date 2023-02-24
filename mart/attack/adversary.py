@@ -29,27 +29,27 @@ class AdversaryCallbackHookMixin(Callback):
         for _name, callback in self.callbacks.items():
             # FIXME: Skip incomplete callback instance.
             # Give access of self to callbacks by `adversary=self`.
-            callback.on_run_start(adversary=self, **kwargs)
+            callback.on_run_start(**kwargs)
 
     def on_examine_start(self, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
-            callback.on_examine_start(adversary=self, **kwargs)
+            callback.on_examine_start(**kwargs)
 
     def on_examine_end(self, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
-            callback.on_examine_end(adversary=self, **kwargs)
+            callback.on_examine_end(**kwargs)
 
     def on_advance_start(self, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
-            callback.on_advance_start(adversary=self, **kwargs)
+            callback.on_advance_start(**kwargs)
 
     def on_advance_end(self, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
-            callback.on_advance_end(adversary=self, **kwargs)
+            callback.on_advance_end(**kwargs)
 
     def on_run_end(self, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
-            callback.on_run_end(adversary=self, **kwargs)
+            callback.on_run_end(**kwargs)
 
 
 class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
@@ -175,19 +175,27 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
             model (_type_): _description_
         """
 
-        self.on_run_start(input=input, target=target, model=model, **kwargs)
+        self.on_run_start(adversary=self, input=input, target=target, model=model, **kwargs)
 
         while True:
             try:
-                self.on_examine_start(input=input, target=target, model=model, **kwargs)
-                self.examine(input=input, target=target, model=model, **kwargs)
-                self.on_examine_end(input=input, target=target, model=model, **kwargs)
+                self.on_examine_start(
+                    adversary=self, input=input, target=target, model=model, **kwargs
+                )
+                self.examine(adversary=self, input=input, target=target, model=model, **kwargs)
+                self.on_examine_end(
+                    adversary=self, input=input, target=target, model=model, **kwargs
+                )
 
                 # Check the done condition here, so that every update of perturbation is examined.
                 if not self.done:
-                    self.on_advance_start(input=input, target=target, model=model, **kwargs)
+                    self.on_advance_start(
+                        adversary=self, input=input, target=target, model=model, **kwargs
+                    )
                     self.advance()
-                    self.on_advance_end(input=input, target=target, model=model, **kwargs)
+                    self.on_advance_end(
+                        adversary=self, input=input, target=target, model=model, **kwargs
+                    )
                     # Update cur_iter at the end so that all hooks get the correct cur_iter.
                     self.cur_iter += 1
                 else:
@@ -195,7 +203,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
             except StopIteration:
                 break
 
-        self.on_run_end(input=input, target=target, model=model, **kwargs)
+        self.on_run_end(adversary=self, input=input, target=target, model=model, **kwargs)
 
     # Make sure we can do autograd.
     # Earlier Pytorch Lightning uses no_grad(), but later PL uses inference_mode():
