@@ -136,10 +136,10 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     def on_run_start(
         self,
         *,
-        adversary: Optional[torch.nn.Module],
-        input: Optional[Union[torch.Tensor, tuple]],
-        target: Optional[Union[torch.Tensor, Dict[str, Any], tuple]],
-        model: Optional[torch.nn.Module],
+        adversary: torch.nn.Module,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: torch.nn.Module,
         **kwargs,
     ):
         super().on_run_start(
@@ -162,10 +162,10 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     def on_run_end(
         self,
         *,
-        adversary: Optional[torch.nn.Module],
-        input: Optional[Union[torch.Tensor, tuple]],
-        target: Optional[Union[torch.Tensor, Dict[str, Any], tuple]],
-        model: Optional[torch.nn.Module],
+        adversary: torch.nn.Module,
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: torch.nn.Module,
         **kwargs,
     ):
         super().on_run_end(adversary=adversary, input=input, target=target, model=model, **kwargs)
@@ -182,7 +182,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         *,
-        model: Optional[torch.nn.Module],
+        model: torch.nn.Module,
         **kwargs,
     ):
         """_summary_
@@ -243,9 +243,9 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     def examine(
         self,
         *,
-        input: Optional[Union[torch.Tensor, tuple]],
-        target: Optional[Union[torch.Tensor, Dict[str, Any], tuple]],
-        model: Optional[torch.nn.Module],
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: torch.nn.Module,
         **kwargs,
     ):
         """Examine current perturbation, update self.gain and self.found."""
@@ -282,9 +282,9 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     def advance(
         self,
         *,
-        input: Optional[Union[torch.Tensor, tuple]],
-        target: Optional[Union[torch.Tensor, Dict[str, Any], tuple]],
-        model: Optional[torch.nn.Module],
+        input: Union[torch.Tensor, tuple],
+        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        model: torch.nn.Module,
         **kwargs,
     ):
         """Run one attack iteration."""
