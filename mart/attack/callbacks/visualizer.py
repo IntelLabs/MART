@@ -26,7 +26,7 @@ class PerturbedImageVisualizer(Callback):
         if not os.path.isdir(self.folder):
             os.makedirs(self.folder)
 
-    def on_run_end(self, adversary=None, input=None, target=None, model=None, **kwargs):
+    def on_run_end(self, *, adversary, input, target, model, **kwargs):
         adv_input = adversary(input=input, target=target, model=None, **kwargs)
 
         for img, tgt in zip(adv_input, target):

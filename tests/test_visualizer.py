@@ -28,8 +28,8 @@ def test_visualizer_run_end(input_data, target_data, perturbation, tmp_path):
     adversary = Mock(spec=Adversary, side_effect=perturb)
 
     visualizer = PerturbedImageVisualizer(folder)
-    kwargs = {"input": input_list, "target": target_list, "model": model}
-    visualizer.on_run_end(adversary, **kwargs)
+    kwargs = {"adversary": adversary, "input": input_list, "target": target_list, "model": model}
+    visualizer.on_run_end(**kwargs)
 
     # verify that the visualizer created the JPG file
     expected_output_path = folder / target_data["file_name"]
