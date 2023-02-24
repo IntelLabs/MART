@@ -8,7 +8,9 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+import torch
 
 if TYPE_CHECKING:
     from ..adversary import Adversary
@@ -21,36 +23,60 @@ class Callback(abc.ABC):
 
     def on_run_start(
         self,
+        adversary: Adversary = None,
+        input: torch.Tensor | tuple = None,
+        target: torch.Tensor | dict[str, Any] | tuple = None,
+        model: torch.nn.Module = None,
         **kwargs,
     ):
         pass
 
     def on_examine_start(
         self,
+        adversary: Adversary = None,
+        input: torch.Tensor | tuple = None,
+        target: torch.Tensor | dict[str, Any] | tuple = None,
+        model: torch.nn.Module = None,
         **kwargs,
     ):
         pass
 
     def on_examine_end(
         self,
+        adversary: Adversary = None,
+        input: torch.Tensor | tuple = None,
+        target: torch.Tensor | dict[str, Any] | tuple = None,
+        model: torch.nn.Module = None,
         **kwargs,
     ):
         pass
 
     def on_advance_start(
         self,
+        adversary: Adversary = None,
+        input: torch.Tensor | tuple = None,
+        target: torch.Tensor | dict[str, Any] | tuple = None,
+        model: torch.nn.Module = None,
         **kwargs,
     ):
         pass
 
     def on_advance_end(
         self,
+        adversary: Adversary = None,
+        input: torch.Tensor | tuple = None,
+        target: torch.Tensor | dict[str, Any] | tuple = None,
+        model: torch.nn.Module = None,
         **kwargs,
     ):
         pass
 
     def on_run_end(
         self,
+        adversary: Adversary = None,
+        input: torch.Tensor | tuple = None,
+        target: torch.Tensor | dict[str, Any] | tuple = None,
+        model: torch.nn.Module = None,
         **kwargs,
     ):
         pass

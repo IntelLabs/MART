@@ -16,12 +16,10 @@ class ModelParamsNoGrad(Callback):
     This callback should not change the result. Don't use unless an attack runs faster.
     """
 
-    def on_run_start(self, **kwargs):
-        model = kwargs["model"]
+    def on_run_start(self, model=None, **kwargs):
         for param in model.parameters():
             param.requires_grad_(False)
 
-    def on_run_end(self, **kwargs):
-        model = kwargs["model"]
+    def on_run_end(self, model=None, **kwargs):
         for param in model.parameters():
             param.requires_grad_(True)
