@@ -18,8 +18,7 @@ class ProgressBar(Callback):
     def on_run_start(self, *, adversary, **kwargs):
         self.pbar = tqdm.tqdm(total=adversary.max_iters, leave=False, desc="Attack", unit="iter")
 
-    def on_examine_end(self, *, adversary, **kwargs):
-        input = kwargs["input"]
+    def on_examine_end(self, *, input, adversary, **kwargs):
         msg = ""
         if hasattr(adversary, "found"):
             # there is no adversary.found if adversary.objective_fn() is not defined.
