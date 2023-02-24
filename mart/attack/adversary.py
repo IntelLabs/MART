@@ -5,8 +5,10 @@
 # agreement between Intel Corporation and you.
 #
 
+from __future__ import annotations
+
 from collections import OrderedDict
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import torch
 
@@ -78,12 +80,12 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
     def __init__(
         self,
-        perturber: Union[BatchPerturber, Perturber],
+        perturber: BatchPerturber | Perturber,
         optimizer: torch.optim.Optimizer,
         max_iters: int,
         gain: Gain,
-        objective: Optional[Objective] = None,
-        callbacks: Optional[Dict[str, Callback]] = None,
+        objective: Objective | None = None,
+        callbacks: dict[str, Callback] | None = None,
     ):
         """_summary_
 
@@ -137,8 +139,8 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         self,
         *,
         adversary: torch.nn.Module,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -163,8 +165,8 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         self,
         *,
         adversary: torch.nn.Module,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -180,8 +182,8 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     def forward(
         self,
         *,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -243,8 +245,8 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     def examine(
         self,
         *,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -282,8 +284,8 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     def advance(
         self,
         *,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -312,9 +314,9 @@ class Adversary(IterativeGenerator):
 
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: Optional[torch.nn.Module] = None,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module | None = None,
         **kwargs,
     ):
         # Generate a perturbation only if we have a model. This will update
@@ -333,9 +335,9 @@ class Adversary(IterativeGenerator):
 class NoAdversary(torch.nn.Module):
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: Optional[torch.nn.Module] = None,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module | None = None,
         **kwargs,
     ):
         return input
