@@ -10,4 +10,7 @@ adversary:
     version: custom
     attacks_to_run:
       - apgd-dlr
-  redirecting_fn: run_standard_evaluation
+  adapter:
+    _target_: mart.utils.adapters.CallableAdapter
+    _partial_: true
+    redirecting_fn: run_standard_evaluation
