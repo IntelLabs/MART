@@ -80,6 +80,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
     def __init__(
         self,
+        *,
         perturber: BatchPerturber | Perturber,
         optimizer: torch.optim.Optimizer,
         max_iters: int,
@@ -302,13 +303,13 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 class Adversary(IterativeGenerator):
     """An adversary module which generates and applies perturbation to input."""
 
-    def __init__(self, threat_model: ThreatModel, *args, **kwargs):
+    def __init__(self, *, threat_model: ThreatModel, **kwargs):
         """_summary_
 
         Args:
             threat_model (torch.nn.Module): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
         self.threat_model = threat_model
 
