@@ -91,12 +91,12 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         """_summary_
 
         Args:
-            perturber (BatchPerturber | Perturber): _description_.
+            perturber (BatchPerturber | Perturber): A module that stores perturbations.
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
-            objective (Objective | None): A function for computing adversarial objective, which returns True or False.
-            callbacks (dict[str, Callback] | None): A dict of callback objects.
+            objective (Objective | None): A function for computing adversarial objective, which returns True or False. Optional.
+            callbacks (dict[str, Callback] | None): A dictionary of callback objects. Optional.
         """
         super().__init__()
 
@@ -188,12 +188,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         model: torch.nn.Module,
         **kwargs,
     ):
-        """_summary_
-
-        Args:
-            target (_type_): _description_
-            model (_type_): _description_
-        """
 
         self.on_run_start(adversary=self, input=input, target=target, model=model, **kwargs)
 
@@ -307,7 +301,7 @@ class Adversary(IterativeGenerator):
         """_summary_
 
         Args:
-            threat_model (torch.nn.Module): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
+            threat_model (ThreatModel): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
         """
         super().__init__(**kwargs)
 
