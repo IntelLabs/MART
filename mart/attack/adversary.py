@@ -5,8 +5,10 @@
 # agreement between Intel Corporation and you.
 #
 
+from __future__ import annotations
+
 from collections import OrderedDict
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import torch
 
@@ -24,31 +26,32 @@ class AdversaryCallbackHookMixin(Callback):
 
     callbacks = {}
 
-    def on_run_start(self, adversary, input, target, model, **kwargs) -> None:
+    def on_run_start(self, **kwargs) -> None:
         """Prepare the attack loop state."""
         for _name, callback in self.callbacks.items():
             # FIXME: Skip incomplete callback instance.
-            callback.on_run_start(adversary, input, target, model, **kwargs)
+            # Give access of self to callbacks by `adversary=self`.
+            callback.on_run_start(**kwargs)
 
-    def on_examine_start(self, adversary, input, target, model, **kwargs) -> None:
+    def on_examine_start(self, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
-            callback.on_examine_start(adversary, input, target, model, **kwargs)
+            callback.on_examine_start(**kwargs)
 
-    def on_examine_end(self, adversary, input, target, model, **kwargs) -> None:
+    def on_examine_end(self, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
-            callback.on_examine_end(adversary, input, target, model, **kwargs)
+            callback.on_examine_end(**kwargs)
 
-    def on_advance_start(self, adversary, input, target, model, **kwargs) -> None:
+    def on_advance_start(self, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
-            callback.on_advance_start(adversary, input, target, model, **kwargs)
+            callback.on_advance_start(**kwargs)
 
-    def on_advance_end(self, adversary, input, target, model, **kwargs) -> None:
+    def on_advance_end(self, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
-            callback.on_advance_end(adversary, input, target, model, **kwargs)
+            callback.on_advance_end(**kwargs)
 
-    def on_run_end(self, adversary, input, target, model, **kwargs) -> None:
+    def on_run_end(self, **kwargs) -> None:
         for _name, callback in self.callbacks.items():
-            callback.on_run_end(adversary, input, target, model, **kwargs)
+            callback.on_run_end(**kwargs)
 
 
 class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
@@ -77,22 +80,23 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
     def __init__(
         self,
-        perturber: Union[BatchPerturber, Perturber],
+        *,
+        perturber: BatchPerturber | Perturber,
         optimizer: torch.optim.Optimizer,
-        max_iters: Union[int, float],
+        max_iters: int,
         gain: Gain,
-        objective: Optional[Objective] = None,
-        callbacks: Optional[Dict[str, Callback]] = None,
+        objective: Objective | None = None,
+        callbacks: dict[str, Callback] | None = None,
     ):
         """_summary_
 
         Args:
-            perturber (torch.nn.Module): _description_.
+            perturber (BatchPerturber | Perturber): A module that stores perturbations.
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             max_iters (int): The max number of attack iterations.
-            gain (torch.nn.Module): An adversarial gain function, which is a differentiable estimate of adversarial objective.
-            objective (torch.nn.Module): A function for computing adversarial objective, which returns True or False.
-            callbacks (dict): A dict of callback objects.
+            gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
+            objective (Objective | None): A function for computing adversarial objective, which returns True or False. Optional.
+            callbacks (dict[str, Callback] | None): A dictionary of callback objects. Optional.
         """
         super().__init__()
 
@@ -132,8 +136,18 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
         return False
 
-    def on_run_start(self, adversary, input, target, model, **kwargs):
-        super().on_run_start(adversary, input, target, model, **kwargs)
+    def on_run_start(
+        self,
+        *,
+        adversary: torch.nn.Module,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module,
+        **kwargs,
+    ):
+        super().on_run_start(
+            adversary=adversary, input=input, target=target, model=model, **kwargs
+        )
 
         # FIXME: We should probably just register IterativeAdversary as a callback.
         # Set up the optimizer.
@@ -148,8 +162,16 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         param_groups = [{"params": [param]} for param in self.perturber.parameters()]
         self.opt = self.optimizer_fn(param_groups)
 
-    def on_run_end(self, adversary, input, target, model, **kwargs):
-        super().on_run_end(adversary, input, target, model, **kwargs)
+    def on_run_end(
+        self,
+        *,
+        adversary: torch.nn.Module,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module,
+        **kwargs,
+    ):
+        super().on_run_end(adversary=adversary, input=input, target=target, model=model, **kwargs)
 
         # Release optimization resources
         del self.opt
@@ -160,32 +182,47 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     @torch.autocast("cpu", enabled=False)
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        *,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
         model: torch.nn.Module,
-        **kwargs
+        **kwargs,
     ):
-        """_summary_
 
-        Args:
-            input (_type_): _description_
-            target (_type_): _description_
-            model (_type_): _description_
-        """
-
-        self.on_run_start(self, input, target, model, **kwargs)
+        self.on_run_start(adversary=self, input=input, target=target, model=model, **kwargs)
 
         while True:
             try:
-                self.on_examine_start(self, input, target, model, **kwargs)
-                self.examine(input, target, model, **kwargs)
-                self.on_examine_end(self, input, target, model, **kwargs)
+                self.on_examine_start(
+                    adversary=self, input=input, target=target, model=model, **kwargs
+                )
+                self.examine(input=input, target=target, model=model, **kwargs)
+                self.on_examine_end(
+                    adversary=self, input=input, target=target, model=model, **kwargs
+                )
 
                 # Check the done condition here, so that every update of perturbation is examined.
                 if not self.done:
-                    self.on_advance_start(self, input, target, model, **kwargs)
-                    self.advance(input, target, model, **kwargs)
-                    self.on_advance_end(self, input, target, model, **kwargs)
+                    self.on_advance_start(
+                        adversary=self,
+                        input=input,
+                        target=target,
+                        model=model,
+                        **kwargs,
+                    )
+                    self.advance(
+                        input=input,
+                        target=target,
+                        model=model,
+                        **kwargs,
+                    )
+                    self.on_advance_end(
+                        adversary=self,
+                        input=input,
+                        target=target,
+                        model=model,
+                        **kwargs,
+                    )
                     # Update cur_iter at the end so that all hooks get the correct cur_iter.
                     self.cur_iter += 1
                 else:
@@ -193,7 +230,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
             except StopIteration:
                 break
 
-        self.on_run_end(self, input, target, model, **kwargs)
+        self.on_run_end(adversary=self, input=input, target=target, model=model, **kwargs)
 
     # Make sure we can do autograd.
     # Earlier Pytorch Lightning uses no_grad(), but later PL uses inference_mode():
@@ -202,10 +239,11 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     @torch.inference_mode(False)
     def examine(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        *,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
         model: torch.nn.Module,
-        **kwargs
+        **kwargs,
     ):
         """Examine current perturbation, update self.gain and self.found."""
 
@@ -240,10 +278,11 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     @torch.inference_mode(False)
     def advance(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
+        *,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
         model: torch.nn.Module,
-        **kwargs
+        **kwargs,
     ):
         """Run one attack iteration."""
 
@@ -258,31 +297,32 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 class Adversary(IterativeGenerator):
     """An adversary module which generates and applies perturbation to input."""
 
-    def __init__(self, threat_model: ThreatModel, *args, **kwargs):
+    def __init__(self, *, threat_model: ThreatModel, **kwargs):
         """_summary_
 
         Args:
-            threat_model (torch.nn.Module): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
+            threat_model (ThreatModel): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
         self.threat_model = threat_model
 
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: Optional[torch.nn.Module] = None,
-        **kwargs
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module | None = None,
+        **kwargs,
     ):
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturber.
         if model is not None:
-            super().forward(input, target, model, **kwargs)
+            super().forward(input=input, target=target, model=model, **kwargs)
 
         # Get perturbation and apply threat model
+        # The mask projector in perturber may require information from target.
         perturbation = self.perturber(input, target)
-        output = self.threat_model(input, target, perturbation, **kwargs)
+        output = self.threat_model(input, target, perturbation)
 
         return output
 
@@ -290,9 +330,9 @@ class Adversary(IterativeGenerator):
 class NoAdversary(torch.nn.Module):
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: Optional[torch.nn.Module] = None,
-        **kwargs
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module | None = None,
+        **kwargs,
     ):
         return input

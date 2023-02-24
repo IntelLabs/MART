@@ -15,10 +15,10 @@ __all__ = ["ProgressBar"]
 class ProgressBar(Callback):
     """Display progress bar of attack iterations with the gain value."""
 
-    def on_run_start(self, adversary, input, target, model, **kwargs):
+    def on_run_start(self, *, adversary, **kwargs):
         self.pbar = tqdm.tqdm(total=adversary.max_iters, leave=False, desc="Attack", unit="iter")
 
-    def on_examine_end(self, adversary, input, target, model, **kwargs):
+    def on_examine_end(self, *, input, adversary, **kwargs):
         msg = ""
         if hasattr(adversary, "found"):
             # there is no adversary.found if adversary.objective_fn() is not defined.
@@ -29,6 +29,6 @@ class ProgressBar(Callback):
         self.pbar.set_description(msg)
         self.pbar.update(1)
 
-    def on_run_end(self, adversary, input, target, model, **kwargs):
+    def on_run_end(self, **kwargs):
         self.pbar.close()
         del self.pbar
