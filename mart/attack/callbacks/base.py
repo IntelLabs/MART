@@ -23,60 +23,60 @@ class Callback(abc.ABC):
 
     def on_run_start(
         self,
-        adversary: Adversary = None,
-        input: torch.Tensor | tuple = None,
-        target: torch.Tensor | dict[str, Any] | tuple = None,
-        model: torch.nn.Module = None,
+        adversary: Adversary | None = None,
+        input: torch.Tensor | tuple | None = None,
+        target: torch.Tensor | dict[str, Any] | tuple | None = None,
+        model: torch.nn.Module | None = None,
         **kwargs,
     ):
         pass
 
     def on_examine_start(
         self,
-        adversary: Adversary = None,
-        input: torch.Tensor | tuple = None,
-        target: torch.Tensor | dict[str, Any] | tuple = None,
-        model: torch.nn.Module = None,
+        adversary: Adversary | None = None,
+        input: torch.Tensor | tuple | None = None,
+        target: torch.Tensor | dict[str, Any] | tuple | None = None,
+        model: torch.nn.Module | None = None,
         **kwargs,
     ):
         pass
 
     def on_examine_end(
         self,
-        adversary: Adversary = None,
-        input: torch.Tensor | tuple = None,
-        target: torch.Tensor | dict[str, Any] | tuple = None,
-        model: torch.nn.Module = None,
+        adversary: Adversary | None = None,
+        input: torch.Tensor | tuple | None = None,
+        target: torch.Tensor | dict[str, Any] | tuple | None = None,
+        model: torch.nn.Module | None = None,
         **kwargs,
     ):
         pass
 
     def on_advance_start(
         self,
-        adversary: Adversary = None,
-        input: torch.Tensor | tuple = None,
-        target: torch.Tensor | dict[str, Any] | tuple = None,
-        model: torch.nn.Module = None,
+        adversary: Adversary | None = None,
+        input: torch.Tensor | tuple | None = None,
+        target: torch.Tensor | dict[str, Any] | tuple | None = None,
+        model: torch.nn.Module | None = None,
         **kwargs,
     ):
         pass
 
     def on_advance_end(
         self,
-        adversary: Adversary = None,
-        input: torch.Tensor | tuple = None,
-        target: torch.Tensor | dict[str, Any] | tuple = None,
-        model: torch.nn.Module = None,
+        adversary: Adversary | None = None,
+        input: torch.Tensor | tuple | None = None,
+        target: torch.Tensor | dict[str, Any] | tuple | None = None,
+        model: torch.nn.Module | None = None,
         **kwargs,
     ):
         pass
 
     def on_run_end(
         self,
-        adversary: Adversary = None,
-        input: torch.Tensor | tuple = None,
-        target: torch.Tensor | dict[str, Any] | tuple = None,
-        model: torch.nn.Module = None,
+        adversary: Adversary | None = None,
+        input: torch.Tensor | tuple | None = None,
+        target: torch.Tensor | dict[str, Any] | tuple | None = None,
+        model: torch.nn.Module | None = None,
         **kwargs,
     ):
         pass
