@@ -5,7 +5,9 @@
 # agreement between Intel Corporation and you.
 #
 
-__all__ = ["CallableAdapter"]
+from typing import Any, Callable
+
+__all__ = ["CallableAdapter", "PartialInstanceWrapper"]
 
 
 class CallableAdapter:
@@ -36,3 +38,23 @@ class CallableAdapter:
         assert callable(function)
 
         return function(*args, **kwargs)
+
+
+class PartialInstanceWrapper:
+    """Make a partial class object callable."""
+
+    def __init__(self, partial: Callable, wrapper: Callable):
+        """
+
+        Args:
+            partial (Callable): A partial of a class object.
+            adapter (Callable): An adapter that creates the `__call__` method.
+        """
+        self.partial = partial
+        self.wrapper = wrapper
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Callable:
+        # Turn a partial to a class object.
+        instance = self.partial(*args, **kwargs)
+        # Make the object callable.
+        return self.wrapper(instance)

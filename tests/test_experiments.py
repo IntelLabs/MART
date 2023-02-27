@@ -146,6 +146,25 @@ def test_cifar10_cnn_experiment(classification_cfg, tmp_path):
 
 
 @RunIf(sh=True)
+def test_cifar10_cnn_autoattack_experiment(classification_cfg, tmp_path):
+    """Test CIFAR10 CNN AutoAttack experiment."""
+    overrides = classification_cfg["datamodel"]
+    command = [
+        module,
+        "-m",
+        "experiment=CIFAR10_CNN",
+        "hydra.sweep.dir=" + str(tmp_path),
+        "++datamodule.train_dataset.image_size=[3,32,32]",
+        "++datamodule.train_dataset.num_classes=10",
+        "fit=false",
+        "+attack@model.modules.input_adv_test=classification_autoattack",
+        '+model.modules.input_adv_test.adversary.partial.device="cpu"',
+        "+trainer.limit_test_batches=1",
+    ] + overrides
+    run_sh_command(command)
+
+
+@RunIf(sh=True)
 def test_cifar10_robust_bench_experiment(classification_cfg, tmp_path):
     """Test CIFAR10 Robust Bench experiment."""
     overrides = classification_cfg["trainer"] + classification_cfg["datamodel"]
