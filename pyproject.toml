@@ -48,7 +48,7 @@ mart = "mart.__main__:main"
 
 [project.optional-dependencies]
 developer = [
-  "pre-commit ~= 2.20.0",      # hooks for applying linters on commit
+  "pre-commit ~= 3.1.1",      # hooks for applying linters on commit
   "pytest ~= 7.2.0",           # tests
   "sh ~= 1.14.3",              # for running bash commands in some tests
   "wheel",                     # support setup.py
