@@ -1,6 +1,6 @@
 defaults:
   - iterative_sgd
-  - perturber: batch
+  - perturber: entirety
   - perturber/initializer: constant
   - perturber/gradient_modifier: sign
   - perturber/projector: linf_additive_range
