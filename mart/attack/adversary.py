@@ -100,16 +100,17 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         """
         super().__init__()
 
-        self.perturber = perturber
+        # So that perturbation is not in module.parameters()
+        self.perturber = [perturber]
         self.optimizer_fn = optimizer
 
         self.max_iters = max_iters
         self.callbacks = OrderedDict()
 
         # Register perturber as callback if it implements Callback interface
-        if isinstance(self.perturber, Callback):
+        if isinstance(self.perturber[0], Callback):
             # FIXME: Use self.perturber.__class__.__name__ as key?
-            self.callbacks["_perturber"] = self.perturber
+            self.callbacks["_perturber"] = self.perturber[0]
 
         if callbacks is not None:
             self.callbacks.update(callbacks)
@@ -156,10 +157,10 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         # We could be at the inference/no-grad mode here.
         # Initialize lazy module
         # FIXME: Perturbers can just use on_run_start/on_run_end to initialize
-        self.perturber(input, target)
+        self.perturber[0](input, target)
 
         # Split param groups by input elements, so that we can schedule optimizers individually.
-        param_groups = [{"params": [param]} for param in self.perturber.parameters()]
+        param_groups = [{"params": [param]} for param in self.perturber[0].parameters()]
         self.opt = self.optimizer_fn(param_groups)
 
     def on_run_end(
@@ -321,7 +322,7 @@ class Adversary(IterativeGenerator):
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
-        perturbation = self.perturber(input, target)
+        perturbation = self.perturber[0](input, target)
         output = self.threat_model(input, target, perturbation)
 
         return output
