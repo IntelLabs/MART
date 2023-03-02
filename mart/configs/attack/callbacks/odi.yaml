@@ -1,0 +1,20 @@
+output_diversified_initialization:
+  _target_: mart.attack.callbacks.OutputDiversifiedInitialization
+  nb_iters: ???
+  learning_rate: ???
+
+  gain_fn:
+    _target_: mart.nn.CallWith
+    module:
+      _target_: mart.attack.objective.RandomTarget
+      nb_classes: ???
+      gain_fn:
+        _target_: torch.nn.CrossEntropyLoss
+        reduction: none
+    arg_keys:
+      - logits
+      - target
+    kwarg_keys: null
+# We must postpone LR schedulers by a few iterations if ODI is used.
+# reduce_lr_on_plateau:
+#   skip_iters: ${output_diversified_initialization.nb_iters}
