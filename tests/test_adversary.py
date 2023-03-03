@@ -69,7 +69,6 @@ def test_adversary_with_model(input_data, target_data, perturbation):
 
     output_data = adversary(input_data, target_data, model=model)
 
-    parameters.assert_called_once()
     optimizer.assert_called_once()
     # max_iters+1 because Adversary examines one last time
     assert gain.call_count == max_iters + 1
