@@ -82,4 +82,4 @@ class Overlay(ThreatModel):
         #   because some data modules (e.g. Armory) gives binary mask.
         mask = mask.to(input)
 
-        return input * (1 - mask) + perturbation
+        return input * (1 - mask) + perturbation * mask
