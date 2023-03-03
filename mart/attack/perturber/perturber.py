@@ -29,6 +29,7 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
         initializer: Initializer,
         gradient_modifier: Optional[GradientModifier] = None,
         projector: Optional[Projector] = None,
+        **optim_params,
     ):
         """_summary_
 
@@ -36,12 +37,14 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
             initializer (object): To initialize the perturbation.
             gradient_modifier (object): To modify the gradient of perturbation.
             projector (object): To project the perturbation into some space.
+            optim_params Optional[dict]: Optimization parameters such learning rate and momentum for perturbation.
         """
         super().__init__()
 
         self.initializer = initializer
         self.gradient_modifier = gradient_modifier
         self.projector = projector
+        self.optim_params = optim_params
 
         self.perturbation = torch.nn.UninitializedParameter()
 
@@ -55,6 +58,13 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
         # Will be called before forward() is called.
         if projector is not None:
             self.register_forward_pre_hook(projector_wrapper)
+
+    def parameters_optim(self):
+        """Return parameters along with the pre-defined optimization parameters.
+
+        Example: `{"params": perturbation, "lr":0.1, "momentum": 0.9}`
+        """
+        return [{"params": self.perturbation} | self.optim_params]
 
     def initialize_parameters(
         self, input: torch.Tensor, target: Union[torch.Tensor, Dict[str, Any]]

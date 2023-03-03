@@ -43,6 +43,13 @@ class BatchPerturber(Callback, torch.nn.Module):
 
         self.perturbers = torch.nn.ModuleDict()
 
+    def parameters_optim(self):
+        """Return parameters along with optim parameters."""
+        params = []
+        for _, perturber in self.perturbers.items():
+            params += perturber.parameters_optim()
+        return params
+
     def on_run_start(self, adversary, input, target, model, **kwargs):
         # Remove old perturbers
         # FIXME: Can we do this in on_run_end instead?
