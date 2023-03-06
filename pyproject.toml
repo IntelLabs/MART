@@ -29,7 +29,7 @@ dependencies = [
 
   # --------- others --------- #
   "pyrootutils ~= 1.0.4",      # standardizing the project root setup
-  "rich ~= 12.6.0",            # beautiful text formatting in terminal
+  "rich ~= 13.3.2",            # beautiful text formatting in terminal
   "timm ~= 0.6.11",            # pytorch image models
 
   # ----- object detection----- #
