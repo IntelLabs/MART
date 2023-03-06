@@ -59,10 +59,10 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
         if projector is not None:
             self.register_forward_pre_hook(projector_wrapper)
 
-    def parameters_optim(self):
+    def parameter_groups(self):
         """Return parameters along with the pre-defined optimization parameters.
 
-        Example: `{"params": perturbation, "lr":0.1, "momentum": 0.9}`
+        Example: `[{"params": perturbation, "lr":0.1, "momentum": 0.9}]`
         """
         if "params" in self.optim_params:
             raise ValueError(

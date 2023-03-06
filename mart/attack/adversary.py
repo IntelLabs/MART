@@ -159,7 +159,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         self.perturber(input, target)
 
         # param_groups with learning rate and other optim params.
-        param_groups = self.perturber.parameters_optim()
+        param_groups = self.perturber.parameter_groups()
 
         self.opt = self.optimizer_fn(param_groups)
 
