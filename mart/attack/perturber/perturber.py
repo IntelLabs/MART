@@ -64,6 +64,11 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
 
         Example: `{"params": perturbation, "lr":0.1, "momentum": 0.9}`
         """
+        if "params" in self.optim_params:
+            raise ValueError(
+                'Optimization parameters should not include "params" which will override the actual parameters to be optimized. '
+            )
+
         return [{"params": self.perturbation} | self.optim_params]
 
     def initialize_parameters(
