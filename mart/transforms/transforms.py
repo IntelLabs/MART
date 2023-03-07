@@ -100,7 +100,8 @@ class DictToTensor(torch.nn.Module):
         super().__init__()
         self.keys = keys
 
-    def forward(self, x_dict):
-        x_list = [x_dict[key] for key in self.keys]
-        x = torch.cat(x_list)
+    def forward(self, x):
+        if self.keys is not None:
+            x_list = [x[key] for key in self.keys]
+            x = torch.cat(x_list)
         return x
