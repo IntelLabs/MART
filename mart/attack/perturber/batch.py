@@ -46,7 +46,7 @@ class BatchPerturber(Callback, torch.nn.Module):
     def parameter_groups(self):
         """Return parameters along with optim parameters."""
         params = []
-        for _, perturber in self.perturbers.items():
+        for perturber in self.perturbers.values():
             params += perturber.parameter_groups()
         return params
 
