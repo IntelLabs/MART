@@ -14,13 +14,9 @@ modules:
   preprocessor:
     _target_: mart.transforms.TupleTransforms
     transforms:
-      _target_: torchvision.transforms.Compose
-      transforms:
-        - _target_: mart.transforms.DictToTensor
-          keys: ${datamodule.test_dataset.modalities}
-        - _target_: torchvision.transforms.Normalize
-          mean: 0
-          std: 255
+      _target_: torchvision.transforms.Normalize
+      mean: 0
+      std: 255
 
   losses_and_detections:
     # Return losses in the training mode and predictions in the eval mode in one pass.

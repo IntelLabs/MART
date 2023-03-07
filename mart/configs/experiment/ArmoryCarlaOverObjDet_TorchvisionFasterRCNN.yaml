@@ -11,6 +11,18 @@ optimized_metric: "test_metrics/map"
 
 model:
   modules:
+    preprocessor:
+      _target_: mart.transforms.TupleTransforms
+      transforms:
+        _target_: torchvision.transforms.Compose
+        transforms:
+          - _target_: mart.transforms.GetItems
+            keys: ${datamodule.test_dataset.modalities}
+          - _target_: mart.transforms.Cat
+            dim: 0
+          - _target_: torchvision.transforms.Normalize
+            mean: 0
+            std: 255
     losses_and_detections:
       model:
         weights_fpath: null

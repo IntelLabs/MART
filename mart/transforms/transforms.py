@@ -16,7 +16,7 @@ __all__ = [
     "Squeeze",
     "Chunk",
     "TupleTransforms",
-    "DictToTensor",
+    "GetItems",
 ]
 
 
@@ -93,15 +93,13 @@ class TupleTransforms(torch.nn.Module):
         return output_tuple
 
 
-class DictToTensor(torch.nn.Module):
-    """Concatenate tensors following the order in keys."""
+class GetItems:
+    """Get a list of values with a list of keys from a dictionary."""
 
     def __init__(self, keys):
         super().__init__()
         self.keys = keys
 
-    def forward(self, x):
-        if self.keys is not None:
-            x_list = [x[key] for key in self.keys]
-            x = torch.cat(x_list)
-        return x
+    def __call__(self, x):
+        x_list = [x[key] for key in self.keys]
+        return x_list

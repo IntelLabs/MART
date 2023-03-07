@@ -5,7 +5,6 @@ train_dataset:
   _target_: mart.datamodules.coco.CocoDetection
   root: ${paths.data_dir}/coco/train2017
   annFile: ${paths.data_dir}/coco/annotations/instances_train2017.json
-  modalities: null
   transforms:
     _target_: mart.transforms.Compose
     transforms:
@@ -21,7 +20,6 @@ val_dataset:
   _target_: mart.datamodules.coco.CocoDetection
   root: ${paths.data_dir}/coco/val2017
   annFile: ${paths.data_dir}/coco/annotations/instances_val2017.json
-  modalities: null
   transforms:
     _target_: mart.transforms.Compose
     transforms:
@@ -35,7 +33,6 @@ test_dataset:
   _target_: mart.datamodules.coco.CocoDetection
   root: ${paths.data_dir}/coco/val2017
   annFile: ${paths.data_dir}/coco/annotations/instances_val2017.json
-  modalities: null
   transforms:
     _target_: mart.transforms.Compose
     transforms:
