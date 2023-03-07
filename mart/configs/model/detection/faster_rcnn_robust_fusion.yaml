@@ -1,0 +1,8 @@
+# @package model.modules.losses_and_detections.model.model
+_target_: torchvision.models.detection.FasterRCNN
+backbone:
+  _target_: armory.baseline_models.pytorch.carla_multimodality_object_detection_frcnn_robust_fusion.MultimodalRobust
+  modalities: ["rgb", "depth"]
+num_classes: 3
+image_mean: [0.485, 0.456, 0.406, 0.0, 0.0, 0.0]
+image_std: [0.229, 0.224, 0.225, 1.0, 1.0, 1.0]
