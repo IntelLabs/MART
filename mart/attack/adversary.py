@@ -159,8 +159,9 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         # FIXME: Perturbers can just use on_run_start/on_run_end to initialize
         self.perturber[0](input, target)
 
-        # Split param groups by input elements, so that we can schedule optimizers individually.
-        param_groups = [{"params": [param]} for param in self.perturber[0].parameters()]
+        # param_groups with learning rate and other optim params.
+        param_groups = self.perturber[0].parameter_groups()
+
         self.opt = self.optimizer_fn(param_groups)
 
     def on_run_end(

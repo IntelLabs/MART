@@ -56,8 +56,8 @@ def test_adversary(input_data, target_data, perturbation):
 def test_adversary_with_model(input_data, target_data, perturbation):
     threat_model = mart.attack.threat_model.Additive()
     initializer = Mock()
-    parameters = Mock(return_value=[])
-    perturber = Mock(return_value=perturbation, parameters=parameters)
+    parameter_groups = Mock(return_value=[])
+    perturber = Mock(return_value=perturbation, parameter_groups=parameter_groups)
     optimizer = Mock()
     max_iters = 3
     model = Mock(return_value={})
@@ -69,7 +69,7 @@ def test_adversary_with_model(input_data, target_data, perturbation):
 
     output_data = adversary(input_data, target_data, model=model)
 
-    parameters.assert_called_once()
+    parameter_groups.assert_called_once()
     optimizer.assert_called_once()
     # max_iters+1 because Adversary examines one last time
     assert gain.call_count == max_iters + 1
