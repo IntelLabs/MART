@@ -70,11 +70,18 @@ class CocoDetection(CocoDetection_):
         return {"image_id": id, "file_name": file_name, "annotations": annotations}
 
     def __getitem__(self, index: int):
+        """Override __getitem__() to dictionarize input for multi-modality datasets.
+
+        This runs after _load_image() and transforms(), while transforms() typically converts
+        images to tensors.
+        """
+
         image, target_dict = super().__getitem__(index)
 
         # Convert multi-modal input to a dictionary.
-        # We assume image is a multi-channel tensor, with each modality including 3 channels.
         if self.modalities is not None:
+            # We assume image is a multi-channel tensor, with each modality including 3 channels.
+            assert image.shape[0] == len(self.modalities) * 3
             image = dict(zip(self.modalities, image.split(3)))
 
         return image, target_dict
