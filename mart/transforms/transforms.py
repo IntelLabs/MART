@@ -8,7 +8,16 @@
 import torch
 from torchvision.transforms import transforms as T
 
-__all__ = ["Denormalize", "Cat", "Permute", "Unsqueeze", "Squeeze", "Chunk", "TupleTransforms"]
+__all__ = [
+    "Denormalize",
+    "Cat",
+    "Permute",
+    "Unsqueeze",
+    "Squeeze",
+    "Chunk",
+    "TupleTransforms",
+    "DictToTensor",
+]
 
 
 class Denormalize(T.Normalize):
@@ -82,3 +91,16 @@ class TupleTransforms(torch.nn.Module):
     def forward(self, x_tuple):
         output_tuple = tuple(self.transforms(x) for x in x_tuple)
         return output_tuple
+
+
+class DictToTensor(torch.nn.Module):
+    """Concatenate tensors following the order in keys."""
+
+    def __init__(self, keys):
+        super().__init__()
+        self.keys = keys
+
+    def forward(self, x_dict):
+        x_list = [x_dict[key] for key in self.keys]
+        x = torch.cat(x_list)
+        return x

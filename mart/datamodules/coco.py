@@ -69,6 +69,12 @@ class CocoDetection(CocoDetection_):
 
         return {"image_id": id, "file_name": file_name, "annotations": annotations}
 
+    def __getitem__(self, index: int):
+        image, target_dict = super().__getitem__(index)
+        # We assume image is a multi-channel tensor, with each sub-component including 3 channels.
+        image_dict = dict(zip(self.modalities, image.split(3)))
+        return image_dict, target_dict
+
 
 # Source: https://github.com/pytorch/vision/blob/dc07ac2add8285e16a716564867d0b4b953f6735/references/detection/utils.py#L203
 def collate_fn(batch):
