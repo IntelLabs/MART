@@ -5,15 +5,13 @@
 # agreement between Intel Corporation and you.
 #
 
-from typing import Any, Dict, Optional, Union
+from __future__ import annotations
+
+from typing import Any
 
 import torch
 
-from mart.attack.callbacks import Callback
-
-from ..gradient_modifier import GradientModifier
-from ..initializer import Initializer
-from ..projector import Projector
+from ..callbacks import Callback
 
 __all__ = ["Perturber"]
 
@@ -29,17 +27,17 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
     def __init__(
         self,
         initializer: Initializer,
-        gradient_modifier: Optional[GradientModifier] = None,
-        projector: Optional[Projector] = None,
+        gradient_modifier: GradientModifier | None = None,
+        projector: Projector | None = None,
         **optim_params,
     ):
         """_summary_
 
         Args:
-            initializer (object): To initialize the perturbation.
-            gradient_modifier (object): To modify the gradient of perturbation.
-            projector (object): To project the perturbation into some space.
-            optim_params Optional[dict]: Optimization parameters such learning rate and momentum for perturbation.
+            initializer (Initializer): To initialize the perturbation.
+            gradient_modifier (GradientModifier | None): To modify the gradient of perturbation.
+            projector (Projector | None): To project the perturbation into some space.
+            optim_params (dict | None): Optimization parameters such learning rate and momentum for perturbation.
         """
         super().__init__()
 
@@ -76,7 +74,7 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
         return [{"params": self.perturbation} | self.optim_params]
 
     def initialize_parameters(
-        self, input: torch.Tensor, target: Union[torch.Tensor, Dict[str, Any]]
+        self, input: torch.Tensor, target: torch.Tensor | dict[str, Any]
     ) -> None:
         assert isinstance(self.perturbation, torch.nn.UninitializedParameter)
 
@@ -88,12 +86,20 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
 
         self.initializer(self.perturbation)
 
-    def on_run_start(self, adversary, input, target, model, **kwargs):
+    def on_run_start(
+        self,
+        *,
+        adversary: Adversary,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module,
+        **kwargs,
+    ):
         # Initialize lazy module
         self(input, target)
 
     def forward(
-        self, input: torch.Tensor, target: Union[torch.Tensor, Dict[str, Any]]
+        self, input: torch.Tensor, target: torch.Tensor | dict[str, Any]
     ) -> torch.Tensor:
         return self.perturbation
 

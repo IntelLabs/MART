@@ -5,17 +5,13 @@
 # agreement between Intel Corporation and you.
 #
 
-from typing import Any, Callable, Dict, Union
+from __future__ import annotations
+
+from typing import Any
 
 import torch
-from hydra.utils import instantiate
 
-from mart.attack.callbacks import Callback
-
-from ..gradient_modifier import GradientModifier
-from ..initializer import Initializer
-from ..projector import Projector
-from .perturber import Perturber
+from ..callbacks import Callback
 
 __all__ = ["BatchPerturber"]
 
@@ -60,7 +56,7 @@ class BatchPerturber(Callback, torch.nn.Module):
             perturber = self.perturber_factory(*self.perturber_args, **self.perturber_kwargs)
             self.perturbers[f"input_{i}_perturber"] = perturber
 
-    def forward(self, input: torch.Tensor, target: Union[torch.Tensor, Dict[str, Any]]) -> None:
+    def forward(self, input: torch.Tensor, target: torch.Tensor | dict[str, Any]) -> None:
         output = []
         for i, (input_i, target_i) in enumerate(zip(input, target)):
             perturber = self.perturbers[f"input_{i}_perturber"]
