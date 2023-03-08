@@ -9,6 +9,8 @@ from typing import Any, Dict, Optional, Union
 
 import torch
 
+from mart.attack.callbacks import Callback
+
 from ..gradient_modifier import GradientModifier
 from ..initializer import Initializer
 from ..projector import Projector
@@ -16,7 +18,7 @@ from ..projector import Projector
 __all__ = ["Perturber"]
 
 
-class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
+class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
     """The base class of perturbers.
 
     A perturber wraps a nn.Parameter and returns this parameter when called. It also enables one to
@@ -85,6 +87,10 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
             self.perturbation.register_hook(self.gradient_modifier)
 
         self.initializer(self.perturbation)
+
+    def on_run_start(self, adversary, input, target, model, **kwargs):
+        # Initialize lazy module
+        self(input, target)
 
     def forward(
         self, input: torch.Tensor, target: Union[torch.Tensor, Dict[str, Any]]
