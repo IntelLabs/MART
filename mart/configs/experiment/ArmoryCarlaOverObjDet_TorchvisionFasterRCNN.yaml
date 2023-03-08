@@ -2,7 +2,7 @@
 
 defaults:
   - COCO_TorchvisionFasterRCNN
-  - override /model/detection@model.modules.preprocessor: preprocessor_multi_modal
+  - override /model/modules@model.modules.preprocessor: preprocessor_multi_modal
   - override /datamodule: armory_carla_over_objdet_perturbable_mask
 
 task_name: "ArmoryCarlaOverObjDet_TorchvisionFasterRCNN"
