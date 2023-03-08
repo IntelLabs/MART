@@ -78,6 +78,8 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         on_run_end()
     """
 
+    IGNORED_MODULES = ["perturber"]
+
     def __init__(
         self,
         *,
@@ -101,16 +103,16 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         super().__init__()
 
         # So that perturbation is not in module.parameters()
-        self.perturber = [perturber]
+        self.perturber = perturber
         self.optimizer_fn = optimizer
 
         self.max_iters = max_iters
         self.callbacks = OrderedDict()
 
         # Register perturber as callback if it implements Callback interface
-        if isinstance(self.perturber[0], Callback):
+        if isinstance(self.perturber, Callback):
             # FIXME: Use self.perturber.__class__.__name__ as key?
-            self.callbacks["_perturber"] = self.perturber[0]
+            self.callbacks["_perturber"] = self.perturber
 
         if callbacks is not None:
             self.callbacks.update(callbacks)
@@ -118,6 +120,26 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         self.objective_fn = objective
         # self.gain is a tensor.
         self.gain_fn = gain
+
+    def named_modules(
+        self,
+        memo: set[torch.nn.Module] | None = None,
+        prefix: str = "",
+        remove_duplicate: bool = True,
+    ):
+        # Add prefix to ignored modules
+        ignored_modules = [
+            prefix + ("." if prefix else "") + name for name in self.IGNORED_MODULES
+        ]
+
+        # Enumerate through named modules ignore those that match
+        for name, module in super().named_modules(
+            memo=memo, prefix=prefix, remove_duplicate=remove_duplicate
+        ):
+            if name in ignored_modules:
+                continue
+
+            yield name, module
 
     @property
     def done(self) -> bool:
@@ -157,10 +179,10 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         # We could be at the inference/no-grad mode here.
         # Initialize lazy module
         # FIXME: Perturbers can just use on_run_start/on_run_end to initialize
-        self.perturber[0](input, target)
+        self.perturber(input, target)
 
         # param_groups with learning rate and other optim params.
-        param_groups = self.perturber[0].parameter_groups()
+        param_groups = self.perturber.parameter_groups()
 
         self.opt = self.optimizer_fn(param_groups)
 
@@ -323,7 +345,7 @@ class Adversary(IterativeGenerator):
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
-        perturbation = self.perturber[0](input, target)
+        perturbation = self.perturber(input, target)
         output = self.threat_model(input, target, perturbation)
 
         return output
