@@ -86,7 +86,6 @@ def test_adversary_with_model(input_data, target_data, perturbation):
 def test_adversary_perturber_hidden_params(input_data, target_data):
     initializer = Mock()
     perturber = Perturber(initializer)
-    perturber(input_data, target_data)
 
     threat_model = mart.attack.threat_model.Additive()
     optimizer = Mock()
