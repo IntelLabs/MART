@@ -12,6 +12,7 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Callback
 from pytorch_lightning.loggers import LightningLoggerBase
 from pytorch_lightning.utilities import rank_zero_only
+from pytorch_lightning.utilities.model_summary import summarize
 
 from mart.utils import pylogger, rich_utils
 
@@ -164,7 +165,7 @@ def log_hyperparameters(object_dict: Dict[str, Any]) -> None:
     hparams["model"] = cfg["model"]
 
     # save number of model parameters
-    summary = model.summarize()
+    summary = summarize(model)
 
     hparams["model/params/total"] = summary.total_parameters
     hparams["model/params/trainable"] = summary.trainable_parameters
