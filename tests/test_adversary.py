@@ -12,6 +12,7 @@ import torch
 
 import mart
 from mart.attack import Adversary, NoAdversary
+from mart.attack.perturber import Perturber
 
 
 def test_no_adversary(input_data, target_data):
@@ -80,3 +81,27 @@ def test_adversary_with_model(input_data, target_data, perturbation):
     assert perturber.call_count == 2
 
     torch.testing.assert_close(output_data, input_data + perturbation)
+
+
+def test_adversary_perturber_hidden_params(input_data, target_data):
+    initializer = Mock()
+    perturber = Perturber(initializer)
+    perturber(input_data, target_data)
+
+    threat_model = mart.attack.threat_model.Additive()
+    optimizer = Mock()
+    gain = Mock(return_value=torch.tensor(0.0, requires_grad=True))
+    model = Mock(return_value={})
+
+    adversary = Adversary(
+        threat_model=threat_model, perturber=perturber, optimizer=optimizer, max_iters=1, gain=gain
+    )
+    output_data = adversary(input_data, target_data, model=model)
+
+    # Adversarial perturbation should not be updated by a regular training optimizer.
+    params = [p for p in adversary.parameters()]
+    assert len(params) == 0
+
+    # Adversarial perturbation should not be saved to the model checkpoint.
+    state_dict = adversary.state_dict()
+    assert "perturber.perturbation" not in state_dict
