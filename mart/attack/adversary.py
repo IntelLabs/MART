@@ -153,9 +153,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         # Set up the optimizer.
         self.cur_iter = 0
 
-        # FIXME: Perturbers can just use on_run_start/on_run_end to initialize
-        self.perturber.initialize_parameters(input, target)
-
         # param_groups with learning rate and other optim params.
         param_groups = self.perturber.parameter_groups()
 

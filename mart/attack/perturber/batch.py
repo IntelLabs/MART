@@ -60,6 +60,14 @@ class BatchPerturber(Callback, torch.nn.Module):
             perturber = self.perturber_factory(*self.perturber_args, **self.perturber_kwargs)
             self.perturbers[f"input_{i}_perturber"] = perturber
 
+        # Trigger callback
+        for i, (input_i, target_i) in enumerate(zip(input, target)):
+            perturber = self.perturbers[f"input_{i}_perturber"]
+            if isinstance(perturber, Callback):
+                perturber.on_run_start(
+                    adversary=adversary, input=input_i, target=target_i, model=model, **kwargs
+                )
+
     def forward(self, input: torch.Tensor, target: Union[torch.Tensor, Dict[str, Any]]) -> None:
         output = []
         for i, (input_i, target_i) in enumerate(zip(input, target)):

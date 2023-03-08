@@ -9,6 +9,8 @@ from typing import Any, Dict, Optional, Union
 
 import torch
 
+from mart.attack.callbacks import Callback
+
 from ..gradient_modifier import GradientModifier
 from ..initializer import Initializer
 from ..projector import Projector
@@ -16,7 +18,7 @@ from ..projector import Projector
 __all__ = ["Perturber"]
 
 
-class Perturber(torch.nn.Module):
+class Perturber(Callback, torch.nn.Module):
     """The base class of perturbers.
 
     A perturber wraps a nn.Parameter and returns this parameter when called. It also enables one to
@@ -59,6 +61,9 @@ class Perturber(torch.nn.Module):
         # Will be called before forward() is called.
         if projector is not None:
             self.register_forward_pre_hook(projector_wrapper)
+
+    def on_run_start(self, adversary, input, target, model, **kwargs):
+        self.initialize_parameters(input, target)
 
     def initialize_parameters(self, input, target):
         perturbation = torch.zeros_like(input, requires_grad=True)
