@@ -46,7 +46,9 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
         self.projector = projector
         self.optim_params = optim_params
 
-        self.perturbation = torch.nn.UninitializedParameter()
+        # Register perturbation as a non-persistent buffer even though we will optimize it. This is because we need
+        # to control the optimization of this tensor and its value is always dynamically computed.
+        self.register_buffer("perturbation", torch.nn.UninitializedParameter(), persistent=False)
 
         def projector_wrapper(perturber_module, args):
             if isinstance(perturber_module.perturbation, torch.nn.UninitializedParameter):
