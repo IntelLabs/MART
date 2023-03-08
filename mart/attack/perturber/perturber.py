@@ -130,8 +130,8 @@ class Perturber(Callback, torch.nn.Module):
 
     def extra_repr(self):
         perturbation = self.perturbation
-        if not self.has_uninitialized_params():
-            perturbation = (perturbation.shape, perturbation.min(), perturbation.max())
+        #if not self.has_uninitialized_params():
+        #    perturbation = (perturbation.shape, perturbation.min(), perturbation.max())
 
         return (
             f"{repr(perturbation)}, optimizer={self.optimizer_fn}, initializer={self.initializer},"
