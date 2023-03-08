@@ -40,7 +40,7 @@ def test_perturber_forward(input_data, target_data):
     initializer = Mock()
     perturber = Perturber(initializer)
 
-    perturber.initialize_parameters(input_data, target_data)
+    perturber.on_run_start(adversary=None, input=input_data, target=target_data, model=None)
     output = perturber(input_data, target_data)
     expected_output = perturber.perturbation
     torch.testing.assert_close(output, expected_output, equal_nan=True)

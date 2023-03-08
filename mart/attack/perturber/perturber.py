@@ -62,7 +62,7 @@ class Perturber(Callback, torch.nn.Module):
         if projector is not None:
             self.register_forward_pre_hook(projector_wrapper)
 
-    def on_run_start(self, adversary, input, target, model, **kwargs):
+    def on_run_start(self, *, adversary, input, target, model, **kwargs):
         self.initialize_parameters(input, target)
 
     def initialize_parameters(self, input, target):
