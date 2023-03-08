@@ -31,7 +31,7 @@ def test_perturber_repr(input_data, target_data):
 
     # generate again the perturber with an initialized
     # perturbation
-    perturber.initialize_parameters(input_data, target_data)
+    perturber.on_run_start(adversary=None, input=input_data, target=target_data, model=None)
     representation = perturber.extra_repr()
     assert expected_repr != representation
 
