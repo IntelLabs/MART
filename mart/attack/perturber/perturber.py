@@ -140,6 +140,6 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
             perturbation = (perturbation.shape, perturbation.min(), perturbation.max())
 
         return (
-            f"{repr(perturbation)}, initializer={self.initializer},"
+            f"{repr(perturbation)}, optimizer={self.optimizer_fn}, initializer={self.initializer},"
             f"gradient_modifier={self.gradient_modifier}, projector={self.projector}"
         )

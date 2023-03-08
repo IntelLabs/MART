@@ -15,15 +15,16 @@ from mart.attack.perturber import Perturber
 
 
 def test_perturber_repr(input_data, target_data):
+    optimizer = Mock()
     initializer = Mock()
     gradient_modifier = Mock()
     projector = Mock()
-    perturber = Perturber(initializer, gradient_modifier, projector)
+    perturber = Perturber(optimizer, initializer, gradient_modifier, projector)
 
     # get additive perturber representation
     perturbation = torch.nn.UninitializedParameter()
     expected_repr = (
-        f"{repr(perturbation)}, initializer={initializer},"
+        f"{repr(perturbation)}, optimizer={optimizer}, initializer={initializer},"
         f"gradient_modifier={gradient_modifier}, projector={projector}"
     )
     representation = perturber.extra_repr()
@@ -37,8 +38,9 @@ def test_perturber_repr(input_data, target_data):
 
 
 def test_perturber_forward(input_data, target_data):
+    optimizer = Mock()
     initializer = Mock()
-    perturber = Perturber(initializer)
+    perturber = Perturber(optimizer, initializer)
 
     output = perturber(input_data, target_data)
     expected_output = perturber.perturbation
