@@ -48,10 +48,10 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
 
         # Register perturbation as a non-persistent buffer even though we will optimize it. This is because it is not
         # a parameter of the underlying model but a parameter of the adversary.
-        self.register_buffer("perturbation", torch.nn.UninitializedParameter(), persistent=False)
+        self.register_buffer("perturbation", torch.nn.UninitializedBuffer(), persistent=False)
 
         def projector_wrapper(perturber_module, args):
-            if isinstance(perturber_module.perturbation, torch.nn.UninitializedParameter):
+            if isinstance(perturber_module.perturbation, torch.nn.UninitializedBuffer):
                 raise ValueError("Perturbation must be initialized")
 
             input, target = args
@@ -76,9 +76,12 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
     def initialize_parameters(
         self, input: torch.Tensor, target: Union[torch.Tensor, Dict[str, Any]]
     ) -> None:
-        assert isinstance(self.perturbation, torch.nn.UninitializedParameter)
+        assert isinstance(self.perturbation, torch.nn.UninitializedBuffer)
 
         self.perturbation.materialize(input.shape, device=input.device)
+
+        # Perturbation is a buffer (see comment above) but now we want it to become a parameter so we can optimize it.
+        self.perturbation.requires_grad_(True)
 
         # A backward hook that will be called when a gradient w.r.t the Tensor is computed.
         if self.gradient_modifier is not None:
