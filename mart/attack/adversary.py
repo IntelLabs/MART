@@ -78,8 +78,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         on_run_end()
     """
 
-    IGNORED_MODULES = ["perturber"]
-
     def __init__(
         self,
         *,
@@ -119,26 +117,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         self.objective_fn = objective
         # self.gain is a tensor.
         self.gain_fn = gain
-
-    def named_modules(
-        self,
-        memo: set[torch.nn.Module] | None = None,
-        prefix: str = "",
-        remove_duplicate: bool = True,
-    ):
-        # Add prefix to ignored modules
-        ignored_modules = [
-            prefix + ("." if prefix else "") + name for name in self.IGNORED_MODULES
-        ]
-
-        # Enumerate through named modules ignore those that match
-        for name, module in super().named_modules(
-            memo=memo, prefix=prefix, remove_duplicate=remove_duplicate
-        ):
-            if name in ignored_modules:
-                continue
-
-            yield name, module
 
     @property
     def done(self) -> bool:
