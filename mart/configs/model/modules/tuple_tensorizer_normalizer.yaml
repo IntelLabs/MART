@@ -2,6 +2,7 @@
 defaults:
   - tuple_normalizer
 
+# Convert dictionary input into tensor input, then normalize to [0, 1].
 transforms:
   transforms:
     - _target_: mart.transforms.GetItems

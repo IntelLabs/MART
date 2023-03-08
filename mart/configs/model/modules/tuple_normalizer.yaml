@@ -2,6 +2,7 @@
 _target_: mart.transforms.TupleTransforms
 transforms:
   _target_: torchvision.transforms.Compose
+  # Normalize to [0, 1].
   transforms:
     - _target_: torchvision.transforms.Normalize
       mean: 0
