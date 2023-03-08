@@ -47,7 +47,7 @@ class Perturber(torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
         self.optim_params = optim_params
 
         # Register perturbation as a non-persistent buffer even though we will optimize it. This is because it is not
-        # a parameter of the underlying model but a parameter of the attack optimization procedure.
+        # a parameter of the underlying model but a parameter of the adversary.
         self.register_buffer("perturbation", torch.nn.UninitializedParameter(), persistent=False)
 
         def projector_wrapper(perturber_module, args):
