@@ -97,7 +97,6 @@ class GetItems:
     """Get a list of values with a list of keys from a dictionary."""
 
     def __init__(self, keys):
-        super().__init__()
         self.keys = keys
 
     def __call__(self, x):
