@@ -23,7 +23,7 @@ if typing.TYPE_CHECKING:
 __all__ = ["Perturber"]
 
 
-class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module):
+class Perturber(Callback, torch.nn.Module):
     """The base class of perturbers.
 
     A perturber wraps a nn.Parameter and returns this parameter when called. It also enables one to
@@ -68,9 +68,15 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
         if projector is not None:
             self.register_forward_pre_hook(projector_wrapper)
 
-    def initialize_parameters(
-        self, input: torch.Tensor, target: torch.Tensor | dict[str, Any]
-    ) -> None:
+    def on_run_start(
+        self,
+        *,
+        adversary: Adversary,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module,
+        **kwargs,
+    ):
         assert isinstance(self.perturbation, torch.nn.UninitializedBuffer)
 
         self.perturbation.materialize(input.shape, device=input.device)
@@ -83,16 +89,6 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
             self.perturbation.register_hook(self.gradient_modifier)
 
         self.initializer(self.perturbation)
-
-    def on_run_start(
-        self,
-        *,
-        adversary: Adversary,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module,
-        **kwargs,
-    ):
         # Initialize lazy module
         self(input, target)
 

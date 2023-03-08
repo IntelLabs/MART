@@ -132,22 +132,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
         return False
 
-    def on_run_start(
-        self,
-        *,
-        adversary: torch.nn.Module,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module,
-        **kwargs,
-    ):
-        super().on_run_start(
-            adversary=adversary, input=input, target=target, model=model, **kwargs
-        )
-
-        # FIXME: We should probably just register IterativeAdversary as a callback.
-        # Set up the optimizer.
-
     # Disable mixed-precision optimization for attacks,
     #   since we haven't implemented it yet.
     @torch.autocast("cuda", enabled=False)
