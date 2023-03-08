@@ -102,7 +102,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         """
         super().__init__()
 
-        # So that perturbation is not in module.parameters()
         self.perturber = perturber
         self.optimizer_fn = optimizer
 
