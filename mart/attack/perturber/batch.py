@@ -53,7 +53,9 @@ class BatchPerturber(Callback, torch.nn.Module):
         for i, (input_i, target_i) in enumerate(zip(input, target)):
             perturber = self.perturbers[f"input_{i}_perturber"]
             if isinstance(perturber, Callback):
-                perturber.on_run_start(adversary=adversary, input=input_i, target=target_i, model=model, **kwargs)
+                perturber.on_run_start(
+                    adversary=adversary, input=input_i, target=target_i, model=model, **kwargs
+                )
 
     def on_advance_start(
         self,
@@ -67,7 +69,9 @@ class BatchPerturber(Callback, torch.nn.Module):
         for i, (input_i, target_i) in enumerate(zip(input, target)):
             perturber = self.perturbers[f"input_{i}_perturber"]
             if isinstance(perturber, Callback):
-                perturber.on_advance_start(adversary=adversary, input=input_i, target=target_i, model=model, **kwargs)
+                perturber.on_advance_start(
+                    adversary=adversary, input=input_i, target=target_i, model=model, **kwargs
+                )
 
     def on_advance_end(
         self,
@@ -81,7 +85,9 @@ class BatchPerturber(Callback, torch.nn.Module):
         for i, (input_i, target_i) in enumerate(zip(input, target)):
             perturber = self.perturbers[f"input_{i}_perturber"]
             if isinstance(perturber, Callback):
-                perturber.on_advance_end(adversary=adversary, input=input_i, target=target_i, model=model, **kwargs)
+                perturber.on_advance_end(
+                    adversary=adversary, input=input_i, target=target_i, model=model, **kwargs
+                )
 
     def forward(self, input: torch.Tensor, target: torch.Tensor | dict[str, Any]) -> None:
         output = []

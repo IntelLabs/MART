@@ -120,9 +120,7 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
     ):
         self.opt.step()
 
-    def forward(
-        self, input: torch.Tensor, target: torch.Tensor | dict[str, Any]
-    ) -> torch.Tensor:
+    def forward(self, input: torch.Tensor, target: torch.Tensor | dict[str, Any]) -> torch.Tensor:
         return self.perturbation
 
     def on_run_end(
