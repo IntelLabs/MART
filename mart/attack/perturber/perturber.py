@@ -77,20 +77,17 @@ class Perturber(Callback, torch.nn.Module):
         model: torch.nn.Module,
         **kwargs,
     ):
-        assert isinstance(self.perturbation, torch.nn.UninitializedBuffer)
+        perturbation = torch.zeros_like(input, requires_grad=True)
 
-        self.perturbation.materialize(input.shape, device=input.device)
-
-        # Perturbation is a buffer (see comment above) but now we want it to become a parameter so we can optimize it.
-        self.perturbation.requires_grad_(True)
+        # Register perturbation as a non-persistent buffer even though we will optimize it. This is because it is not
+        # a parameter of the underlying model but a parameter of the adversary.
+        self.register_buffer("perturbation", perturbation, persistent=False)
 
         # A backward hook that will be called when a gradient w.r.t the Tensor is computed.
         if self.gradient_modifier is not None:
             self.perturbation.register_hook(self.gradient_modifier)
 
         self.initializer(self.perturbation)
-        # Initialize lazy module
-        self(input, target)
 
         # Initialize optimizer
         self.opt = self.optimizer_fn([self.perturbation])
