@@ -5,7 +5,7 @@ defaults:
 transforms:
   transforms:
     - _target_: mart.transforms.GetItems
-      keys: ${datamodule.test_dataset.modalities}
+      keys: ["rgb"]
     - _target_: mart.transforms.Cat
       dim: 0
     - _target_: torchvision.transforms.Normalize
