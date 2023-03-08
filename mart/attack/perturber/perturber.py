@@ -7,11 +7,18 @@
 
 from __future__ import annotations
 
+import typing
 from typing import Any
 
 import torch
 
 from ..callbacks import Callback
+
+if typing.TYPE_CHECKING:
+    from ..adversary import Adversary
+    from ..gradient_modifier import GradientModifier
+    from ..initializer import Initializer
+    from ..projector import Projector
 
 __all__ = ["Perturber"]
 
