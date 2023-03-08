@@ -1,6 +1,8 @@
 # @package model.modules.preprocessor
 _target_: mart.transforms.TupleTransforms
 transforms:
-  _target_: torchvision.transforms.Normalize
-  mean: 0
-  std: 255
+  _target_: torchvision.transforms.Compose
+  transforms:
+    - _target_: torchvision.transforms.Normalize
+      mean: 0
+      std: 255
