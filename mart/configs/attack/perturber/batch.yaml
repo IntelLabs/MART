@@ -2,6 +2,7 @@ _target_: mart.attack.BatchPerturber
 perturber_factory:
   _target_: mart.attack.Perturber
   _partial_: true
+optimizer: ???
 initializer: ???
 gradient_modifier: ???
 projector: ???

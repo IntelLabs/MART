@@ -3,11 +3,11 @@ defaults:
   - objective: object_detection_missed
   - gain: rcnn_class_background
 
-optimizer:
-  lr: 3
-
 max_iters: 100
 
 perturber:
+  optimizer:
+    lr: 3
+
   initializer:
     constant: 127

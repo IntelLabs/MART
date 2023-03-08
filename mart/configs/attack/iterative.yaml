@@ -1,6 +1,8 @@
+defaults:
+  - callbacks: [progress_bar]
+
 _target_: mart.attack.Adversary
 perturber: ???
-optimizer: ???
 max_iters: ???
 callbacks: ???
 objective: ???

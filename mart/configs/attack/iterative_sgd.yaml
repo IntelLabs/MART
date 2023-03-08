@@ -1,4 +1,0 @@
-defaults:
-  - iterative
-  - optimizer: sgd
-  - callbacks: [progress_bar]

@@ -82,7 +82,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         self,
         *,
         perturber: BatchPerturber | Perturber,
-        optimizer: torch.optim.Optimizer,
         max_iters: int,
         gain: Gain,
         objective: Objective | None = None,
@@ -92,7 +91,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
         Args:
             perturber (BatchPerturber | Perturber): A module that stores perturbations.
-            optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             objective (Objective | None): A function for computing adversarial objective, which returns True or False. Optional.
@@ -101,8 +99,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         super().__init__()
 
         self.perturber = perturber
-        self.optimizer_fn = optimizer
-
         self.max_iters = max_iters
         self.callbacks = OrderedDict()
 
@@ -151,26 +147,6 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
         # FIXME: We should probably just register IterativeAdversary as a callback.
         # Set up the optimizer.
-        self.cur_iter = 0
-
-        # param_groups with learning rate and other optim params.
-        param_groups = self.perturber.parameter_groups()
-
-        self.opt = self.optimizer_fn(param_groups)
-
-    def on_run_end(
-        self,
-        *,
-        adversary: torch.nn.Module,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module,
-        **kwargs,
-    ):
-        super().on_run_end(adversary=adversary, input=input, target=target, model=model, **kwargs)
-
-        # Release optimization resources
-        del self.opt
 
     # Disable mixed-precision optimization for attacks,
     #   since we haven't implemented it yet.
@@ -184,6 +160,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         model: torch.nn.Module,
         **kwargs,
     ):
+        self.cur_iter = 0
 
         self.on_run_start(adversary=self, input=input, target=target, model=model, **kwargs)
 
@@ -281,13 +258,8 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         **kwargs,
     ):
         """Run one attack iteration."""
-
-        self.opt.zero_grad()
-
         # Do not flip the gain value, because we set maximize=True in optimizer.
         self.total_gain.backward()
-
-        self.opt.step()
 
 
 class Adversary(IterativeGenerator):

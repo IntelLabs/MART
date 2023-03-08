@@ -39,13 +39,6 @@ class BatchPerturber(Callback, torch.nn.Module):
 
         self.perturbers = torch.nn.ModuleDict()
 
-    def parameter_groups(self):
-        """Return parameters along with optim parameters."""
-        params = []
-        for perturber in self.perturbers.values():
-            params += perturber.parameter_groups()
-        return params
-
     def on_run_start(self, adversary, input, target, model, **kwargs):
         # Remove old perturbers
         # FIXME: Can we do this in on_run_end instead?
@@ -55,6 +48,40 @@ class BatchPerturber(Callback, torch.nn.Module):
         for i in range(len(input)):
             perturber = self.perturber_factory(*self.perturber_args, **self.perturber_kwargs)
             self.perturbers[f"input_{i}_perturber"] = perturber
+
+        # Trigger callback
+        for i, (input_i, target_i) in enumerate(zip(input, target)):
+            perturber = self.perturbers[f"input_{i}_perturber"]
+            if isinstance(perturber, Callback):
+                perturber.on_run_start(adversary=adversary, input=input_i, target=target_i, model=model, **kwargs)
+
+    def on_advance_start(
+        self,
+        *,
+        adversary: Adversary,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module,
+        **kwargs,
+    ):
+        for i, (input_i, target_i) in enumerate(zip(input, target)):
+            perturber = self.perturbers[f"input_{i}_perturber"]
+            if isinstance(perturber, Callback):
+                perturber.on_advance_start(adversary=adversary, input=input_i, target=target_i, model=model, **kwargs)
+
+    def on_advance_end(
+        self,
+        *,
+        adversary: Adversary,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module,
+        **kwargs,
+    ):
+        for i, (input_i, target_i) in enumerate(zip(input, target)):
+            perturber = self.perturbers[f"input_{i}_perturber"]
+            if isinstance(perturber, Callback):
+                perturber.on_advance_end(adversary=adversary, input=input_i, target=target_i, model=model, **kwargs)
 
     def forward(self, input: torch.Tensor, target: torch.Tensor | dict[str, Any]) -> None:
         output = []

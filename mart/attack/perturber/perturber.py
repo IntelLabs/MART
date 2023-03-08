@@ -26,6 +26,7 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
 
     def __init__(
         self,
+        optimizer: torch.optim.Optimizer,
         initializer: Initializer,
         gradient_modifier: GradientModifier | None = None,
         projector: Projector | None = None,
@@ -34,6 +35,7 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
         """_summary_
 
         Args:
+            optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             initializer (Initializer): To initialize the perturbation.
             gradient_modifier (GradientModifier | None): To modify the gradient of perturbation.
             projector (Projector | None): To project the perturbation into some space.
@@ -41,10 +43,16 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
         """
         super().__init__()
 
+        self.optimizer_fn = optimizer
         self.initializer = initializer
         self.gradient_modifier = gradient_modifier
         self.projector = projector
         self.optim_params = optim_params
+
+        if "params" in self.optim_params:
+            raise ValueError(
+                'Optimization parameters should not include "params" which will override the actual parameters to be optimized. '
+            )
 
         # Register perturbation as a non-persistent buffer even though we will optimize it. This is because it is not
         # a parameter of the underlying model but a parameter of the adversary.
@@ -60,18 +68,6 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
         # Will be called before forward() is called.
         if projector is not None:
             self.register_forward_pre_hook(projector_wrapper)
-
-    def parameter_groups(self):
-        """Return parameters along with the pre-defined optimization parameters.
-
-        Example: `[{"params": perturbation, "lr":0.1, "momentum": 0.9}]`
-        """
-        if "params" in self.optim_params:
-            raise ValueError(
-                'Optimization parameters should not include "params" which will override the actual parameters to be optimized. '
-            )
-
-        return [{"params": self.perturbation} | self.optim_params]
 
     def initialize_parameters(
         self, input: torch.Tensor, target: torch.Tensor | dict[str, Any]
@@ -98,10 +94,47 @@ class Perturber(Callback, torch.nn.modules.lazy.LazyModuleMixin, torch.nn.Module
         # Initialize lazy module
         self(input, target)
 
+        # Initialize optimizer
+        params = [{"params": self.perturbation} | self.optim_params]
+        self.opt = self.optimizer_fn(params)
+
+    def on_advance_start(
+        self,
+        *,
+        adversary: Adversary,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module,
+        **kwargs,
+    ):
+        self.opt.zero_grad()
+
+    def on_advance_end(
+        self,
+        *,
+        adversary: Adversary,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module,
+        **kwargs,
+    ):
+        self.opt.step()
+
     def forward(
         self, input: torch.Tensor, target: torch.Tensor | dict[str, Any]
     ) -> torch.Tensor:
         return self.perturbation
+
+    def on_run_end(
+        self,
+        *,
+        adversary: Adversary,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module,
+        **kwargs,
+    ):
+        del self.opt
 
     def extra_repr(self):
         perturbation = self.perturbation

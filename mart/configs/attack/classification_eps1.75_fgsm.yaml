@@ -1,6 +1,7 @@
 defaults:
-  - iterative_sgd
+  - iterative
   - perturber: default
+  - perturber/optimizer: sgd
   - perturber/initializer: constant
   - perturber/gradient_modifier: sign
   - perturber/projector: linf_additive_range
@@ -8,12 +9,12 @@ defaults:
   - gain: cross_entropy
   - threat_model: additive
 
-optimizer:
-  lr: 1.75
-
 max_iters: 1
 
 perturber:
+  optimizer:
+    lr: 1.75
+
   initializer:
     constant: 0
 

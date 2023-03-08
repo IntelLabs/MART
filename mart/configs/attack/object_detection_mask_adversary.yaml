@@ -1,6 +1,7 @@
 defaults:
-  - iterative_sgd
+  - iterative
   - perturber: batch
+  - perturber/optimizer: sgd
   - perturber/initializer: constant
   - perturber/gradient_modifier: sign
   - perturber/projector: mask_range
@@ -10,11 +11,11 @@ defaults:
   - threat_model: batch_overlay
 
 # Make a 5-step attack for the demonstration purpose.
-optimizer:
-  lr: 55
-
 max_iters: 5
 
 perturber:
+  optimizer:
+    lr: 55
+
   initializer:
     constant: 127
