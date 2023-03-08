@@ -21,7 +21,7 @@ def test_perturber_repr(input_data, target_data):
     perturber = Perturber(initializer, gradient_modifier, projector)
 
     # get additive perturber representation
-    perturbation = torch.nn.UninitializedParameter()
+    perturbation = torch.nn.UninitializedBuffer()
     expected_repr = (
         f"{repr(perturbation)}, initializer={initializer},"
         f"gradient_modifier={gradient_modifier}, projector={projector}"
