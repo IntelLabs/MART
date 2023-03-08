@@ -63,9 +63,7 @@ class Perturber(Callback, torch.nn.Module):
             self.register_forward_pre_hook(projector_wrapper)
 
     def on_run_start(self, *, adversary, input, target, model, **kwargs):
-        self.initialize_parameters(input, target)
-
-    def initialize_parameters(self, input, target):
+        # Initialize perturbation.
         perturbation = torch.zeros_like(input, requires_grad=True)
 
         # Register perturbation as a non-persistent buffer even though we will optimize it. This is because it is not
