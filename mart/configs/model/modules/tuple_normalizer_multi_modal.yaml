@@ -1,7 +1,8 @@
 # @package model.modules.preprocessor
-_target_: mart.transforms.TupleTransforms
+defaults:
+  - tuple_normalizer
+
 transforms:
-  _target_: torchvision.transforms.Compose
   transforms:
     - _target_: mart.transforms.GetItems
       keys: ${datamodule.test_dataset.modalities}

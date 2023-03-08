@@ -1,7 +1,7 @@
 # We simply wrap a torchvision object detection model for validation.
 defaults:
   - modular
-  - /model/modules@modules.preprocessor: preprocessor_single_modal
+  - /model/modules@modules.preprocessor: tuple_normalizer
 
 training_step_log: ???
 
