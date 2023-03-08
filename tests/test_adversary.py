@@ -78,9 +78,9 @@ def test_adversary_with_model(input_data, target_data, perturbation):
     assert gain.call_count == max_iters + 1
     assert model.call_count == max_iters + 1
 
-    # Twice because once with model=None to get perturbation and once with
-    # model=model as above.
-    assert perturber.call_count == 2
+    # Once with model=None to get perturbation.
+    # When model=model, perturber.initialize_parameters() is called.
+    assert perturber.call_count == 1
 
     torch.testing.assert_close(output_data, input_data + perturbation)
 
