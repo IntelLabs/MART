@@ -7,15 +7,19 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 
 from .callbacks import Callback
 from .gain import Gain
 from .objective import Objective
-from .perturber import BatchPerturber, Perturber
 from .threat_model import ThreatModel
+
+if TYPE_CHECKING:
+    from ..gradient_modifier import GradientModifier
+    from ..initializer import Initializer
+    from ..projector import Projector
 
 __all__ = ["Adversary", "NoAdversary"]
 
@@ -80,38 +84,44 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     def __init__(
         self,
         *,
-        perturber: BatchPerturber | Perturber,
+        optimizer: torch.optim.Optimizer,
+        initializer: Initializer,
         max_iters: int,
         gain: Gain,
+        gradient_modifier: GradientModifier | None = None,
+        projector: Projector | None = None,
         objective: Objective | None = None,
         callbacks: dict[str, Callback] | None = None,
     ):
         """_summary_
 
         Args:
-            perturber (BatchPerturber | Perturber): A module that stores perturbations.
+            optimizer (torch.optim.Optimizer): A PyTorch optimizer.
+            initializer (Initializer): To initialize the perturbation.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
+            gradient_modifier (GradientModifier | None): To modify the gradient of perturbation.
+            projector (Projector | None): To project the perturbation into some space.
             objective (Objective | None): A function for computing adversarial objective, which returns True or False. Optional.
             callbacks (dict[str, Callback] | None): A dictionary of callback objects. Optional.
         """
         super().__init__()
 
-        self.perturber = perturber
+        self.optimizer_fn = optimizer
+        self.initializer = initializer
+        self.gradient_modifier = gradient_modifier
+        self.projector = projector
         self.max_iters = max_iters
         self.callbacks = OrderedDict()
-
-        # Register perturber as callback if it implements Callback interface
-        if isinstance(self.perturber, Callback):
-            # FIXME: Use self.perturber.__class__.__name__ as key?
-            self.callbacks["_perturber"] = self.perturber
 
         if callbacks is not None:
             self.callbacks.update(callbacks)
 
         self.objective_fn = objective
-        # self.gain is a tensor.
         self.gain_fn = gain
+
+        # Pre-occupy the name of the buffer, so that extra_repr() always gets perturbation.
+        self.register_buffer("perturbation", torch.nn.UninitializedBuffer(), persistent=False)
 
     @property
     def done(self) -> bool:
@@ -146,6 +156,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         self.cur_iter = 0
 
         self.on_run_start(adversary=self, input=input, target=target, model=model, **kwargs)
+        self.run_start(input)
 
         while True:
             try:
@@ -160,25 +171,13 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
                 # Check the done condition here, so that every update of perturbation is examined.
                 if not self.done:
                     self.on_advance_start(
-                        adversary=self,
-                        input=input,
-                        target=target,
-                        model=model,
-                        **kwargs,
+                        adversary=self, input=input, target=target, model=model, **kwargs
                     )
-                    self.advance(
-                        input=input,
-                        target=target,
-                        model=model,
-                        **kwargs,
-                    )
+                    self.advance(input=input, target=target, model=model, **kwargs)
                     self.on_advance_end(
-                        adversary=self,
-                        input=input,
-                        target=target,
-                        model=model,
-                        **kwargs,
+                        adversary=self, input=input, target=target, model=model, **kwargs
                     )
+
                     # Update cur_iter at the end so that all hooks get the correct cur_iter.
                     self.cur_iter += 1
                 else:
@@ -186,7 +185,19 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
             except StopIteration:
                 break
 
+        self.run_end()
         self.on_run_end(adversary=self, input=input, target=target, model=model, **kwargs)
+
+    def run_start(self, input: torch.Tensor | tuple):
+        # Initialize perturbation.
+        perturbation = self.initializer(input)
+
+        # Register perturbation as a non-persistent buffer even though we will optimize it. This is because it is not
+        # a parameter of the underlying model but a parameter of the adversary.
+        self.register_buffer("perturbation", perturbation, persistent=False)
+
+        # Initialize optimizer
+        self.optimizer = self.optimizer_fn([self.perturbation])
 
     # Make sure we can do autograd.
     # Earlier Pytorch Lightning uses no_grad(), but later PL uses inference_mode():
@@ -241,8 +252,19 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         **kwargs,
     ):
         """Run one attack iteration."""
+        self.optimizer.zero_grad()
+
         # Do not flip the gain value, because we set maximize=True in optimizer.
         self.total_gain.backward()
+
+        # A backward hook that will be called when a gradient w.r.t the Tensor is computed.
+        with torch.no_grad():
+            self.perturbation.grad = self.gradient_modifier(self.perturbation.grad)
+            self.optimizer.step()
+            self.projector(self.perturbation, input, target)
+
+    def run_end(self):
+        del self.optimizer
 
 
 class Adversary(IterativeGenerator):
@@ -266,14 +288,13 @@ class Adversary(IterativeGenerator):
         **kwargs,
     ):
         # Generate a perturbation only if we have a model. This will update
-        # the parameters of self.perturber.
+        # the parameters of the perturbation.
         if model is not None:
             super().forward(input=input, target=target, model=model, **kwargs)
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
-        perturbation = self.perturber(input, target)
-        output = self.threat_model(input, target, perturbation)
+        output = self.threat_model(input, target, self.perturbation)
 
         return output
 
