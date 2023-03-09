@@ -1,6 +1,7 @@
 # We simply wrap a torchvision object detection model for validation.
 defaults:
   - modular
+  - /model/modules@modules.preprocessor: tuple_normalizer
 
 training_step_log: ???
 
@@ -11,13 +12,6 @@ validation_sequence: ???
 test_sequence: ???
 
 modules:
-  preprocessor:
-    _target_: mart.transforms.TupleTransforms
-    transforms:
-      _target_: torchvision.transforms.Normalize
-      mean: 0
-      std: 255
-
   losses_and_detections:
     # Return losses in the training mode and predictions in the eval mode in one pass.
     _target_: mart.models.DualMode
