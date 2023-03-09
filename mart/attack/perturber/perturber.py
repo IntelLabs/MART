@@ -53,8 +53,7 @@ class Perturber(Callback, torch.nn.Module):
         self.gradient_modifier = gradient_modifier
         self.projector = projector
 
-        # Register perturbation as a non-persistent buffer even though we will optimize it. This is because it is not
-        # a parameter of the underlying model but a parameter of the adversary.
+        # Pre-occupy the name of the buffer, so that extra_repr() always gets perturbation.
         self.register_buffer("perturbation", torch.nn.UninitializedBuffer(), persistent=False)
 
         def projector_wrapper(perturber_module, args):
@@ -77,6 +76,7 @@ class Perturber(Callback, torch.nn.Module):
         model: torch.nn.Module,
         **kwargs,
     ):
+        # Initialize perturbation.
         perturbation = torch.zeros_like(input, requires_grad=True)
 
         # Register perturbation as a non-persistent buffer even though we will optimize it. This is because it is not
@@ -130,8 +130,6 @@ class Perturber(Callback, torch.nn.Module):
 
     def extra_repr(self):
         perturbation = self.perturbation
-        # if not self.has_uninitialized_params():
-        #     perturbation = (perturbation.shape, perturbation.min(), perturbation.max())
 
         return (
             f"{repr(perturbation)}, optimizer={self.optimizer_fn}, initializer={self.initializer},"
