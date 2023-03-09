@@ -108,10 +108,10 @@ def test_adversary_perturbation(input_data, target_data):
     def initializer(x):
         torch.nn.init.constant_(x, 0)
 
-    perturber = Perturber(initializer)
+    perturber = Perturber(optimizer, initializer)
 
     adversary = Adversary(
-        threat_model=threat_model, perturber=perturber, optimizer=optimizer, max_iters=1, gain=gain
+        threat_model=threat_model, perturber=perturber, max_iters=1, gain=gain
     )
 
     def model(input, target, model=None, **kwargs):
