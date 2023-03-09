@@ -48,7 +48,7 @@ class Perturber(Callback, torch.nn.Module):
         self.projector = projector
         self.optim_params = optim_params
 
-        # Pre-occupy the name of the buffer.
+        # Pre-occupy the name of the buffer, so that extra_repr() always gets perturbation.
         self.register_buffer("perturbation", torch.nn.UninitializedBuffer(), persistent=False)
 
         def projector_wrapper(perturber_module, args):
