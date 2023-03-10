@@ -110,9 +110,7 @@ def test_adversary_perturbation(input_data, target_data):
 
     perturber = Perturber(optimizer, initializer)
 
-    adversary = Adversary(
-        threat_model=threat_model, perturber=perturber, max_iters=1, gain=gain
-    )
+    adversary = Adversary(threat_model=threat_model, perturber=perturber, max_iters=1, gain=gain)
 
     def model(input, target, model=None, **kwargs):
         return {"logits": adversary(input, target)}
