@@ -13,28 +13,8 @@ import torch
 from torch.optim import SGD
 
 import mart
-from mart.attack import Adversary, NoAdversary
+from mart.attack import Adversary
 from mart.attack.perturber import Perturber
-
-
-def test_no_adversary(input_data, target_data):
-    adversary = NoAdversary()
-
-    # Not having a model should not change the output.
-    output_data = adversary(input_data, target_data)
-
-    torch.testing.assert_close(output_data, input_data)
-
-
-def test_no_adversary_with_model(input_data, target_data):
-    adversary = NoAdversary()
-    model = Mock()
-
-    # Having a model should not change the output.
-    output_data = adversary(input_data, target_data, model=model)
-
-    model.assert_not_called()
-    torch.testing.assert_close(output_data, input_data)
 
 
 def test_adversary(input_data, target_data, perturbation):
