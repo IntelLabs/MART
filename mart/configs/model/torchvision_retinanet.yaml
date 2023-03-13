@@ -6,11 +6,7 @@ defaults:
 training_step_log: ["loss_classifier", "loss_box_reg"]
 
 training_sequence:
-  - input_adv_training:
-      _call_with_args_: ["input", "target"]
-      model: model
-      step: step
-  - preprocessor: ["input_adv_training"]
+  - preprocessor: ["input"]
   - losses_and_detections: ["preprocessor", "target"]
   - loss:
       # Sum up the losses.
@@ -29,11 +25,7 @@ training_sequence:
       }
 
 validation_sequence:
-  - input_adv_validation:
-      _call_with_args_: ["input", "target"]
-      model: model
-      step: step
-  - preprocessor: ["input_adv_validation"]
+  - preprocessor: ["input"]
   - losses_and_detections: ["preprocessor", "target"]
   - output:
       {
@@ -44,11 +36,7 @@ validation_sequence:
       }
 
 test_sequence:
-  - input_adv_test:
-      _call_with_args_: ["input", "target"]
-      model: model
-      step: step
-  - preprocessor: ["input_adv_test"]
+  - preprocessor: ["input"]
   - losses_and_detections: ["preprocessor", "target"]
   - output:
       {
@@ -59,15 +47,6 @@ test_sequence:
       }
 
 modules:
-  input_adv_training:
-    _target_: mart.attack.NoAdversary
-
-  input_adv_validation:
-    _target_: mart.attack.NoAdversary
-
-  input_adv_test:
-    _target_: mart.attack.NoAdversary
-
   losses_and_detections:
     # _target_: mart.models.DualMode
     model:
