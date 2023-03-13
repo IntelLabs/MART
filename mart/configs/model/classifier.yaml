@@ -5,19 +5,20 @@ defaults:
 
 # The verbose version.
 training_sequence:
-  - input_adv_training:
-      _call_with_args_: ["input", "target"]
-      model: model
-      step: step
-  - preprocessor:
-      _call_with_args_: ["input_adv_training"]
-  - logits:
+  seq010:
+    preprocessor:
+      _call_with_args_: ["input"]
+  seq020:
+    logits:
       _call_with_args_: ["preprocessor"]
-  - loss:
+  seq030:
+    loss:
       _call_with_args_: ["logits", "target"]
-  - preds:
+  seq040:
+    preds:
       _call_with_args_: ["logits"]
-  - output:
+  seq050:
+    output:
       {
         "preds": "preds",
         "target": "target",
@@ -28,13 +29,10 @@ training_sequence:
 # The kwargs-centric version.
 # We may use *args as **kwargs to avoid the lengthy _call_with_args_.
 #   The drawback is that we would need to lookup the *args names from the code.
+# We use a list-style sequence since we don't care about replacing any elements.
 validation_sequence:
-  - input_adv_validation:
-      _call_with_args_: ["input", "target"]
-      model: model
-      step: step
   - preprocessor:
-      tensor: input_adv_validation
+      tensor: input
   - logits: ["preprocessor"]
   - preds:
       input: logits
@@ -46,25 +44,16 @@ validation_sequence:
 # The simplified version.
 #   We treat a list as the `_call_with_args_` parameter.
 test_sequence:
-  - input_adv_test:
-      _call_with_args_: ["input", "target"]
-      model: model
-      step: step
-  - preprocessor: ["input_adv_test"]
-  - logits: ["preprocessor"]
-  - preds: ["logits"]
-  - output: { preds: preds, target: target, logits: logits }
+  seq010:
+    preprocessor: ["input"]
+  seq020:
+    logits: ["preprocessor"]
+  seq030:
+    preds: ["logits"]
+  seq040:
+    output: { preds: preds, target: target, logits: logits }
 
 modules:
-  input_adv_training:
-    _target_: mart.attack.NoAdversary
-
-  input_adv_validation:
-    _target_: mart.attack.NoAdversary
-
-  input_adv_test:
-    _target_: mart.attack.NoAdversary
-
   preprocessor: ???
 
   logits: ???
