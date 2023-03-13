@@ -57,7 +57,7 @@ test_sequence:
   seq040:
     preds: ["logits"]
   seq050:
-    output: { preds: preds, target: target, logits: logits, loss: loss}
+    output: { preds: preds, target: target, logits: logits, loss: loss }
 
 modules:
   preprocessor: ???

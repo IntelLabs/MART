@@ -10,7 +10,7 @@ from collections import OrderedDict
 from typing import Any
 
 import torch
-from pytorch_lightning import Trainer, LightningModule
+from pytorch_lightning import LightningModule, Trainer
 
 from .callbacks import Callback
 from .gain import Gain
@@ -55,16 +55,9 @@ class AdversaryCallbackHookMixin(Callback):
 
 
 class LitPerturbation(LightningModule):
-    """Peturbation optimization module.
-    """
-    def __init__(
-        self,
-        *,
-        batch,
-        optimizer,
-        gain,
-        **kwargs
-    ):
+    """Peturbation optimization module."""
+
+    def __init__(self, *, batch, optimizer, gain, **kwargs):
         """_summary_
 
         Args:
@@ -78,9 +71,9 @@ class LitPerturbation(LightningModule):
         # Perturbation will be same size as batch input
         self.perturbation = torch.nn.Parameter(torch.zeros_like(batch["input"], dtype=torch.float))
 
-
     def train_dataloader(self):
         from itertools import cycle
+
         return cycle([self.batch])
 
     def configure_optimizers(self):
@@ -108,7 +101,7 @@ class Adversary(torch.nn.Module):
         gain: Gain,
         objective: Objective | None = None,
         callbacks: dict[str, Callback] | None = None,
-        **kwargs
+        **kwargs,
     ):
         """_summary_
 
@@ -137,18 +130,19 @@ class Adversary(torch.nn.Module):
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
         model: torch.nn.Module | None = None,
-        **kwargs
+        **kwargs,
     ):
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturbation.
         if model is not None:
             batch = {"input": input, "target": target, "model": model, **kwargs}
-            self.perturbation = LitPerturbation(batch=batch, optimizer=self.optimizer, gain=self.gain, **kwargs)
+            self.perturbation = LitPerturbation(
+                batch=batch, optimizer=self.optimizer, gain=self.gain, **kwargs
+            )
 
             # FIXME: how do we get a proper device?
             attacker = Trainer(accelerator="auto", max_steps=self.max_iters)
             attacker.fit(model=self.perturbation)
-
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
