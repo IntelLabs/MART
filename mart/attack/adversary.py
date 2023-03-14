@@ -82,6 +82,7 @@ class LitPerturber(LazyModuleMixin, LightningModule):
         *,
         initializer: Initializer,
         optimizer: Callable,
+        threat_model: ThreatModel,
         gradient_modifier: GradientModifier | None = None,
         projector: Projector | None = None,
         gain: str = "loss",
@@ -91,13 +92,21 @@ class LitPerturber(LazyModuleMixin, LightningModule):
         """_summary_
 
         Args:
+            initializer (Initializer): To initialize the perturbation.
+            optimizer (torch.optim.Optimizer): A PyTorch optimizer.
+            threat_model (ThreatModel): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
+            gradient_modifier (GradientModifier): To modify the gradient of perturbation.
+            projector (Projector): To project the perturbation into some space.
+            gain (str): Which output to use as an adversarial gain function, which is a differentiable estimate of adversarial objective. (default: loss)
+            objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
         """
         super().__init__()
 
         self.initializer = initializer
+        self.optimizer_fn = optimizer
+        self.threat_model = threat_model
         self.gradient_modifier = gradient_modifier
         self.projector = projector
-        self.optimizer_fn = optimizer
         self.gain_output = gain
         self.objective_fn = objective
 
@@ -120,6 +129,8 @@ class LitPerturber(LazyModuleMixin, LightningModule):
         return self.optimizer_fn([self.perturbation])
 
     def training_step(self, batch, batch_idx):
+        # copy batch since we will modify it and it it passed around
+        batch = batch.copy()
         input = batch.pop("input")
         target = batch.pop("target")
         model = batch.pop("model")
@@ -129,6 +140,7 @@ class LitPerturber(LazyModuleMixin, LightningModule):
             self(input, target)
 
         outputs = model(input=input, target=target, **batch)
+        # FIXME: This should really be just `return outputs`. Everything below here should live in the model!
         gain = outputs[self.gain_output]
 
         # objective_fn is optional, because adversaries may never reach their objective.
@@ -161,7 +173,11 @@ class LitPerturber(LazyModuleMixin, LightningModule):
 
     def forward(self, input, target, **kwargs):
         # FIXME: Can we get rid of .to(input.device)?
-        return self.perturbation.to(input.device)
+        perturbation = self.perturbation.to(input.device)
+
+        # Get perturbation and apply threat model
+        # The mask projector in perturber may require information from target.
+        return self.threat_model(input, target, perturbation)
 
 
 class Adversary(torch.nn.Module):
@@ -170,7 +186,6 @@ class Adversary(torch.nn.Module):
     def __init__(
         self,
         *,
-        threat_model: ThreatModel,
         max_iters: int = 10,
         callbacks: dict[str, Callback] | None = None,
         **perturber_kwargs,
@@ -178,13 +193,11 @@ class Adversary(torch.nn.Module):
         """_summary_
 
         Args:
-            threat_model (ThreatModel): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
             max_iters (int): The max number of attack iterations.
             callbacks (dict[str, Callback] | None): A dictionary of callback objects. Optional.
         """
         super().__init__()
 
-        self.threat_model = threat_model
         self.callbacks = callbacks # FIXME: Register these with trainer?
         self.perturber_factory = partial(LitPerturber, **perturber_kwargs)
 
@@ -220,9 +233,5 @@ class Adversary(torch.nn.Module):
                 model=self.perturber[0], train_dataloaders=benign_dataloader
             )
 
-        # Get perturbation and apply threat model
-        # The mask projector in perturber may require information from target.
-        perturbation = self.perturber[0](input, target)
-        output = self.threat_model(input, target, perturbation)
-
-        return output
+        # Get preturbed input (some threat models, projectors, etc. may require information from target like a mask)
+        return self.perturber[0](input, target)
