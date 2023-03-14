@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-from .base import Callback
+from pytorch_lightning.callbacks import Callback
 
 __all__ = ["ModelParamsNoGrad"]
 
@@ -15,10 +15,10 @@ class ModelParamsNoGrad(Callback):
     This callback should not change the result. Don't use unless an attack runs faster.
     """
 
-    def on_run_start(self, *, model, **kwargs):
+    def on_train_start(self, trainer, model):
         for param in model.parameters():
             param.requires_grad_(False)
 
-    def on_run_end(self, *, model, **kwargs):
+    def on_train_end(self, trainer, model):
         for param in model.parameters():
             param.requires_grad_(True)

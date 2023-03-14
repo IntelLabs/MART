@@ -27,38 +27,6 @@ if TYPE_CHECKING:
 __all__ = ["Adversary"]
 
 
-class AdversaryCallbackHookMixin(Callback):
-    """Define event hooks in the Adversary Loop for callbacks."""
-
-    callbacks = {}
-
-    def on_run_start(self, **kwargs) -> None:
-        """Prepare the attack loop state."""
-        for _name, callback in self.callbacks.items():
-            # FIXME: Skip incomplete callback instance.
-            # Give access of self to callbacks by `adversary=self`.
-            callback.on_run_start(**kwargs)
-
-    def on_examine_start(self, **kwargs) -> None:
-        for _name, callback in self.callbacks.items():
-            callback.on_examine_start(**kwargs)
-
-    def on_examine_end(self, **kwargs) -> None:
-        for _name, callback in self.callbacks.items():
-            callback.on_examine_end(**kwargs)
-
-    def on_advance_start(self, **kwargs) -> None:
-        for _name, callback in self.callbacks.items():
-            callback.on_advance_start(**kwargs)
-
-    def on_advance_end(self, **kwargs) -> None:
-        for _name, callback in self.callbacks.items():
-            callback.on_advance_end(**kwargs)
-
-    def on_run_end(self, **kwargs) -> None:
-        for _name, callback in self.callbacks.items():
-            callback.on_run_end(**kwargs)
-
 class SilentTrainer(Trainer):
     """Suppress logging."""
 
@@ -198,7 +166,6 @@ class Adversary(torch.nn.Module):
         """
         super().__init__()
 
-        self.callbacks = callbacks # FIXME: Register these with trainer?
         self.perturber_factory = partial(LitPerturber, **perturber_kwargs)
 
         # FIXME: how do we get a proper device?
@@ -210,6 +177,7 @@ class Adversary(torch.nn.Module):
             max_epochs=1,
             max_steps=max_iters,
             enable_model_summary=False,
+            callbacks=list(callbacks.values()),  # ignore keys
             enable_checkpointing=False,
         )
 

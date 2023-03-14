@@ -8,8 +8,6 @@ from typing import Any, Callable, Dict, Optional, Union
 
 import torch
 
-from .callbacks import Callback
-
 __all__ = ["NormalizedAdversaryAdapter"]
 
 

@@ -6,9 +6,8 @@
 
 import os
 
+from pytorch_lightning.callbacks import Callback
 from torchvision.transforms import ToPILImage
-
-from .base import Callback
 
 __all__ = ["PerturbedImageVisualizer"]
 
@@ -25,10 +24,16 @@ class PerturbedImageVisualizer(Callback):
         if not os.path.isdir(self.folder):
             os.makedirs(self.folder)
 
-    def on_run_end(self, *, adversary, input, target, model, **kwargs):
-        adv_input = adversary(input=input, target=target, model=None, **kwargs)
+    def on_train_batch_end(self, trainer, model, outputs, batch, batch_idx):
+        # Save input and target for on_train_end
+        self.input = batch["input"]
+        self.target = batch["target"]
 
-        for img, tgt in zip(adv_input, target):
+    def on_train_end(self, trainer, model):
+        # FIXME: We should really just save this to outputs instead of recomputing adv_input
+        adv_input = model(self.input, self.target)
+
+        for img, tgt in zip(adv_input, self.target):
             fname = tgt["file_name"]
             fpath = os.path.join(self.folder, fname)
             im = self.convert(img / 255)
