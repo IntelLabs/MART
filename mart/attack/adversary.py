@@ -118,7 +118,7 @@ class LitPerturber(LazyModuleMixin, LightningModule):
         # FIXME: Make objective a part of the model...
         if self.objective_fn is not None:
             found = self.objective_fn(**outputs)
-            self.log("found", found.sum(), prog_bar=True)
+            self.log("found", found.sum().float(), prog_bar=True)
 
             # No need to calculate new gradients if adversarial examples are already found.
             if len(gain.shape) > 0:
@@ -172,7 +172,14 @@ class Adversary(torch.nn.Module):
         self.perturber_factory = partial(LitPerturber, **perturber_kwargs)
 
         # FIXME: how do we get a proper device?
-        self.attacker = Trainer(accelerator="auto", max_steps=max_iters, enable_model_summary=False)
+        self.attacker = partial(Trainer,
+            accelerator="auto",
+            log_every_n_steps=1,
+            max_epochs=1,
+            max_steps=max_iters,
+            enable_model_summary=False,
+            enable_checkpointing=False,
+        )
 
     def forward(
         self,
@@ -185,10 +192,12 @@ class Adversary(torch.nn.Module):
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturbation.
         if model is not None:
-            self.perturber = [self.perturber_factory()]
+            benign_dataloader = cycle(
+                [{"input": input, "target": target, "model": model, **kwargs}]
+            )
 
-            benign_dataloader = cycle([{"input": input, "target": target, "model": model, **kwargs}])
-            self.attacker.fit(model=self.perturber[0], train_dataloaders=benign_dataloader)
+            self.perturber = [self.perturber_factory()]
+            self.attacker().fit(model=self.perturber[0], train_dataloaders=benign_dataloader)
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
