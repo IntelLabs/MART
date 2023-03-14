@@ -8,6 +8,5 @@ optimizer:
 
 max_iters: 100
 
-perturber:
-  initializer:
-    constant: 127
+initializer:
+  constant: 127

@@ -1,9 +1,8 @@
 defaults:
   - iterative_sgd
-  - perturber: batch
-  - perturber/initializer: constant
-  - perturber/gradient_modifier: sign
-  - perturber/projector: mask_range
+  - initializer: constant
+  - gradient_modifier: sign
+  - projector: mask_range
   - callbacks: [progress_bar, image_visualizer]
   - objective: zero_ap
   - gain: rcnn_training_loss
@@ -15,6 +14,5 @@ optimizer:
 
 max_iters: 5
 
-perturber:
-  initializer:
-    constant: 127
+initializer:
+  constant: 127

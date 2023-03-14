@@ -8,8 +8,11 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from typing import Any
+from itertools import cycle
+from functools import partial
 
 import torch
+from torch.nn.modules.lazy import LazyModuleMixin
 from pytorch_lightning import LightningModule, Trainer
 
 from .callbacks import Callback
@@ -54,39 +57,77 @@ class AdversaryCallbackHookMixin(Callback):
             callback.on_run_end(**kwargs)
 
 
-class LitAdversary(LightningModule):
+class LitPerturber(LazyModuleMixin, LightningModule):
     """Peturbation optimization module."""
 
-    def __init__(self, *, batch, optimizer, gain, **kwargs):
+    def __init__(
+        self,
+        *,
+        initializer: Initializer,
+        optimizer: Callable,
+        gradient_modifier: GradientModifier | None = None,
+        projector: Projector | None = None,
+        gain: str = "loss",
+        **kwargs
+    ):
         """_summary_
 
         Args:
         """
         super().__init__()
 
-        self.batch = batch
+        self.initializer = initializer
+        self.gradient_modifier = gradient_modifier
+        self.projector = projector
         self.optimizer_fn = optimizer
         self.gain = gain
 
-        # Perturbation will be same size as batch input
-        self.perturbation = torch.nn.Parameter(torch.zeros_like(batch["input"], dtype=torch.float))
+        self.perturbation = torch.nn.UninitializedParameter()
 
-    def train_dataloader(self):
-        from itertools import cycle
+        def projector_wrapper(module, args):
+            if isinstance(module.perturbation, torch.nn.UninitializedBuffer):
+                raise ValueError("Perturbation must be initialized")
 
-        return cycle([self.batch])
+            input, target = args
+
+            # FIXME: How do we get rid of .to(input.device)?
+            return projector(module.perturbation.data.to(input.device), input, target)
+
+        # Will be called before forward() is called.
+        if projector is not None:
+            self.register_forward_pre_hook(projector_wrapper)
 
     def configure_optimizers(self):
-        return self.optimizer_fn(self.parameters())
+        return self.optimizer_fn([self.perturbation])
 
     def training_step(self, batch, batch_idx):
-        outputs = self(**batch)
+        input = batch.pop("input")
+        target = batch.pop("target")
+        model = batch.pop("model")
+
+        if self.has_uninitialized_params():
+            # Use this syntax because LazyModuleMixin assume non-keyword arguments
+            self(input, target)
+
+        outputs = model(input=input, target=target, **batch)
+
         return outputs[self.gain]
 
-    def forward(self, *, input, target, model, step=None, **kwargs):
-        # Calling model with model=None will trigger perturbation application
-        return model(input=input, target=target, model=None, step=step)
+    def initialize_parameters(self, input, target):
+        assert isinstance(self.perturbation, torch.nn.UninitializedParameter)
 
+        self.perturbation.materialize(input.shape, device=input.device)
+
+        # A backward hook that will be called when a gradient w.r.t the Tensor is computed.
+        if self.gradient_modifier is not None:
+            self.perturbation.register_hook(self.gradient_modifier)
+
+        self.initializer(self.perturbation)
+
+
+    def forward(self, input, target, **kwargs):
+        # FIXME: Can we get rid of .to(input.device)?
+        return self.perturbation.to(input.device)
 
 class Adversary(torch.nn.Module):
     """An adversary module which generates and applies perturbation to input."""
@@ -95,34 +136,25 @@ class Adversary(torch.nn.Module):
         self,
         *,
         threat_model: ThreatModel,
-        perturber: BatchPerturber | Perturber,
-        optimizer: torch.optim.Optimizer,
-        max_iters: int,
-        gain: Gain,
-        objective: Objective | None = None,
+        max_iters: int = 10,
         callbacks: dict[str, Callback] | None = None,
-        **kwargs,
+        **perturber_kwargs,
     ):
         """_summary_
 
         Args:
             threat_model (ThreatModel): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
-            perturber (BatchPerturber | Perturber): A module that stores perturbations.
-            optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             max_iters (int): The max number of attack iterations.
-            gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
-            objective (Objective | None): A function for computing adversarial objective, which returns True or False. Optional.
             callbacks (dict[str, Callback] | None): A dictionary of callback objects. Optional.
         """
-        super().__init__(**kwargs)
+        super().__init__()
 
         self.threat_model = threat_model
-        self.perturber = perturber
-        self.optimizer = optimizer
-        self.max_iters = max_iters
-        self.gain = gain
-        self.objective = objective
-        self.callbacks = callbacks
+        self.callbacks = callbacks # FIXME: Register these with trainer?
+        self.perturber_factory = partial(LitPerturber, **perturber_kwargs)
+
+        # FIXME: how do we get a proper device?
+        self.attacker = Trainer(accelerator="auto", max_steps=max_iters, enable_model_summary=False)
 
     def forward(
         self,
@@ -135,24 +167,14 @@ class Adversary(torch.nn.Module):
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturbation.
         if model is not None:
-            batch = {"input": input, "target": target, "model": model, **kwargs}
-            perturbation = LitAdversary(
-                batch=batch, optimizer=self.optimizer, gain=self.gain, **kwargs
-            )
+            self.perturber = [self.perturber_factory()]
 
-            # Set initial perturbation
-            self.perturbation = [p.to(input.device) for p in perturbation.parameters()]
-
-            # FIXME: how do we get a proper device?
-            attacker = Trainer(accelerator="auto", max_steps=self.max_iters)
-            attacker.fit(model=perturbation)
-
-            # FIXME: Can get get rid of one of these?
-            self.perturbation = [p.to(input.device) for p in perturbation.parameters()]
+            benign_dataloader = cycle([{"input": input, "target": target, "model": model, **kwargs}])
+            self.attacker.fit(model=self.perturber[0], train_dataloaders=benign_dataloader)
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
-        # FIXME: Generalize this so we can just pass perturbation.parameters() to threat_model
-        output = self.threat_model(input, target, self.perturbation[0])
+        perturbation = self.perturber[0](input, target)
+        output = self.threat_model(input, target, perturbation)
 
         return output

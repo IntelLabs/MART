@@ -1,9 +1,8 @@
 defaults:
   - iterative_sgd
-  - perturber: default
-  - perturber/initializer: uniform_lp
-  - perturber/gradient_modifier: sign
-  - perturber/projector: linf_additive_range
+  - initializer: uniform_lp
+  - gradient_modifier: sign
+  - projector: linf_additive_range
   - objective: misclassification
   - threat_model: additive
 
@@ -14,9 +13,8 @@ max_iters: 10
 
 gain: "loss"
 
-perturber:
-  initializer:
-    eps: 2
+initializer:
+  eps: 2
 
-  projector:
-    eps: 2
+projector:
+  eps: 2
