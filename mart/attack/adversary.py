@@ -68,7 +68,8 @@ class LitPerturber(LazyModuleMixin, LightningModule):
         gradient_modifier: GradientModifier | None = None,
         projector: Projector | None = None,
         gain: str = "loss",
-        **kwargs
+        objective: Objective | None = None,
+        **kwargs,
     ):
         """_summary_
 
@@ -80,7 +81,8 @@ class LitPerturber(LazyModuleMixin, LightningModule):
         self.gradient_modifier = gradient_modifier
         self.projector = projector
         self.optimizer_fn = optimizer
-        self.gain = gain
+        self.gain_output = gain
+        self.objective_fn = objective
 
         self.perturbation = torch.nn.UninitializedParameter()
 
@@ -109,9 +111,22 @@ class LitPerturber(LazyModuleMixin, LightningModule):
             # Use this syntax because LazyModuleMixin assume non-keyword arguments
             self(input, target)
 
-        outputs = model(input=input, target=target, **batch)
+        self.outputs = model(input=input, target=target, **batch)
+        self.gain = self.outputs[self.gain_output]
 
-        return outputs[self.gain]
+        # objective_fn is optional, because adversaries may never reach their objective.
+        if self.objective_fn is not None:
+            self.found = self.objective_fn(**self.outputs)
+            if self.gain.shape == torch.Size([]):
+                # A reduced gain value, not an input-wise gain vector.
+                self.total_gain = self.gain
+            else:
+                # No need to calculate new gradients if adversarial examples are already found.
+                self.total_gain = self.gain[~self.found].sum()
+        else:
+            self.total_gain = self.gain.sum()
+
+        return self.total_gain
 
     def initialize_parameters(self, input, target):
         assert isinstance(self.perturbation, torch.nn.UninitializedParameter)
@@ -124,10 +139,10 @@ class LitPerturber(LazyModuleMixin, LightningModule):
 
         self.initializer(self.perturbation)
 
-
     def forward(self, input, target, **kwargs):
         # FIXME: Can we get rid of .to(input.device)?
         return self.perturbation.to(input.device)
+
 
 class Adversary(torch.nn.Module):
     """An adversary module which generates and applies perturbation to input."""
