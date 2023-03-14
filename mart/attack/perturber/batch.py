@@ -1,8 +1,7 @@
 #
 # Copyright (C) 2022 Intel Corporation
 #
-# Licensed subject to the terms of the separately executed evaluation license
-# agreement between Intel Corporation and you.
+# SPDX-License-Identifier: BSD-3-Clause
 #
 
 from typing import Any, Callable, Dict, Union
@@ -43,6 +42,13 @@ class BatchPerturber(Callback, torch.nn.Module):
 
         self.perturbers = torch.nn.ModuleDict()
 
+    def parameter_groups(self):
+        """Return parameters along with optim parameters."""
+        params = []
+        for perturber in self.perturbers.values():
+            params += perturber.parameter_groups()
+        return params
+
     def on_run_start(self, adversary, input, target, model, **kwargs):
         # Remove old perturbers
         # FIXME: Can we do this in on_run_end instead?
@@ -52,6 +58,14 @@ class BatchPerturber(Callback, torch.nn.Module):
         for i in range(len(input)):
             perturber = self.perturber_factory(*self.perturber_args, **self.perturber_kwargs)
             self.perturbers[f"input_{i}_perturber"] = perturber
+
+        # Trigger callback
+        for i, (input_i, target_i) in enumerate(zip(input, target)):
+            perturber = self.perturbers[f"input_{i}_perturber"]
+            if isinstance(perturber, Callback):
+                perturber.on_run_start(
+                    adversary=adversary, input=input_i, target=target_i, model=model, **kwargs
+                )
 
     def forward(self, input: torch.Tensor, target: Union[torch.Tensor, Dict[str, Any]]) -> None:
         output = []

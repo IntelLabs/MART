@@ -1,8 +1,7 @@
 #
 # Copyright (C) 2022 Intel Corporation
 #
-# Licensed subject to the terms of the separately executed evaluation license
-# agreement between Intel Corporation and you.
+# SPDX-License-Identifier: BSD-3-Clause
 #
 
 from __future__ import annotations
@@ -153,13 +152,9 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
         # Set up the optimizer.
         self.cur_iter = 0
 
-        # We could be at the inference/no-grad mode here.
-        # Initialize lazy module
-        # FIXME: Perturbers can just use on_run_start/on_run_end to initialize
-        self.perturber(input, target)
+        # param_groups with learning rate and other optim params.
+        param_groups = self.perturber.parameter_groups()
 
-        # Split param groups by input elements, so that we can schedule optimizers individually.
-        param_groups = [{"params": [param]} for param in self.perturber.parameters()]
         self.opt = self.optimizer_fn(param_groups)
 
     def on_run_end(

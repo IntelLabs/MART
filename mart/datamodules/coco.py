@@ -1,8 +1,7 @@
 #
 # Copyright (C) 2022 Intel Corporation
 #
-# Licensed subject to the terms of the separately executed evaluation license
-# agreement between Intel Corporation and you.
+# SPDX-License-Identifier: BSD-3-Clause
 #
 
 import os
@@ -68,6 +67,23 @@ class CocoDetection(CocoDetection_):
         file_name = self.coco.loadImgs(id)[0]["file_name"]
 
         return {"image_id": id, "file_name": file_name, "annotations": annotations}
+
+    def __getitem__(self, index: int):
+        """Override __getitem__() to dictionarize input for multi-modality datasets.
+
+        This runs after _load_image() and transforms(), while transforms() typically converts
+        images to tensors.
+        """
+
+        image, target_dict = super().__getitem__(index)
+
+        # Convert multi-modal input to a dictionary.
+        if self.modalities is not None:
+            # We assume image is a multi-channel tensor, with each modality including 3 channels.
+            assert image.shape[0] == len(self.modalities) * 3
+            image = dict(zip(self.modalities, image.split(3)))
+
+        return image, target_dict
 
 
 # Source: https://github.com/pytorch/vision/blob/dc07ac2add8285e16a716564867d0b4b953f6735/references/detection/utils.py#L203
