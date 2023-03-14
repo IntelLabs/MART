@@ -54,7 +54,7 @@ class AdversaryCallbackHookMixin(Callback):
             callback.on_run_end(**kwargs)
 
 
-class LitPerturbation(LightningModule):
+class LitAdversary(LightningModule):
     """Peturbation optimization module."""
 
     def __init__(self, *, batch, optimizer, gain, **kwargs):
@@ -136,18 +136,23 @@ class Adversary(torch.nn.Module):
         # the parameters of self.perturbation.
         if model is not None:
             batch = {"input": input, "target": target, "model": model, **kwargs}
-            self.perturbation = LitPerturbation(
+            perturbation = LitAdversary(
                 batch=batch, optimizer=self.optimizer, gain=self.gain, **kwargs
             )
 
+            # Set initial perturbation
+            self.perturbation = [p.to(input.device) for p in perturbation.parameters()]
+
             # FIXME: how do we get a proper device?
             attacker = Trainer(accelerator="auto", max_steps=self.max_iters)
-            attacker.fit(model=self.perturbation)
+            attacker.fit(model=perturbation)
+
+            # FIXME: Can get get rid of one of these?
+            self.perturbation = [p.to(input.device) for p in perturbation.parameters()]
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
         # FIXME: Generalize this so we can just pass perturbation.parameters() to threat_model
-        perturbation = list(self.perturbation.parameters())[0].to(input.device)
-        output = self.threat_model(input, target, perturbation)
+        output = self.threat_model(input, target, self.perturbation[0])
 
         return output
