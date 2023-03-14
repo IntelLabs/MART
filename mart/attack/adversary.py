@@ -111,22 +111,25 @@ class LitPerturber(LazyModuleMixin, LightningModule):
             # Use this syntax because LazyModuleMixin assume non-keyword arguments
             self(input, target)
 
-        self.outputs = model(input=input, target=target, **batch)
-        self.gain = self.outputs[self.gain_output]
+        outputs = model(input=input, target=target, **batch)
+        gain = outputs[self.gain_output]
 
         # objective_fn is optional, because adversaries may never reach their objective.
+        # FIXME: Make objective a part of the model...
         if self.objective_fn is not None:
-            self.found = self.objective_fn(**self.outputs)
-            if self.gain.shape == torch.Size([]):
-                # A reduced gain value, not an input-wise gain vector.
-                self.total_gain = self.gain
-            else:
-                # No need to calculate new gradients if adversarial examples are already found.
-                self.total_gain = self.gain[~self.found].sum()
-        else:
-            self.total_gain = self.gain.sum()
+            found = self.objective_fn(**outputs)
+            self.log("found", found.sum(), prog_bar=True)
 
-        return self.total_gain
+            # No need to calculate new gradients if adversarial examples are already found.
+            if len(gain.shape) > 0:
+                gain = gain[~found]
+
+        if len(gain.shape) > 0:
+            gain = gain.sum()
+
+        self.log("gain", gain, prog_bar=True)
+
+        return gain
 
     def initialize_parameters(self, input, target):
         assert isinstance(self.perturbation, torch.nn.UninitializedParameter)
