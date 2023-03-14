@@ -6,20 +6,23 @@
 
 from __future__ import annotations
 
+import logging
 from collections import OrderedDict
-from typing import Any
-from itertools import cycle
 from functools import partial
+from itertools import cycle
+from typing import TYPE_CHECKING, Any, Callable
 
 import torch
-from torch.nn.modules.lazy import LazyModuleMixin
 from pytorch_lightning import LightningModule, Trainer
+from pytorch_lightning.callbacks import Callback
+from torch.nn.modules.lazy import LazyModuleMixin
 
-from .callbacks import Callback
-from .gain import Gain
-from .objective import Objective
-from .perturber import BatchPerturber, Perturber
-from .threat_model import ThreatModel
+if TYPE_CHECKING:
+    from .gradient_modifier import GradientModifier
+    from .initializer import Initializer
+    from .objective import Objective
+    from .projector import Projector
+    from .threat_model import ThreatModel
 
 __all__ = ["Adversary"]
 
@@ -57,7 +60,8 @@ class AdversaryCallbackHookMixin(Callback):
             callback.on_run_end(**kwargs)
 
 class SilentTrainer(Trainer):
-    """Suppress logging"""
+    """Suppress logging."""
+
     def fit(self, *args, **kwargs):
         logger = logging.getLogger("pytorch_lightning.accelerators.gpu")
         logger.propagate = False
@@ -185,7 +189,8 @@ class Adversary(torch.nn.Module):
         self.perturber_factory = partial(LitPerturber, **perturber_kwargs)
 
         # FIXME: how do we get a proper device?
-        self.attacker_factory = partial(SilentTrainer,
+        self.attacker_factory = partial(
+            SilentTrainer,
             accelerator="auto",
             num_sanity_val_steps=0,
             log_every_n_steps=1,
@@ -211,7 +216,9 @@ class Adversary(torch.nn.Module):
             )
 
             self.perturber = [self.perturber_factory()]
-            self.attacker_factory().fit(model=self.perturber[0], train_dataloaders=benign_dataloader)
+            self.attacker_factory().fit(
+                model=self.perturber[0], train_dataloaders=benign_dataloader
+            )
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
