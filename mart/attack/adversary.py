@@ -190,7 +190,7 @@ class Adversary(torch.nn.Module):
         **kwargs,
     ):
         # Generate a perturbation only if we have a model. This will update
-        # the parameters of self.perturbation.
+        # the parameters of self.perturber
         if model is not None:
             benign_dataloader = cycle(
                 [{"input": input, "target": target, "model": model, **kwargs}]
