@@ -56,6 +56,19 @@ class AdversaryCallbackHookMixin(Callback):
         for _name, callback in self.callbacks.items():
             callback.on_run_end(**kwargs)
 
+class SilentTrainer(Trainer):
+    """Suppress logging"""
+    def fit(self, *args, **kwargs):
+        logger = logging.getLogger("pytorch_lightning.accelerators.gpu")
+        logger.propagate = False
+
+        super().fit(*args, **kwargs)
+
+        logger.propagate = True
+
+    def _log_device_info(self):
+        pass
+
 
 class LitPerturber(LazyModuleMixin, LightningModule):
     """Peturbation optimization module."""
@@ -172,8 +185,9 @@ class Adversary(torch.nn.Module):
         self.perturber_factory = partial(LitPerturber, **perturber_kwargs)
 
         # FIXME: how do we get a proper device?
-        self.attacker = partial(Trainer,
+        self.attacker_factory = partial(SilentTrainer,
             accelerator="auto",
+            num_sanity_val_steps=0,
             log_every_n_steps=1,
             max_epochs=1,
             max_steps=max_iters,
@@ -197,7 +211,7 @@ class Adversary(torch.nn.Module):
             )
 
             self.perturber = [self.perturber_factory()]
-            self.attacker().fit(model=self.perturber[0], train_dataloaders=benign_dataloader)
+            self.attacker_factory().fit(model=self.perturber[0], train_dataloaders=benign_dataloader)
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
