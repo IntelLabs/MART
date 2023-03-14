@@ -18,6 +18,7 @@ class PerturbedImageVisualizer(Callback):
     def __init__(self, folder):
         super().__init__()
 
+        # FIXME: This should use the Trainer's logging directory.
         self.folder = folder
         self.convert = ToPILImage()
 
