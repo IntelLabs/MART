@@ -114,10 +114,11 @@ class LitPerturber(pl.LightningModule):
         self.optimizer_fn = optimizer
         self.threat_model = threat_model
         self.gradient_modifier = gradient_modifier
-        self.projector = projector
+        self.projector = projector or Projector()
         self.gain_output = gain
         self.objective_fn = objective
 
+        # Perturbation is lazily initialized
         self.perturbation = None
 
     def configure_optimizers(self):
@@ -164,9 +165,8 @@ class LitPerturber(pl.LightningModule):
         if self.perturbation is None:
             self.initialize_parameters(input=input, target=target, **kwargs)
 
-        # Projected perturbation...
-        if self.projector is not None:
-            self.projector(self.perturbation.data, input, target)
+        # Project perturbation...
+        self.projector(self.perturbation.data, input, target)
 
         # ...and apply threat model.
         return self.threat_model(input, target, self.perturbation)

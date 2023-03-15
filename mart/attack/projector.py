@@ -15,7 +15,6 @@ __all__ = ["Projector"]
 class Projector(abc.ABC):
     """A projector modifies nn.Parameter's data."""
 
-    @abc.abstractmethod
     def __call__(
         self,
         tensor: torch.Tensor,
