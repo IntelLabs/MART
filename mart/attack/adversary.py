@@ -63,10 +63,10 @@ class Adversary(torch.nn.Module):
     @silent()
     def forward(self, **batch):
         if "model" in batch:
-            # Attack, aka fit a perturbation, for one epoch by cycling over the same batch of inputs.
+            # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
             # We use Trainer.limit_train_batches to control the number of attack iterations.
             self.attacker.fit_loop.max_epochs += 1
-            self.attacker.fit(model=self.perturber, train_dataloaders=cycle([batch]))
+            self.attacker.fit(self.perturber, train_dataloaders=cycle([batch]))
 
         return self.perturber(**batch)
 
@@ -119,11 +119,12 @@ class LitPerturber(pl.LightningModule):
         target = batch.pop("target")
         model = batch.pop("model")
 
+        # We need to evaluate the whole model, so call it normally to get a gain
         outputs = model(input=input, target=target, **batch)
-        # FIXME: This should really be just `return outputs`. Everything below here should live in the model!
+        # FIXME: This should really be just `return outputs`. But this might require a new sequence?
+        # FIXME: Everything below here should live in the model as modules.
         gain = outputs[self.gain_output]
 
-        # FIXME: Make objective a part of the model...
         # objective_fn is optional, because adversaries may never reach their objective.
         if self.objective_fn is not None:
             found = self.objective_fn(**outputs)
