@@ -128,7 +128,6 @@ class LitPerturber(pl.LightningModule):
         # objective_fn is optional, because adversaries may never reach their objective.
         if self.objective_fn is not None:
             found = self.objective_fn(**outputs)
-            self.log("found", found.sum().float(), prog_bar=True)
 
             # No need to calculate new gradients if adversarial examples are already found.
             if len(gain.shape) > 0:
@@ -136,8 +135,6 @@ class LitPerturber(pl.LightningModule):
 
         if len(gain.shape) > 0:
             gain = gain.sum()
-
-        self.log("gain", gain, prog_bar=True)
 
         return gain
 
