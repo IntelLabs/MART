@@ -181,5 +181,6 @@ class LitPerturber(pl.LightningModule):
         self.perturbation = self.initializer(input, self.perturbation)
 
         # FIXME: I think it's better to use a PL hook here
+        # FIXME: I also think Trainers already implement this functionality so this can probably go away...
         if self.gradient_modifier is not None:
             self.perturbation.register_hook(self.gradient_modifier)
