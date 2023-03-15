@@ -44,7 +44,7 @@ class Adversary(torch.nn.Module):
         self.attacker = trainer
         if self.attacker is None:
             self.attacker = pl.Trainer(
-                accelerator="auto",
+                accelerator="auto",  # FIXME: we need to get this on the same device as input...
                 num_sanity_val_steps=0,
                 log_every_n_steps=1,
                 max_epochs=1,
