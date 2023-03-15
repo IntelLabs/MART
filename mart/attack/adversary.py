@@ -69,7 +69,7 @@ class Adversary(torch.nn.Module):
         if "model" in batch:
             # Initialize perturbation because fit will call configure_optimizers and
             # we want a fresh perturbation.
-            self.perturber.initialize_parameters(**batch)
+            self.perturber(**batch)
 
             # Cycle batch forever since the attacker will know when to stop
             attack_dataloader = cycle([batch])
@@ -126,9 +126,9 @@ class LitPerturber(pl.LightningModule):
 
         return self.optimizer_fn([self.perturbation])
 
-    def on_before_optimizer_step(self, optimizer, optimizer_idx):
-        # FIXME: pl.Trainer might implement some of this functionality so GradientModifier can probably go away?
-        self.gradient_modifier(self.perturbation.grad)
+    def on_train_epoch_start(self):
+        # Force re-initialization of perturbation
+        self.perturbation = None
 
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally
@@ -158,6 +158,10 @@ class LitPerturber(pl.LightningModule):
 
         return gain
 
+    def on_before_optimizer_step(self, optimizer, optimizer_idx):
+        # FIXME: pl.Trainer might implement some of this functionality so GradientModifier can probably go away?
+        self.gradient_modifier(self.perturbation.grad)
+
     def forward(
         self,
         *,
@@ -167,19 +171,10 @@ class LitPerturber(pl.LightningModule):
     ):
         # Act like a lazy module and initialize parameters.
         if self.perturbation is None:
-            self.initialize_parameters(input=input, target=target, **kwargs)
+            self.perturbation = self.initializer(input)
 
         # Project perturbation...
         self.projector(self.perturbation.data, input, target)
 
         # ...and apply threat model.
         return self.threat_model(input, target, self.perturbation)
-
-    def initialize_parameters(
-        self,
-        *,
-        input: torch.Tensor | tuple,
-        **kwargs,
-    ):
-        # Initialize perturbation
-        self.perturbation = self.initializer(input, self.perturbation)
