@@ -6,12 +6,13 @@
 
 from __future__ import annotations
 
-import logging
 from itertools import repeat
 from typing import TYPE_CHECKING, Any, Callable
 
 import pytorch_lightning as pl
 import torch
+
+from mart.utils import silent
 
 if TYPE_CHECKING:
     from pytorch_lightning.callbacks import Callback
@@ -57,6 +58,7 @@ class Adversary(torch.nn.Module):
             enable_checkpointing=False,
         )
 
+    @silent()
     def forward(self, **batch):
         if "model" in batch:
             self.perturber.initialize_parameters(**batch)
@@ -64,10 +66,9 @@ class Adversary(torch.nn.Module):
             # Repeat batch max_iters times
             attack_dataloader = repeat(batch, self.max_iters)
 
-            with Silence():
-                # Attack for another epoch
-                self.attacker.fit_loop.max_epochs += 1
-                self.attacker.fit(model=self.perturber, train_dataloaders=attack_dataloader)
+            # Attack for another epoch
+            self.attacker.fit_loop.max_epochs += 1
+            self.attacker.fit(model=self.perturber, train_dataloaders=attack_dataloader)
 
         return self.perturber(**batch)
 
@@ -172,23 +173,3 @@ class LitPerturber(pl.LightningModule):
 
         if self.gradient_modifier is not None:
             self.perturbation.register_hook(self.gradient_modifier)
-
-
-class Silence:
-    """Suppress logging."""
-
-    DEFAULT_NAMES = ["pytorch_lightning.utilities.rank_zero", "pytorch_lightning.accelerators.gpu"]
-
-    def __init__(self, names=None):
-        if names is None:
-            names = Silence.DEFAULT_NAMES
-
-        self.loggers = [logging.getLogger(name) for name in names]
-
-    def __enter__(self):
-        for logger in self.loggers:
-            logger.propagate = False
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        for logger in self.loggers:
-            logger.propagate = False
