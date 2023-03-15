@@ -27,21 +27,6 @@ if TYPE_CHECKING:
 __all__ = ["Adversary"]
 
 
-class SilentTrainer(Trainer):
-    """Suppress logging."""
-
-    def fit(self, *args, **kwargs):
-        logger = logging.getLogger("pytorch_lightning.accelerators.gpu")
-        logger.propagate = False
-
-        super().fit(*args, **kwargs)
-
-        logger.propagate = True
-
-    def _log_device_info(self):
-        pass
-
-
 class LitPerturber(LazyModuleMixin, LightningModule):
     """Peturbation optimization module."""
 
@@ -170,7 +155,7 @@ class Adversary(torch.nn.Module):
 
         # FIXME: how do we get a proper device?
         self.attacker_factory = partial(
-            SilentTrainer,
+            Trainer,
             accelerator="auto",
             num_sanity_val_steps=0,
             log_every_n_steps=1,
@@ -196,10 +181,30 @@ class Adversary(torch.nn.Module):
                 [{"input": input, "target": target, "model": model, **kwargs}]
             )
 
-            self.perturber = [self.perturber_factory()]
-            self.attacker_factory().fit(
-                model=self.perturber[0], train_dataloaders=benign_dataloader
-            )
+            with Silence():
+                self.perturber = [self.perturber_factory()]
+                self.attacker_factory().fit(
+                    model=self.perturber[0], train_dataloaders=benign_dataloader
+                )
 
         # Get preturbed input (some threat models, projectors, etc. may require information from target like a mask)
         return self.perturber[0](input, target)
+
+class Silence:
+    """Suppress logging."""
+
+    DEFAULT_NAMES = ["pytorch_lightning.utilities.rank_zero", "pytorch_lightning.accelerators.gpu"]
+
+    def __init__(self, names=None):
+        if names is None:
+            names = Silence.DEFAULT_NAMES
+
+        self.loggers = [logging.getLogger(name) for name in names]
+
+    def __enter__(self):
+        for logger in self.loggers:
+            logger.propagate = False
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        for logger in self.loggers:
+            logger.propagate = False
