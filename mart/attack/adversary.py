@@ -139,10 +139,11 @@ class LitPerturber(pl.LightningModule):
         return gain
 
     def configure_gradient_clipping(self, optimizer, optimizer_idx, gradient_clip_val=None, gradient_clip_algorithm=None):
+        # Configuring gradient clipping in the training is still useful, so use it.
         super().configure_gradient_clipping(optimizer, gradient_clip_val, gradient_clip_algorithm)
 
-        # FIXME: pl.Trainer might implement some of this functionality so GradientModifier can probably go away?
-        #        More so, why not loop through optimizer.param_groups?
+        # FIXME: Why not loop through optimizer.param_groups?
+        # FIXME: Make gradient modifier an in-place operation. Will make it easier to fix the above.
         self.perturbation.grad = self.gradient_modifier(self.perturbation.grad)
 
     def forward(
