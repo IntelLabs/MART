@@ -113,7 +113,7 @@ class LitPerturber(pl.LightningModule):
         self.initializer = initializer
         self.optimizer_fn = optimizer
         self.threat_model = threat_model
-        self.gradient_modifier = gradient_modifier
+        self.gradient_modifier = gradient_modifier or GradientModifier()
         self.projector = projector or Projector()
         self.gain_output = gain
         self.objective_fn = objective
@@ -125,6 +125,10 @@ class LitPerturber(pl.LightningModule):
         assert self.perturbation is not None
 
         return self.optimizer_fn([self.perturbation])
+
+    def on_before_optimizer_step(self, optimizer, optimizer_idx):
+        # FIXME: pl.Trainer might implement some of this functionality so GradientModifier can probably go away?
+        self.gradient_modifier(self.perturbation.grad)
 
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally
@@ -179,8 +183,3 @@ class LitPerturber(pl.LightningModule):
     ):
         # Initialize perturbation
         self.perturbation = self.initializer(input, self.perturbation)
-
-        # FIXME: I think it's better to use a PL hook here
-        # FIXME: I also think Trainers already implement this functionality so this can probably go away...
-        if self.gradient_modifier is not None:
-            self.perturbation.register_hook(self.gradient_modifier)

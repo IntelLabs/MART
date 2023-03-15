@@ -15,7 +15,6 @@ __all__ = ["GradientModifier"]
 class GradientModifier(abc.ABC):
     """Gradient modifier base class."""
 
-    @abc.abstractmethod
     def __call__(self, grad: torch.Tensor) -> torch.Tensor:
         pass
 
