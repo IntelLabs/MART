@@ -15,8 +15,6 @@ import torch
 from mart.utils import silent
 
 if TYPE_CHECKING:
-    from pytorch_lightning.callbacks import Callback
-
     from .gradient_modifier import GradientModifier
     from .initializer import Initializer
     from .objective import Objective
@@ -39,15 +37,12 @@ class Adversary(torch.nn.Module):
 
         Args:
             max_iters (int): The max number of attack iterations.
-            callbacks (dict[str, Callback] | None): A dictionary of callback objects. Optional.
+            trainer (Trainer): A PyTorch-Lightning Trainer object used to fit the perturber.
+            perturber (LitPerturber): A LitPerturber that manages perturbations.
         """
         super().__init__()
 
         self.max_iters = max_iters
-
-        self.perturber = perturber
-        if self.perturber is None:
-            self.perturber = LitPerturber(**kwargs)
 
         # FIXME: Setup logging directory correctly
         self.attacker = trainer
@@ -57,9 +52,14 @@ class Adversary(torch.nn.Module):
                 num_sanity_val_steps=0,
                 log_every_n_steps=1,
                 max_epochs=1,
+                callbacks=list(kwargs.pop("callbacks", {}).values()),
                 enable_model_summary=False,
                 enable_checkpointing=False,
             )
+
+        self.perturber = perturber
+        if self.perturber is None:
+            self.perturber = LitPerturber(**kwargs)
 
     @silent()
     def forward(self, **batch):
