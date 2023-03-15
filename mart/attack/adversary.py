@@ -115,12 +115,11 @@ class LitPerturber(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally
         batch = batch.copy()
-        input = batch.pop("input")
-        target = batch.pop("target")
-        model = batch.pop("model")
 
-        # We need to evaluate the whole model, so call it normally to get a gain
-        outputs = model(input=input, target=target, **batch)
+        # We need to evaluate the perturbation against the whole model, so call it normally to get a gain.
+        model = batch.pop("model")
+        outputs = model(**batch)
+
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
         gain = outputs[self.gain_output]
