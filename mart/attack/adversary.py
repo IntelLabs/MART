@@ -28,7 +28,7 @@ class Adversary(torch.nn.Module):
     def __init__(
         self,
         *,
-        trainer: Trainer | None = None,
+        trainer: pl.Trainer | None = None,
         perturber: LitPerturber | None = None,
         **kwargs,
     ):
@@ -40,19 +40,17 @@ class Adversary(torch.nn.Module):
         """
         super().__init__()
 
-        # FIXME: Setup logging directory correctly
-        self.attacker = trainer
-        if self.attacker is None:
-            self.attacker = pl.Trainer(
-                accelerator="auto",  # FIXME: we need to get this on the same device as input...
-                num_sanity_val_steps=0,
-                logger=False,
-                max_epochs=1,
-                limit_train_batches=kwargs.pop("max_iters", 10),
-                callbacks=list(kwargs.pop("callbacks", {}).values()),
-                enable_model_summary=False,
-                enable_checkpointing=False,
-            )
+        self.attacker = trainer or pl.Trainer(
+            accelerator="auto",  # FIXME: we need to get this on the same device as input...
+            num_sanity_val_steps=0,
+            logger=False,
+            max_epochs=1,
+            limit_train_batches=kwargs.pop("max_iters", 10),
+            callbacks=list(kwargs.pop("callbacks", {}).values()),
+            enable_model_summary=False,
+            enable_checkpointing=False,
+            enable_progress_bar=False,
+        )
 
         # We feed the same batch to the attack every time so we treat each step as an
         # attack iteration. As such, attackers must only run for 1 epoch and must limit
@@ -60,9 +58,7 @@ class Adversary(torch.nn.Module):
         assert self.attacker.max_epochs == 1
         assert self.attacker.limit_train_batches > 0
 
-        self.perturber = perturber
-        if self.perturber is None:
-            self.perturber = LitPerturber(**kwargs)
+        self.perturber = perturber or LitPerturber(**kwargs)
 
     @silent()
     def forward(self, **batch):
@@ -156,7 +152,7 @@ class LitPerturber(pl.LightningModule):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        # Act like a lazy module and initialize parameters.
+        # Materialize perturbation and initialize it
         if torch.nn.parameter.is_lazy(self.perturbation):
             self.perturbation.materialize(input.shape, device=input.device, dtype=torch.float32)
             self.initializer(self.perturbation)
