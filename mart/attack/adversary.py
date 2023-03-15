@@ -64,6 +64,8 @@ class Adversary(torch.nn.Module):
     @silent()
     def forward(self, **batch):
         if "model" in batch:
+            # Initialize perturbation because fit will call configure_optimizers and
+            # we want a fresh perturbation.
             self.perturber.initialize_parameters(**batch)
 
             # Repeat batch max_iters times
@@ -112,7 +114,6 @@ class LitPerturber(pl.LightningModule):
         self.projector = projector
         self.gain_output = gain
         self.objective_fn = objective
-        self.projector = projector
 
         self.perturbation = None
 
@@ -156,9 +157,14 @@ class LitPerturber(pl.LightningModule):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        # Get projected perturbation and apply threat model
-        # The mask projector in perturber may require information from target.
-        self.projector(self.perturbation.data, input, target)
+        if self.perturbation is None:
+            self.initialize_parameters(input=input, target=target, **kwargs)
+
+        # Projected perturbation...
+        if self.projector is not None:
+            self.projector(self.perturbation.data, input, target)
+
+        # ...and apply threat model.
         return self.threat_model(input, target, self.perturbation)
 
     def initialize_parameters(
@@ -168,13 +174,14 @@ class LitPerturber(pl.LightningModule):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        # Create new perturbation if necessary
+        # Create new perturbation, if necessary
         if self.perturbation is None or self.perturbation.shape != input.shape:
-            self.perturbation = torch.zeros_like(input, requires_grad=True)
+            self.perturbation = torch.empty_like(input, requires_grad=True)
 
         # FIXME: initializer should really take input and return a perturbation.
         #        once this is done I think this function can just take kwargs?
         self.initializer(self.perturbation)
 
+        # FIXME: I think it's better to use a PL hook here
         if self.gradient_modifier is not None:
             self.perturbation.register_hook(self.gradient_modifier)
