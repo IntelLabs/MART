@@ -159,6 +159,7 @@ class LitPerturber(pl.LightningModule):
             self.initializer(self.perturbation)
 
         # Project perturbation...
+        # FIXME: Projector should probably be an in-place operation instead of passing .data?
         self.projector(self.perturbation.data, input, target)
 
         # ...and apply threat model.
