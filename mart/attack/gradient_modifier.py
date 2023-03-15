@@ -19,11 +19,13 @@ class GradientModifier(abc.ABC):
         pass
 
 
+# FIXME: We should really take inspiration from torch.nn.utils.clip_grad_norm_
 class Sign(GradientModifier):
     def __call__(self, grad: torch.Tensor) -> torch.Tensor:
         return grad.sign()
 
 
+# FIXME: We should really take inspiration from torch.nn.utils.clip_grad_norm_
 class LpNormalizer(GradientModifier):
     """Scale gradients by a certain L-p norm."""
 
