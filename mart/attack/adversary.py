@@ -7,16 +7,15 @@
 from __future__ import annotations
 
 import logging
-from collections import OrderedDict
 from itertools import repeat
 from typing import TYPE_CHECKING, Any, Callable
 
+import pytorch_lightning as pl
 import torch
-from pytorch_lightning import LightningModule, Trainer
-from pytorch_lightning.callbacks import Callback
-from torch.nn.modules.lazy import LazyModuleMixin
 
 if TYPE_CHECKING:
+    from pytorch_lightning.callbacks import Callback
+
     from .gradient_modifier import GradientModifier
     from .initializer import Initializer
     from .objective import Objective
@@ -43,18 +42,18 @@ class Adversary(torch.nn.Module):
         super().__init__()
 
         self.max_iters = max_iters
-        self.callbacks = callbacks
 
+        # FIXME: Should we allow injection of this?
         self.perturber = LitPerturber(**kwargs)
 
         # FIXME: Setup logging directory correctly
-        self.attacker = Trainer(
+        self.attacker = pl.Trainer(
             accelerator="auto",
             num_sanity_val_steps=0,
             log_every_n_steps=1,
             max_epochs=1,
             enable_model_summary=False,
-            callbacks=list(self.callbacks.values()),  # ignore keys
+            callbacks=list(callbacks.values()),  # ignore keys
             enable_checkpointing=False,
         )
 
@@ -73,7 +72,7 @@ class Adversary(torch.nn.Module):
         return self.perturber(**batch)
 
 
-class LitPerturber(LightningModule):
+class LitPerturber(pl.LightningModule):
     """Peturbation optimization module."""
 
     def __init__(
@@ -112,6 +111,8 @@ class LitPerturber(LightningModule):
         self.perturbation = None
 
     def configure_optimizers(self):
+        assert self.perturbation is not None
+
         return self.optimizer_fn([self.perturbation])
 
     def training_step(self, batch, batch_idx):
@@ -125,8 +126,8 @@ class LitPerturber(LightningModule):
         # FIXME: This should really be just `return outputs`. Everything below here should live in the model!
         gain = outputs[self.gain_output]
 
-        # objective_fn is optional, because adversaries may never reach their objective.
         # FIXME: Make objective a part of the model...
+        # objective_fn is optional, because adversaries may never reach their objective.
         if self.objective_fn is not None:
             found = self.objective_fn(**outputs)
             self.log("found", found.sum().float(), prog_bar=True)
@@ -165,15 +166,12 @@ class LitPerturber(LightningModule):
         if self.perturbation is None or self.perturbation.shape != input.shape:
             self.perturbation = torch.zeros_like(input, requires_grad=True)
 
-        # FIXME: initialize should really take input and return a perturbation...
+        # FIXME: initializer should really take input and return a perturbation.
         #        once this is done I think this function can just take kwargs?
         self.initializer(self.perturbation)
 
         if self.gradient_modifier is not None:
             self.perturbation.register_hook(self.gradient_modifier)
-
-        # Keep perturbation on input device since fit moves it to CPU
-        return self.perturbation.to(input.device)
 
 
 class Silence:
