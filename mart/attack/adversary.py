@@ -26,7 +26,54 @@ if TYPE_CHECKING:
 __all__ = ["Adversary"]
 
 
-class Adversary(LightningModule):
+class Adversary(torch.nn.Module):
+    def __init__(
+        self,
+        *,
+        max_iters: int = 10,
+        callbacks: dict[str, Callback] | None = None,
+        **kwargs,
+    ):
+        """_summary_
+
+        Args:
+            max_iters (int): The max number of attack iterations.
+            callbacks (dict[str, Callback] | None): A dictionary of callback objects. Optional.
+        """
+        super().__init__()
+
+        self.max_iters = max_iters
+        self.callbacks = callbacks
+
+        self.perturber = LitPerturber(**kwargs)
+
+        # FIXME: Setup logging directory correctly
+        self.attacker = Trainer(
+            accelerator="auto",
+            num_sanity_val_steps=0,
+            log_every_n_steps=1,
+            max_epochs=1,
+            enable_model_summary=False,
+            callbacks=list(self.callbacks.values()),  # ignore keys
+            enable_checkpointing=False,
+        )
+
+    def forward(self, **batch):
+        if "model" in batch:
+            self.perturber.initialize_parameters(**batch)
+
+            # Repeat batch max_iters times
+            attack_dataloader = repeat(batch, self.max_iters)
+
+            with Silence():
+                # Attack for another epoch
+                self.attacker.fit_loop.max_epochs += 1
+                self.attacker.fit(model=self.perturber, train_dataloaders=attack_dataloader)
+
+        return self.perturber(**batch)
+
+
+class LitPerturber(LightningModule):
     """Peturbation optimization module."""
 
     def __init__(
@@ -39,8 +86,6 @@ class Adversary(LightningModule):
         projector: Projector | None = None,
         gain: str = "loss",
         objective: Objective | None = None,
-        max_iters: int = 10,
-        callbacks: dict[str, Callback] | None = None,
     ):
         """_summary_
 
@@ -52,8 +97,6 @@ class Adversary(LightningModule):
             projector (Projector): To project the perturbation into some space.
             gain (str): Which output to use as an adversarial gain function, which is a differentiable estimate of adversarial objective. (default: loss)
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
-            max_iters (int): The max number of attack iterations.
-            callbacks (dict[str, Callback] | None): A dictionary of callback objects. Optional.
         """
         super().__init__()
 
@@ -66,21 +109,7 @@ class Adversary(LightningModule):
         self.objective_fn = objective
         self.projector = projector
 
-        self.max_iters = max_iters
-        self.callbacks = callbacks
-
         self.perturbation = None
-
-        # FIXME: Setup logging directory correctly
-        self.attacker = Trainer(
-            accelerator="auto",
-            num_sanity_val_steps=0,
-            log_every_n_steps=1,
-            max_epochs=1,
-            enable_model_summary=False,
-            callbacks=list(self.callbacks.values()),  # ignore keys
-            enable_checkpointing=False,
-        )
 
     def configure_optimizers(self):
         return self.optimizer_fn([self.perturbation])
@@ -115,25 +144,21 @@ class Adversary(LightningModule):
 
     def forward(
         self,
+        *,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module | None = None,
         **kwargs,
     ):
-        # Generate a perturbation only if we have a model. This will populate self.perturbation
-        if model is not None:
-            self.perturbation = self.attack(input, target, model, **kwargs)
-
         # Get projected perturbation and apply threat model
         # The mask projector in perturber may require information from target.
         self.projector(self.perturbation.data, input, target)
         return self.threat_model(input, target, self.perturbation)
 
-    def attack(
+    def initialize_parameters(
         self,
+        *,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module | None = None,
         **kwargs,
     ):
         # Create new perturbation if necessary
@@ -146,16 +171,6 @@ class Adversary(LightningModule):
 
         if self.gradient_modifier is not None:
             self.perturbation.register_hook(self.gradient_modifier)
-
-        # Repeat batch max_iters times
-        attack_dataloader = repeat(
-            {"input": input, "target": target, "model": model, **kwargs}, self.max_iters
-        )
-
-        with Silence():
-            # Attack for another epoch
-            self.attacker.fit_loop.max_epochs += 1
-            self.attacker.fit(model=self, train_dataloaders=attack_dataloader)
 
         # Keep perturbation on input device since fit moves it to CPU
         return self.perturbation.to(input.device)
