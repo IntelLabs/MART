@@ -47,6 +47,9 @@ class Adversary(torch.nn.Module):
         # FIXME: Should we allow injection of this?
         self.perturber = LitPerturber(**kwargs)
 
+        if callbacks is not None:
+            callbacks = list(callbacks.values())  # ignore keys
+
         # FIXME: Setup logging directory correctly
         self.attacker = pl.Trainer(
             accelerator="auto",
@@ -54,7 +57,7 @@ class Adversary(torch.nn.Module):
             log_every_n_steps=1,
             max_epochs=1,
             enable_model_summary=False,
-            callbacks=list(callbacks.values()),  # ignore keys
+            callbacks=callbacks,
             enable_checkpointing=False,
         )
 
