@@ -44,7 +44,7 @@ class Adversary(torch.nn.Module):
             accelerator="auto",  # FIXME: we need to get this on the same device as input...
             num_sanity_val_steps=0,
             logger=False,
-            max_epochs=1,
+            max_epochs=0,
             limit_train_batches=kwargs.pop("max_iters", 10),
             callbacks=list(kwargs.pop("callbacks", {}).values()),
             enable_model_summary=False,
@@ -55,7 +55,7 @@ class Adversary(torch.nn.Module):
         # We feed the same batch to the attack every time so we treat each step as an
         # attack iteration. As such, attackers must only run for 1 epoch and must limit
         # the number of attack steps via limit_train_batches.
-        assert self.attacker.max_epochs == 1
+        assert self.attacker.max_epochs == 0
         assert self.attacker.limit_train_batches > 0
 
         self.perturber = perturber or LitPerturber(**kwargs)
@@ -63,11 +63,10 @@ class Adversary(torch.nn.Module):
     @silent()
     def forward(self, **batch):
         if "model" in batch:
-            # Attack for one epoch
-            self.attacker.fit(model=self.perturber, train_dataloaders=cycle([batch]))
-
-            # Enable future attacks to fit by increasing max_epochs by 1
+            # Attack, aka fit a perturbation, for one epoch by cycling over the same batch of inputs.
+            # We use Trainer.limit_train_batches to control the number of attack iterations.
             self.attacker.fit_loop.max_epochs += 1
+            self.attacker.fit(model=self.perturber, train_dataloaders=cycle([batch]))
 
         return self.perturber(**batch)
 
