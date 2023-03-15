@@ -160,6 +160,7 @@ class LitPerturber(pl.LightningModule):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
+        # Act like a lazy module and initialize parameters.
         if self.perturbation is None:
             self.initialize_parameters(input=input, target=target, **kwargs)
 
@@ -174,16 +175,10 @@ class LitPerturber(pl.LightningModule):
         self,
         *,
         input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        # Create new perturbation, if necessary
-        if self.perturbation is None or self.perturbation.shape != input.shape:
-            self.perturbation = torch.empty_like(input, requires_grad=True)
-
-        # FIXME: initializer should really take input and return a perturbation.
-        #        once this is done I think this function can just take kwargs?
-        self.initializer(self.perturbation)
+        # Initialize perturbation
+        self.perturbation = self.initializer(input, self.perturbation)
 
         # FIXME: I think it's better to use a PL hook here
         if self.gradient_modifier is not None:
