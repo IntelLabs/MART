@@ -16,6 +16,7 @@ __all__ = [
     "Chunk",
     "TupleTransforms",
     "GetItems",
+    "Round",
 ]
 
 
@@ -101,3 +102,8 @@ class GetItems:
     def __call__(self, x):
         x_list = [x[key] for key in self.keys]
         return x_list
+
+
+class Round:
+    def __call__(self, x):
+        return x.round()

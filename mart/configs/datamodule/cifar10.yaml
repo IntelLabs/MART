@@ -20,6 +20,7 @@ train_dataset:
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
+      - _target_: mart.transforms.Round
   target_transform: null
   download: true
 
@@ -34,6 +35,7 @@ val_dataset:
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
+      - _target_: mart.transforms.Round
   target_transform: null
   download: true
 
