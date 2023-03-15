@@ -159,6 +159,7 @@ class LitPerturber(pl.LightningModule):
         # Act like a lazy module and initialize parameters.
         if torch.nn.parameter.is_lazy(self.perturbation):
             self.perturbation.materialize(input.shape, device=input.device, dtype=torch.float32)
+            self.initializer(self.perturbation)
 
         # Project perturbation...
         self.projector(self.perturbation.data, input, target)
