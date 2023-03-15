@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from itertools import repeat
+from itertools import cycle
 from typing import TYPE_CHECKING, Any, Callable
 
 import pytorch_lightning as pl
@@ -28,7 +28,6 @@ class Adversary(torch.nn.Module):
     def __init__(
         self,
         *,
-        max_iters: int = 10,
         trainer: Trainer | None = None,
         perturber: LitPerturber | None = None,
         **kwargs,
@@ -36,13 +35,10 @@ class Adversary(torch.nn.Module):
         """_summary_
 
         Args:
-            max_iters (int): The max number of attack iterations.
             trainer (Trainer): A PyTorch-Lightning Trainer object used to fit the perturber.
             perturber (LitPerturber): A LitPerturber that manages perturbations.
         """
         super().__init__()
-
-        self.max_iters = max_iters
 
         # FIXME: Setup logging directory correctly
         self.attacker = trainer
@@ -52,10 +48,17 @@ class Adversary(torch.nn.Module):
                 num_sanity_val_steps=0,
                 log_every_n_steps=1,
                 max_epochs=1,
+                limit_train_batches=kwargs.pop("max_iters", 10),
                 callbacks=list(kwargs.pop("callbacks", {}).values()),
                 enable_model_summary=False,
                 enable_checkpointing=False,
             )
+
+        # We feed the same batch to the attack every time so we treat each step as an
+        # attack iteration. As such, attackers must only run for 1 epoch and must limit
+        # the number of attack steps via limit_train_batches.
+        assert self.attacker.max_epochs == 1
+        assert self.attacker.limit_train_batches > 0
 
         self.perturber = perturber
         if self.perturber is None:
@@ -68,13 +71,13 @@ class Adversary(torch.nn.Module):
             # we want a fresh perturbation.
             self.perturber.initialize_parameters(**batch)
 
-            # Repeat batch max_iters times
-            attack_dataloader = repeat(batch, self.max_iters)
+            # Cycle batch forever since the attacker will know when to stop
+            attack_dataloader = cycle([batch])
 
             # Attack for an epoch
             self.attacker.fit(model=self.perturber, train_dataloaders=attack_dataloader)
 
-            # Enable future attacks to fit by increasing max_epochs
+            # Enable future attacks to fit by increasing max_epochs by 1
             self.attacker.fit_loop.max_epochs += 1
 
         return self.perturber(**batch)
