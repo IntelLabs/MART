@@ -66,9 +66,11 @@ class Adversary(torch.nn.Module):
             # Repeat batch max_iters times
             attack_dataloader = repeat(batch, self.max_iters)
 
-            # Attack for another epoch
-            self.attacker.fit_loop.max_epochs += 1
+            # Attack for an epoch
             self.attacker.fit(model=self.perturber, train_dataloaders=attack_dataloader)
+
+            # Enable future attacks to fit by increasing max_epochs
+            self.attacker.fit_loop.max_epochs += 1
 
         return self.perturber(**batch)
 
