@@ -8,8 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections import OrderedDict
-from functools import partial
-from itertools import cycle
+from itertools import repeat
 from typing import TYPE_CHECKING, Any, Callable
 
 import torch
@@ -27,7 +26,7 @@ if TYPE_CHECKING:
 __all__ = ["Adversary"]
 
 
-class LitPerturber(LazyModuleMixin, LightningModule):
+class Adversary(LightningModule):
     """Peturbation optimization module."""
 
     def __init__(
@@ -40,7 +39,8 @@ class LitPerturber(LazyModuleMixin, LightningModule):
         projector: Projector | None = None,
         gain: str = "loss",
         objective: Objective | None = None,
-        **kwargs,
+        max_iters: int = 10,
+        callbacks: dict[str, Callback] | None = None,
     ):
         """_summary_
 
@@ -52,6 +52,8 @@ class LitPerturber(LazyModuleMixin, LightningModule):
             projector (Projector): To project the perturbation into some space.
             gain (str): Which output to use as an adversarial gain function, which is a differentiable estimate of adversarial objective. (default: loss)
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
+            max_iters (int): The max number of attack iterations.
+            callbacks (dict[str, Callback] | None): A dictionary of callback objects. Optional.
         """
         super().__init__()
 
@@ -62,35 +64,33 @@ class LitPerturber(LazyModuleMixin, LightningModule):
         self.projector = projector
         self.gain_output = gain
         self.objective_fn = objective
+        self.projector = projector
 
-        self.perturbation = torch.nn.UninitializedParameter()
+        self.max_iters = max_iters
+        self.callbacks = callbacks
 
-        def projector_wrapper(module, args):
-            if isinstance(module.perturbation, torch.nn.UninitializedBuffer):
-                raise ValueError("Perturbation must be initialized")
+        self.perturbation = None
 
-            input, target = args
-
-            # FIXME: How do we get rid of .to(input.device)?
-            return projector(module.perturbation.data.to(input.device), input, target)
-
-        # Will be called before forward() is called.
-        if projector is not None:
-            self.register_forward_pre_hook(projector_wrapper)
+        # FIXME: Setup logging directory correctly
+        self.attacker = Trainer(
+            accelerator="auto",
+            num_sanity_val_steps=0,
+            log_every_n_steps=1,
+            max_epochs=1,
+            enable_model_summary=False,
+            callbacks=list(self.callbacks.values()),  # ignore keys
+            enable_checkpointing=False,
+        )
 
     def configure_optimizers(self):
         return self.optimizer_fn([self.perturbation])
 
     def training_step(self, batch, batch_idx):
-        # copy batch since we will modify it and it it passed around
+        # copy batch since we modify it and it is used internally
         batch = batch.copy()
         input = batch.pop("input")
         target = batch.pop("target")
         model = batch.pop("model")
-
-        if self.has_uninitialized_params():
-            # Use this syntax because LazyModuleMixin assume non-keyword arguments
-            self(input, target)
 
         outputs = model(input=input, target=target, **batch)
         # FIXME: This should really be just `return outputs`. Everything below here should live in the model!
@@ -113,82 +113,53 @@ class LitPerturber(LazyModuleMixin, LightningModule):
 
         return gain
 
-    def initialize_parameters(self, input, target):
-        assert isinstance(self.perturbation, torch.nn.UninitializedParameter)
-
-        self.perturbation.materialize(input.shape, device=input.device)
-
-        # A backward hook that will be called when a gradient w.r.t the Tensor is computed.
-        if self.gradient_modifier is not None:
-            self.perturbation.register_hook(self.gradient_modifier)
-
-        self.initializer(self.perturbation)
-
-    def forward(self, input, target, **kwargs):
-        # FIXME: Can we get rid of .to(input.device)?
-        perturbation = self.perturbation.to(input.device)
-
-        # Get perturbation and apply threat model
-        # The mask projector in perturber may require information from target.
-        return self.threat_model(input, target, perturbation)
-
-
-class Adversary(torch.nn.Module):
-    """An adversary module which generates and applies perturbation to input."""
-
-    def __init__(
-        self,
-        *,
-        max_iters: int = 10,
-        callbacks: dict[str, Callback] | None = None,
-        **perturber_kwargs,
-    ):
-        """_summary_
-
-        Args:
-            max_iters (int): The max number of attack iterations.
-            callbacks (dict[str, Callback] | None): A dictionary of callback objects. Optional.
-        """
-        super().__init__()
-
-        self.perturber_factory = partial(LitPerturber, **perturber_kwargs)
-
-        # FIXME: how do we get a proper device?
-        self.attacker_factory = partial(
-            Trainer,
-            accelerator="auto",
-            num_sanity_val_steps=0,
-            log_every_n_steps=1,
-            max_epochs=1,
-            max_steps=max_iters,
-            enable_model_summary=False,
-            callbacks=list(callbacks.values()),  # ignore keys
-            enable_checkpointing=False,
-        )
-
     def forward(
         self,
-        *,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
         model: torch.nn.Module | None = None,
         **kwargs,
     ):
-        # Generate a perturbation only if we have a model. This will update
-        # the parameters of self.perturber
+        # Generate a perturbation only if we have a model. This will populate self.perturbation
         if model is not None:
-            benign_dataloader = cycle(
-                [{"input": input, "target": target, "model": model, **kwargs}]
-            )
+            self.perturbation = self.attack(input, target, model, **kwargs)
 
-            with Silence():
-                self.perturber = [self.perturber_factory()]
-                self.attacker_factory().fit(
-                    model=self.perturber[0], train_dataloaders=benign_dataloader
-                )
+        # Get projected perturbation and apply threat model
+        # The mask projector in perturber may require information from target.
+        self.projector(self.perturbation.data, input, target)
+        return self.threat_model(input, target, self.perturbation)
 
-        # Get preturbed input (some threat models, projectors, etc. may require information from target like a mask)
-        return self.perturber[0](input, target)
+    def attack(
+        self,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module | None = None,
+        **kwargs,
+    ):
+        # Create new perturbation if necessary
+        if self.perturbation is None or self.perturbation.shape != input.shape:
+            self.perturbation = torch.zeros_like(input, requires_grad=True)
+
+        # FIXME: initialize should really take input and return a perturbation...
+        #        once this is done I think this function can just take kwargs?
+        self.initializer(self.perturbation)
+
+        if self.gradient_modifier is not None:
+            self.perturbation.register_hook(self.gradient_modifier)
+
+        # Repeat batch max_iters times
+        attack_dataloader = repeat(
+            {"input": input, "target": target, "model": model, **kwargs}, self.max_iters
+        )
+
+        with Silence():
+            # Attack for another epoch
+            self.attacker.fit_loop.max_epochs += 1
+            self.attacker.fit(model=self, train_dataloaders=attack_dataloader)
+
+        # Keep perturbation on input device since fit moves it to CPU
+        return self.perturbation.to(input.device)
+
 
 class Silence:
     """Suppress logging."""
