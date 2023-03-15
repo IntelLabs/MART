@@ -67,15 +67,8 @@ class Adversary(torch.nn.Module):
     @silent()
     def forward(self, **batch):
         if "model" in batch:
-            # Initialize perturbation because fit will call configure_optimizers and
-            # we want a fresh perturbation.
-            self.perturber(**batch)
-
-            # Cycle batch forever since the attacker will know when to stop
-            attack_dataloader = cycle([batch])
-
-            # Attack for an epoch
-            self.attacker.fit(model=self.perturber, train_dataloaders=attack_dataloader)
+            # Attack for one epoch
+            self.attacker.fit(model=self.perturber, train_dataloaders=cycle([batch]))
 
             # Enable future attacks to fit by increasing max_epochs by 1
             self.attacker.fit_loop.max_epochs += 1
@@ -118,17 +111,11 @@ class LitPerturber(pl.LightningModule):
         self.gain_output = gain
         self.objective_fn = objective
 
-        # Perturbation is lazily initialized
-        self.perturbation = None
-
     def configure_optimizers(self):
-        assert self.perturbation is not None
+        # Perturbation is lazily initialized but we need a reference to it for the optimizer
+        self.perturbation = torch.nn.UninitializedBuffer(requires_grad=True)
 
         return self.optimizer_fn([self.perturbation])
-
-    def on_train_epoch_start(self):
-        # Force re-initialization of perturbation
-        self.perturbation = None
 
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally
@@ -170,8 +157,8 @@ class LitPerturber(pl.LightningModule):
         **kwargs,
     ):
         # Act like a lazy module and initialize parameters.
-        if self.perturbation is None:
-            self.perturbation = self.initializer(input)
+        if torch.nn.parameter.is_lazy(self.perturbation):
+            self.perturbation.materialize(input.shape, device=input.device, dtype=torch.float32)
 
         # Project perturbation...
         self.projector(self.perturbation.data, input, target)
