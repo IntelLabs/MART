@@ -7,6 +7,12 @@ defaults:
   - objective: misclassification
   - gain: cross_entropy
   - threat_model: additive
+  - threat_model/constraints: [lp]
+
+threat_model:
+  constraints:
+    lp:
+      eps: 2
 
 optimizer:
   lr: 1

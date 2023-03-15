@@ -1,0 +1,2 @@
+integer:
+  _target_: mart.attack.threat_model.Integer
