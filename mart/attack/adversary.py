@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from .projector import Projector
     from .threat_model import ThreatModel
 
-__all__ = ["Adversary"]
+__all__ = ["Adversary", "LitPerturber"]
 
 
 class Adversary(torch.nn.Module):
@@ -31,7 +31,8 @@ class Adversary(torch.nn.Module):
         self,
         *,
         max_iters: int = 10,
-        callbacks: dict[str, Callback] | None = None,
+        trainer: Trainer | None = None,
+        perturber: LitPerturber | None = None,
         **kwargs,
     ):
         """_summary_
@@ -44,22 +45,21 @@ class Adversary(torch.nn.Module):
 
         self.max_iters = max_iters
 
-        # FIXME: Should we allow injection of this?
-        self.perturber = LitPerturber(**kwargs)
-
-        if callbacks is not None:
-            callbacks = list(callbacks.values())  # ignore keys
+        self.perturber = perturber
+        if self.perturber is None:
+            self.perturber = LitPerturber(**kwargs)
 
         # FIXME: Setup logging directory correctly
-        self.attacker = pl.Trainer(
-            accelerator="auto",
-            num_sanity_val_steps=0,
-            log_every_n_steps=1,
-            max_epochs=1,
-            enable_model_summary=False,
-            callbacks=callbacks,
-            enable_checkpointing=False,
-        )
+        self.attacker = trainer
+        if self.attacker is None:
+            self.attacker = pl.Trainer(
+                accelerator="auto",
+                num_sanity_val_steps=0,
+                log_every_n_steps=1,
+                max_epochs=1,
+                enable_model_summary=False,
+                enable_checkpointing=False,
+            )
 
     @silent()
     def forward(self, **batch):
