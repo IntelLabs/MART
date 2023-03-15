@@ -16,7 +16,7 @@ class Initializer(abc.ABC):
     """Initializer base class."""
 
     def __call__(self, input, perturbation=None) -> torch.Tensor:
-        if perturbation is None or self.perturbation.shape != input.shape:
+        if perturbation is None or perturbation.shape != input.shape:
             perturbation = torch.empty_like(input, requires_grad=True)
 
         self.initialize(perturbation)
