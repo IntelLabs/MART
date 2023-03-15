@@ -46,7 +46,7 @@ class Adversary(torch.nn.Module):
             self.attacker = pl.Trainer(
                 accelerator="auto",  # FIXME: we need to get this on the same device as input...
                 num_sanity_val_steps=0,
-                log_every_n_steps=1,
+                logger=False,
                 max_epochs=1,
                 limit_train_batches=kwargs.pop("max_iters", 10),
                 callbacks=list(kwargs.pop("callbacks", {}).values()),
