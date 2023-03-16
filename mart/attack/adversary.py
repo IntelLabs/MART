@@ -9,9 +9,11 @@ from __future__ import annotations
 from itertools import cycle
 
 import pytorch_lightning as pl
+import torch
 
-from mart.attack import LitPerturber
 from mart.utils import silent
+
+from .perturber import LitPerturber
 
 __all__ = ["Adversary"]
 
