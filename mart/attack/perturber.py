@@ -58,7 +58,7 @@ class LitPerturber(pl.LightningModule):
 
     def configure_optimizers(self):
         # Perturbation is lazily initialized but we need a reference to it for the optimizer
-        # FIXME: It would be nice if we didn't have to create this buffer every time someone call's fit.
+        # FIXME: It would be nice if we didn't have to create this buffer every time someone calls fit.
         self.perturbation = torch.nn.UninitializedBuffer(requires_grad=True)
 
         return self.optimizer_fn([self.perturbation])
@@ -94,9 +94,8 @@ class LitPerturber(pl.LightningModule):
         # Configuring gradient clipping in pl.Trainer is still useful, so use it.
         super().configure_gradient_clipping(optimizer, gradient_clip_val, gradient_clip_algorithm)
 
-        # FIXME: Why not loop through optimizer.param_groups?
-        # FIXME: Make gradient modifier an in-place operation. Will make it easier to fix the above.
-        self.perturbation.grad = self.gradient_modifier(self.perturbation.grad)
+        for group in optimizer.param_groups:
+            self.gradient_modifier(group["params"])
 
     def forward(
         self,

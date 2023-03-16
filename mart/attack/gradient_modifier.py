@@ -4,8 +4,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+from __future__ import annotations
+
 import abc
-from typing import Union
+from typing import Iterable
 
 import torch
 
@@ -15,26 +17,33 @@ __all__ = ["GradientModifier"]
 class GradientModifier(abc.ABC):
     """Gradient modifier base class."""
 
-    def __call__(self, grad: torch.Tensor) -> torch.Tensor:
+    def __call__(self, parameters: torch.Tensor | Iterable[torch.Tensor]) -> None:
         pass
 
 
-# FIXME: We should really take inspiration from torch.nn.utils.clip_grad_norm_
 class Sign(GradientModifier):
-    def __call__(self, grad: torch.Tensor) -> torch.Tensor:
-        return grad.sign()
+    def __call__(self, parameters: torch.Tensor | Iterable[torch.Tensor]) -> None:
+        if isinstance(parameters, torch.Tensor):
+            parameters = [parameters]
+
+        parameters = [p for p in parameters if p.grad is not None]
+
+        for p in parameters:
+            p.grad.detach().sign_()
 
 
-# FIXME: We should really take inspiration from torch.nn.utils.clip_grad_norm_
 class LpNormalizer(GradientModifier):
     """Scale gradients by a certain L-p norm."""
 
-    def __init__(self, p: Union[int, float]):
-        super().__init__
-
+    def __init__(self, p: int | float):
         self.p = p
 
-    def __call__(self, grad: torch.Tensor) -> torch.Tensor:
-        grad_norm = grad.norm(p=self.p)
-        grad_normalized = grad / grad_norm
-        return grad_normalized
+    def __call__(self, parameters: torch.Tensor | Iterable[torch.Tensor]) -> None:
+        if isinstance(parameters, torch.Tensor):
+            parameters = [parameters]
+
+        parameters = [p for p in parameters if p.grad is not None]
+
+        for p in parameters:
+            p_norm = torch.norm(p.grad.detach(), p=self.p)
+            p.grad.detach().div_(p_norm)
