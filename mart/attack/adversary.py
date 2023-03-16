@@ -111,6 +111,7 @@ class LitPerturber(pl.LightningModule):
 
     def configure_optimizers(self):
         # Perturbation is lazily initialized but we need a reference to it for the optimizer
+        # FIXME: It would be nice if we didn't have to create this buffer every time someone call's fit.
         self.perturbation = torch.nn.UninitializedBuffer(requires_grad=True)
 
         return self.optimizer_fn([self.perturbation])
