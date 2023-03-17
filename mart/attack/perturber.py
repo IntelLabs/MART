@@ -11,11 +11,12 @@ from typing import TYPE_CHECKING, Any, Callable
 import pytorch_lightning as pl
 import torch
 
+from .gradient_modifier import GradientModifier
+from .projector import Projector
+
 if TYPE_CHECKING:
-    from .gradient_modifier import GradientModifier
     from .initializer import Initializer
     from .objective import Objective
-    from .projector import Projector
     from .threat_model import ThreatModel
 
 __all__ = ["LitPerturber"]
