@@ -15,6 +15,8 @@ __all__ = ["Projector"]
 class Projector(abc.ABC):
     """A projector modifies nn.Parameter's data."""
 
+    @torch.no_grad()
+    @abc.abstractmethod
     def __call__(
         self,
         tensor: torch.Tensor,
@@ -30,6 +32,7 @@ class Compose(Projector):
     def __init__(self, projectors: List[Projector]):
         self.projectors = projectors
 
+    @torch.no_grad()
     def __call__(
         self,
         tensor: torch.Tensor,
@@ -57,6 +60,7 @@ class Range(Projector):
         self.min = min
         self.max = max
 
+    @torch.no_grad()
     def __call__(
         self,
         tensor: torch.Tensor,
@@ -89,6 +93,7 @@ class RangeAdditive(Projector):
         self.min = min
         self.max = max
 
+    @torch.no_grad()
     def __call__(
         self,
         tensor: torch.Tensor,
@@ -119,6 +124,7 @@ class Lp(Projector):
         self.p = p
         self.eps = eps
 
+    @torch.no_grad()
     def __call__(
         self,
         tensor: torch.Tensor,
@@ -145,6 +151,7 @@ class LinfAdditiveRange(Projector):
         self.min = min
         self.max = max
 
+    @torch.no_grad()
     def __call__(
         self,
         tensor: torch.Tensor,
@@ -158,6 +165,7 @@ class LinfAdditiveRange(Projector):
 
 
 class Mask(Projector):
+    @torch.no_grad()
     def __call__(
         self,
         tensor: torch.Tensor,
