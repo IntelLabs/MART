@@ -17,7 +17,7 @@ from .objective import Objective
 from .perturber import BatchPerturber, Perturber
 from .threat_model import ThreatModel
 
-__all__ = ["Adversary", "NoAdversary"]
+__all__ = ["Adversary"]
 
 
 class AdversaryCallbackHookMixin(Callback):
@@ -320,14 +320,3 @@ class Adversary(IterativeGenerator):
         output = self.threat_model(input, target, perturbation)
 
         return output
-
-
-class NoAdversary(torch.nn.Module):
-    def forward(
-        self,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module | None = None,
-        **kwargs,
-    ):
-        return input

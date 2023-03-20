@@ -7,3 +7,11 @@ defaults:
 
 task_name: "COCO_TorchvisionFasterRCNN_Adv"
 tags: ["adv"]
+
+model:
+  test_sequence:
+    seq005:
+      input_adv_test:
+        _call_with_args_: ["input", "target"]
+        model: model
+        step: step
