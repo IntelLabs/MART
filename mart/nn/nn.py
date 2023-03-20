@@ -161,11 +161,8 @@ class CallWith(torch.nn.Module):
         selected_args = [kwargs[key] for key in arg_keys[len(args) :]]
         selected_kwargs = {key: kwargs[val] for key, val in kwarg_keys.items()}
 
-        try:
-            ret = self.module(*args, *selected_args, **selected_kwargs)
-        except TypeError:
-            # FIXME: Add better error message
-            raise
+        # FIXME: Add better error message
+        ret = self.module(*args, *selected_args, **selected_kwargs)
 
         if self.return_keys:
             if not isinstance(ret, tuple):
