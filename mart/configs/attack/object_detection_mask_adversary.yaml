@@ -1,5 +1,6 @@
 defaults:
-  - iterative_sgd
+  - adversary
+  - optimizer: sgd
   - initializer: constant
   - gradient_modifier: sign
   - projector: mask_range
