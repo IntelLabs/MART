@@ -56,9 +56,11 @@ class Adversary(torch.nn.Module):
 
     @silent()
     def forward(self, **batch):
-        # Adversary lives within a sequence of nn.Modules. To signal the adversary should attack, one
-        # must pass a model to attack when calling the adversary.
-        if "model" in batch:
+        # Adversary lives within a sequence of model. To signal the adversary should attack, one
+        # must pass a model to attack when calling the adversary. Since we do not know where the
+        # Adversary lives inside the model, we also need the remaining sequence to be able to
+        # get a loss.
+        if "model" in batch and "sequence" in batch:
             # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
             # We use Trainer.limit_train_batches to control the number of attack iterations.
             self.attacker.fit_loop.max_epochs += 1
