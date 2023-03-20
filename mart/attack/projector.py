@@ -16,7 +16,6 @@ class Projector(abc.ABC):
     """A projector modifies nn.Parameter's data."""
 
     @torch.no_grad()
-    @abc.abstractmethod
     def __call__(
         self,
         tensor: torch.Tensor,
