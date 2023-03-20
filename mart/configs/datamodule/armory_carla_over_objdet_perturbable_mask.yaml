@@ -13,6 +13,7 @@ train_dataset:
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
+      - _target_: mart.transforms.Round
 
 val_dataset:
   transforms:
@@ -24,6 +25,7 @@ val_dataset:
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
+      - _target_: mart.transforms.Round
 
 test_dataset:
   transforms:
@@ -36,3 +38,4 @@ test_dataset:
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
+      - _target_: mart.transforms.Round

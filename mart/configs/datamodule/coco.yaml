@@ -15,6 +15,7 @@ train_dataset:
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
+      - _target_: mart.transforms.Round
 
 val_dataset:
   _target_: mart.datamodules.coco.CocoDetection
@@ -28,6 +29,7 @@ val_dataset:
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
+      - _target_: mart.transforms.Round
 
 test_dataset:
   _target_: mart.datamodules.coco.CocoDetection
@@ -41,6 +43,7 @@ test_dataset:
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
+      - _target_: mart.transforms.Round
 
 num_workers: 2
 collate_fn:
