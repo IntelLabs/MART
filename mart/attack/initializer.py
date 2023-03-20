@@ -15,6 +15,7 @@ __all__ = ["Initializer"]
 class Initializer(abc.ABC):
     """Initializer base class."""
 
+    @torch.no_grad()
     @abc.abstractmethod
     def __call__(self, perturbation: torch.Tensor) -> None:
         pass
@@ -24,6 +25,7 @@ class Constant(Initializer):
     def __init__(self, constant: Optional[Union[int, float]] = 0):
         self.constant = constant
 
+    @torch.no_grad()
     def __call__(self, perturbation: torch.Tensor) -> None:
         torch.nn.init.constant_(perturbation, self.constant)
 
@@ -33,6 +35,7 @@ class Uniform(Initializer):
         self.min = min
         self.max = max
 
+    @torch.no_grad()
     def __call__(self, perturbation: torch.Tensor) -> None:
         torch.nn.init.uniform_(perturbation, self.min, self.max)
 
@@ -42,10 +45,11 @@ class UniformLp(Initializer):
         self.eps = eps
         self.p = p
 
+    @torch.no_grad()
     def __call__(self, perturbation: torch.Tensor) -> None:
         torch.nn.init.uniform_(perturbation, -self.eps, self.eps)
         # TODO: make sure the first dim is the batch dim.
         if self.p is not torch.inf:
             # We don't do tensor.renorm_() because the first dim is not the batch dim.
-            pert_norm = perturbation.data.norm(p=self.p)
-            perturbation.data.mul_(self.eps / pert_norm)
+            pert_norm = perturbation.norm(p=self.p)
+            perturbation.mul_(self.eps / pert_norm)

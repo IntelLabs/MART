@@ -3,9 +3,29 @@
 defaults:
   - CIFAR10_CNN
   - /attack@model.modules.input_adv_training: classification_eps1.75_fgsm
-  # Skip costly adversarial validation.
-  # - /attack@model.modules.input_adv_validation: classification_eps2_pgd10_step1
   - /attack@model.modules.input_adv_test: classification_eps2_pgd10_step1
 
 task_name: "CIFAR10_CNN_Adv"
 tags: ["adv", "fat"]
+
+model:
+  training_sequence:
+    seq005:
+      input_adv_training:
+        _call_with_args_: ["input", "target"]
+        model: model
+        step: step
+
+    seq010:
+      preprocessor:
+        _call_with_args_: ["input_adv_training"]
+
+  test_sequence:
+    seq005:
+      input_adv_test:
+        _call_with_args_: ["input", "target"]
+        model: model
+        step: step
+
+    seq010:
+      preprocessor: ["input_adv_test"]
