@@ -55,7 +55,7 @@ class Perturber(Callback, torch.nn.Module):
                 raise ValueError("Perturbation must be initialized")
 
             input, target = args
-            return projector(perturber_module.perturbation.data, input, target)
+            return projector(perturber_module.perturbation, input, target)
 
         # Will be called before forward() is called.
         if projector is not None:
