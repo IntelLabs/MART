@@ -155,15 +155,6 @@ class LinfAdditiveRange(Projector):
         eps_min = (input - self.eps).clamp(self.min, self.max) - input
         eps_max = (input + self.eps).clamp(self.min, self.max) - input
 
-        # Avoid round-off errors.
-        eps_min = eps_min.clamp(min=-self.eps)
-        eps_max = eps_max.clamp(max=self.eps)
-
-        # TODO: We could have rounded input earlier to avoid round-off errors here.
-        # f"{torch.tensor(126.99999237060547, dtype=torch.float) + 2 - 126.99999237060547}" == "2.0000076293945312"
-        # f"{torch.tensor(126.99999237060547, dtype=torch.double) + 2 - 126.99999237060547}" == "2.0"
-        # f"{torch.tensor(126.99999237060547, dtype=torch.float).round() + 2 - torch.tensor(126.99999237060547).round()}" == "2.0"
-
         tensor.clamp_(eps_min, eps_max)
 
 
