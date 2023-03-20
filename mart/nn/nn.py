@@ -66,6 +66,10 @@ class SequentialDict(torch.nn.ModuleDict):
 
         module_dict = OrderedDict()
         for module_info in sequence:
+            # Treat strings as modules that don't require CallWith
+            if isinstance(module_info, str):
+                module_info = {module_info: {}}
+
             if not isinstance(module_info, dict) or len(module_info) != 1:
                 raise ValueError(
                     f"Each module config in the sequence list should be a length-one dict: {module_info}"
@@ -87,7 +91,11 @@ class SequentialDict(torch.nn.ModuleDict):
             kwarg_keys = module_cfg
 
             module = self[module_name]
-            module = CallWith(module, arg_keys, kwarg_keys, return_keys)
+
+            # Add CallWith to module if we have enough parameters
+            if arg_keys is not None or len(kwarg_keys) > 0 or return_keys is not None:
+                module = CallWith(module, arg_keys, kwarg_keys, return_keys)
+
             module_dict[return_name] = module
         return module_dict
 
@@ -153,6 +161,7 @@ class CallWith(torch.nn.Module):
         selected_args = [kwargs[key] for key in arg_keys[len(args) :]]
         selected_kwargs = {key: kwargs[val] for key, val in kwarg_keys.items()}
 
+        # FIXME: Add better error message
         ret = self.module(*args, *selected_args, **selected_kwargs)
 
         if self.return_keys:
