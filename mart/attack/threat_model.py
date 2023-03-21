@@ -49,7 +49,7 @@ class Lp(Constraint):
 
 class Integer(Constraint):
     def __call__(self, input, target, input_adv):
-        torch.testing.assert_close(input_adv, input_adv.round())
+        torch.testing._comparison.assert_equal(input_adv, input_adv.round())
 
 
 class Mask(Constraint):
