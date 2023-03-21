@@ -4,8 +4,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+from __future__ import annotations
+
 import abc
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import torch
 
@@ -29,9 +31,7 @@ class Range(Constraint):
 
 
 class Lp(Constraint):
-    def __init__(
-        self, eps: float, p: Optional[Union[int, float]] = torch.inf, dim=None, keepdim=False
-    ):
+    def __init__(self, eps: float, p: int | float | None = torch.inf, dim=None, keepdim=False):
         self.p = p
         self.eps = eps
         self.dim = dim
@@ -70,13 +70,13 @@ class Enforcer(torch.nn.Module):
         super().__init__()
         self.constraints = constraints
 
-    def _check_constraints(self, input, target, input_adv) -> Any:
+    def _check_constraints(self, input, target, input_adv):
         if self.constraints is not None:
             for constraint in self.constraints.values():
                 constraint(input, target, input_adv)
 
     @torch.no_grad()
-    def forward(self, input, target, input_adv) -> Any:
+    def forward(self, input, target, input_adv):
         self._check_constraints(input, target, input_adv)
 
 
@@ -84,16 +84,23 @@ class BatchEnforcer(Enforcer):
     @torch.no_grad()
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        input_adv: Union[torch.Tensor, tuple],
-    ) -> Union[torch.Tensor, tuple]:
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        input_adv: torch.Tensor | tuple,
+    ) -> torch.Tensor | tuple:
         for input_i, target_i, input_adv_i in zip(input, target, input_adv):
             self._check_constraints(input_i, target_i, input_adv_i)
 
 
 class Composer(torch.nn.Module, abc.ABC):
-    pass
+    @abc.abstractclassmethod
+    def forward(
+        self,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        perturbation: torch.Tensor | tuple,
+    ) -> torch.Tensor | tuple:
+        raise NotImplementedError
 
 
 class BatchComposer(Composer):
@@ -104,11 +111,11 @@ class BatchComposer(Composer):
 
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        perturbation: Union[torch.Tensor, tuple],
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        perturbation: torch.Tensor | tuple,
         **kwargs,
-    ) -> Union[torch.Tensor, tuple]:
+    ) -> torch.Tensor | tuple:
         output = []
 
         for input_i, target_i, perturbation_i in zip(input, target, perturbation):
@@ -128,10 +135,10 @@ class Additive(Composer):
 
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        perturbation: Union[torch.Tensor, tuple],
-    ) -> Union[torch.Tensor, tuple]:
+        input: torch.Tensor,
+        target: torch.Tensor | dict[str, Any],
+        perturbation: torch.Tensor,
+    ) -> torch.Tensor:
         return input + perturbation
 
 
@@ -140,11 +147,10 @@ class Overlay(Composer):
 
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        perturbation: Union[torch.Tensor, tuple],
-    ) -> Union[torch.Tensor, tuple]:
-
+        input: torch.Tensor,
+        target: torch.Tensor | dict[str, Any],
+        perturbation: torch.Tensor,
+    ) -> torch.Tensor:
         # True is mutable, False is immutable.
         mask = target["perturbable_mask"]
 
