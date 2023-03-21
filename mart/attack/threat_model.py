@@ -24,9 +24,8 @@ class Range(Constraint):
         self.max = max
 
     def __call__(self, input, target, input_adv):
-        perturbation = input_adv - input
-        if torch.any(perturbation < self.min) or torch.any(perturbation > self.max):
-            raise ValueError(f"Perturbation is outside [{self.min}, {self.max}].")
+        if torch.any(input_adv < self.min) or torch.any(input_adv > self.max):
+            raise ValueError(f"Adversarial input is outside [{self.min}, {self.max}].")
 
 
 class Lp(Constraint):
