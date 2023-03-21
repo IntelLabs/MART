@@ -48,5 +48,8 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
             return logits
 
         attack = self.adversary(model_wrapper)
+        input_adv = attack(input / 255, target)
 
-        return attack(input / 255, target) * 255
+        # Round to integer, in case of imprecise scaling.
+        input_adv = (input_adv * 255).round()
+        return input_adv

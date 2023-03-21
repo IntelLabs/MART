@@ -52,9 +52,9 @@ cifar_attack: ## Evaluate adversarial robustness of a CIFAR-10 model from robust
 	trainer=gpu \
 	fit=false \
 	+trainer.limit_test_batches=1 \
-	+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1 \
+	+attack@model.modules.input_adv_test=classification_autoattack \
 	+attack/threat_model/enforcer@model.modules.enforcer=default \
-	+attack/threat_model/enforcer/constraints@model.modules.enforcer.constraints=[lp] \
+	+attack/threat_model/enforcer/constraints@model.modules.enforcer.constraints=[lp,pixel_range] \
 	model.modules.enforcer.constraints.lp.eps=8 \
 	+model.test_sequence.seq005=input_adv_test \
 	+model.test_sequence.seq006.enforcer=["input","target","input_adv_test"] \
