@@ -6,7 +6,7 @@ defaults:
   - /attack@model.modules.input_adv_test: classification_eps2_pgd10_step1
   - /attack/threat_model/enforcer@model.modules.enforcer: default
   - /attack/threat_model/enforcer/constraints@model.modules.enforcer.constraints:
-      [lp]
+      [lp, pixel_range]
 
 task_name: "CIFAR10_CNN_Adv"
 tags: ["adv", "fat"]
