@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-from typing import Any, Callable, Dict, Optional, Union
+from __future__ import annotations
+
+from typing import Any, Callable
 
 import torch
 
@@ -34,10 +36,10 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
 
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: Optional[torch.nn.Module] = None,
-        **kwargs
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module | None = None,
+        **kwargs,
     ):
 
         # Shortcut. Input is already updated in the attack loop.
