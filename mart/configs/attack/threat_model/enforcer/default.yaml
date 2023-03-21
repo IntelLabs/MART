@@ -1,0 +1,4 @@
+defaults:
+  - constraints: null
+
+_target_: mart.attack.threat_model.Enforcer

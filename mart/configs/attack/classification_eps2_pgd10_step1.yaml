@@ -6,13 +6,7 @@ defaults:
   - perturber/projector: linf_additive_range
   - objective: misclassification
   - gain: cross_entropy
-  - threat_model: additive
-  - threat_model/constraints: [lp]
-
-threat_model:
-  constraints:
-    lp:
-      eps: 2
+  - threat_model/composer@composer: additive
 
 optimizer:
   lr: 1

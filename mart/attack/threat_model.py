@@ -9,12 +9,12 @@ from typing import Any, Dict, Optional, Union
 
 import torch
 
-__all__ = ["BatchThreatModel"]
+__all__ = ["BatchComposer"]
 
 
 class Constraint(abc.ABC):
     @abc.abstractclassmethod
-    def __call__(self, perturbation) -> None:
+    def __call__(self, input, target, input_adv) -> None:
         raise NotImplementedError
 
 
@@ -23,7 +23,8 @@ class Range(Constraint):
         self.min = min
         self.max = max
 
-    def __call__(self, perturbation):
+    def __call__(self, input, target, input_adv):
+        perturbation = input_adv - input
         if torch.any(perturbation < self.min) or torch.any(perturbation > self.max):
             raise ValueError(f"Perturbation is outside [{self.min}, {self.max}].")
 
@@ -37,7 +38,8 @@ class Lp(Constraint):
         self.dim = dim
         self.keepdim = keepdim
 
-    def __call__(self, perturbation):
+    def __call__(self, input, target, input_adv):
+        perturbation = input_adv - input
         norm_vals = perturbation.norm(p=self.p, dim=self.dim, keepdim=self.keepdim)
         norm_max = norm_vals.max()
         if norm_max > self.eps:
@@ -47,27 +49,46 @@ class Lp(Constraint):
 
 
 class Integer(Constraint):
-    def __call__(self, perturbation):
-        torch.testing.assert_close(perturbation, perturbation.round())
+    def __call__(self, input, target, input_adv):
+        torch.testing.assert_close(input_adv, input_adv.round())
 
 
-class ThreatModel(torch.nn.Module, abc.ABC):
-    @abc.abstractmethod
+class Enforcer(torch.nn.Module):
+    def __init__(self, constraints=None) -> None:
+        super().__init__()
+        self.constraints = constraints
+
+    def _check_constraints(self, input, target, input_adv) -> Any:
+        if self.constraints is not None:
+            for constraint in self.constraints.values():
+                constraint(input, target, input_adv)
+
+    @torch.no_grad()
+    def forward(self, input, target, input_adv) -> Any:
+        self._check_constraints(input, target, input_adv)
+
+
+class BatchEnforcer(Enforcer):
+    @torch.no_grad()
     def forward(
         self,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
-        perturbation: Union[torch.Tensor, tuple],
-        **kwargs,
+        input_adv: Union[torch.Tensor, tuple],
     ) -> Union[torch.Tensor, tuple]:
-        raise NotImplementedError
+        for input_i, target_i, input_adv_i in zip(input, target, input_adv):
+            self._check_constraints(input_i, target_i, input_adv_i)
 
 
-class BatchThreatModel(ThreatModel):
-    def __init__(self, threat_model: ThreatModel):
+class Composer(torch.nn.Module, abc.ABC):
+    pass
+
+
+class BatchComposer(Composer):
+    def __init__(self, composer: Composer):
         super().__init__()
 
-        self.threat_model = threat_model
+        self.composer = composer
 
     def forward(
         self,
@@ -79,7 +100,7 @@ class BatchThreatModel(ThreatModel):
         output = []
 
         for input_i, target_i, perturbation_i in zip(input, target, perturbation):
-            output_i = self.threat_model(input_i, target_i, perturbation_i, **kwargs)
+            output_i = self.composer(input_i, target_i, perturbation_i, **kwargs)
             output.append(output_i)
 
         if isinstance(input, torch.Tensor):
@@ -90,50 +111,27 @@ class BatchThreatModel(ThreatModel):
         return output
 
 
-class Additive(ThreatModel):
+class Additive(Composer):
     """We assume an adversary adds perturbation to the input."""
-
-    def __init__(self, constraints=None) -> None:
-        super().__init__()
-        self.constraints = constraints
-
-    def _check_constraints(self, perturbation):
-        if self.constraints is not None:
-            for constraint in self.constraints.values():
-                constraint(perturbation)
 
     def forward(
         self,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         perturbation: Union[torch.Tensor, tuple],
-        **kwargs,
     ) -> Union[torch.Tensor, tuple]:
-        self._check_constraints(perturbation)
-
         return input + perturbation
 
 
-class Overlay(ThreatModel):
+class Overlay(Composer):
     """We assume an adversary overlays a patch to the input."""
-
-    def __init__(self, constraints=None) -> None:
-        super().__init__()
-        self.constraints = constraints
-
-    def _check_constraints(self, perturbation):
-        if self.constraints is not None:
-            for constraint in self.constraints.values():
-                constraint(perturbation)
 
     def forward(
         self,
         input: Union[torch.Tensor, tuple],
         target: Union[torch.Tensor, Dict[str, Any], tuple],
         perturbation: Union[torch.Tensor, tuple],
-        **kwargs,
     ) -> Union[torch.Tensor, tuple]:
-        self._check_constraints(perturbation)
 
         # True is mutable, False is immutable.
         mask = target["perturbable_mask"]

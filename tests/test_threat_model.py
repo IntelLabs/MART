@@ -32,40 +32,46 @@ def test_overlay_threat_model_forward(input_data, target_data, perturbation):
 
 
 def test_constraint_range():
+    input = torch.tensor([0, 0, 0])
+    target = None
+
     constraint = Range(min=0, max=255)
 
     perturbation = torch.tensor([0, 128, 255])
-    constraint(perturbation)
+    constraint(input, target, input + perturbation)
 
     with pytest.raises(Exception):
         perturbation = torch.tensor([-1, 255])
-        constraint(perturbation)
+        constraint(input, target, input + perturbation)
         perturbation = torch.tensor([1, 256])
-        constraint(perturbation)
+        constraint(input, target, input + perturbation)
 
 
 def test_constraint_l2():
+    input = torch.zeros((3, 10, 10))
+    batch_input = torch.stack((input, input))
+
     constraint = Lp(eps=17.33, p=2, dim=[-1, -2, -3])
+    target = None
 
     # (3*10*10)**0.5 = 17.3205
     perturbation = torch.ones((3, 10, 10))
-    # The same L2 norm, but a batch of data points.
-    batch_perturbation = torch.stack((perturbation, perturbation))
+    constraint(input, target, input + perturbation)
+    constraint(batch_input, target, batch_input + perturbation)
 
-    constraint(perturbation)
     with pytest.raises(Exception):
-        constraint(perturbation * 2)
-
-    constraint(batch_perturbation)
-    with pytest.raises(Exception):
-        constraint(batch_perturbation * 2)
+        constraint(input, target, batch_input + perturbation * 2)
+        constraint(batch_input, target, batch_input + perturbation * 2)
 
 
 def test_constraint_integer():
-    constraint = Integer()
-    perturbation = torch.tensor([1.0, 2.0])
-    constraint(perturbation)
+    input, target = None, None
 
-    perturbation = torch.tensor([1.0, 2.001])
+    constraint = Integer()
+
+    input_adv = torch.tensor([1.0, 2.0])
+    constraint(input, target, input_adv)
+
+    input_adv = torch.tensor([1.0, 2.001])
     with pytest.raises(Exception):
-        constraint(perturbation)
+        constraint(input, target, input_adv)

@@ -4,13 +4,23 @@ defaults:
   - CIFAR10_CNN
   - /attack@model.modules.input_adv_training: classification_eps1.75_fgsm
   - /attack@model.modules.input_adv_test: classification_eps2_pgd10_step1
+  - /attack/threat_model/enforcer@model.modules.enforcer: lp
 
 task_name: "CIFAR10_CNN_Adv"
 tags: ["adv", "fat"]
 
 model:
+  modules:
+    # Enforce Lp threat model.
+    enforcer:
+      constraints:
+        lp:
+          eps: 2
+
   training_sequence:
     seq005: input_adv_training
+    seq006:
+      enforcer: ["input", "target", "input_adv_training"]
 
     seq010:
       preprocessor:
@@ -18,6 +28,8 @@ model:
 
   test_sequence:
     seq005: input_adv_test
+    seq006:
+      enforcer: ["input", "target", "input_adv_test"]
 
     seq010:
       preprocessor: ["input_adv_test"]

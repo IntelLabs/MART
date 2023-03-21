@@ -15,7 +15,7 @@ from .callbacks import Callback
 from .gain import Gain
 from .objective import Objective
 from .perturber import BatchPerturber, Perturber
-from .threat_model import ThreatModel
+from .threat_model import Composer
 
 __all__ = ["Adversary"]
 
@@ -292,15 +292,15 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 class Adversary(IterativeGenerator):
     """An adversary module which generates and applies perturbation to input."""
 
-    def __init__(self, *, threat_model: ThreatModel, **kwargs):
+    def __init__(self, *, composer: Composer, **kwargs):
         """_summary_
 
         Args:
-            threat_model (ThreatModel): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
+            composer (Composer): A module which composes adversarial examples from input and perturbation.
         """
         super().__init__(**kwargs)
 
-        self.threat_model = threat_model
+        self.composer = composer
 
     def forward(
         self,
@@ -317,6 +317,6 @@ class Adversary(IterativeGenerator):
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
         perturbation = self.perturber(input, target)
-        output = self.threat_model(input, target, perturbation)
+        output = self.composer(input, target, perturbation)
 
         return output
