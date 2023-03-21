@@ -53,6 +53,19 @@ class Integer(Constraint):
         torch.testing.assert_close(input_adv, input_adv.round())
 
 
+class Mask(Constraint):
+    def __call__(self, input, target, input_adv):
+        # True/1 is mutable, False/0 is immutable.
+        # mask.shape=(H, W)
+        mask = target["perturbable_mask"]
+
+        # Immutable boolean mask, True is immutable.
+        imt_mask = (1 - mask).bool()
+        perturbation = input_adv - input
+        if perturbation.masked_select(imt_mask).any():
+            raise ValueError("Perturbable mask is violated.")
+
+
 class Enforcer(torch.nn.Module):
     def __init__(self, constraints=None) -> None:
         super().__init__()

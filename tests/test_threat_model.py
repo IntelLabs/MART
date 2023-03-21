@@ -10,7 +10,7 @@ from unittest.mock import Mock, patch
 import pytest
 import torch
 
-from mart.attack.threat_model import Additive, Integer, Lp, Overlay, Range
+from mart.attack.threat_model import Additive, Integer, Lp, Mask, Overlay, Range
 
 
 def test_additive_threat_model_forward(input_data, target_data, perturbation):
@@ -75,3 +75,16 @@ def test_constraint_integer():
     input_adv = torch.tensor([1.0, 2.001])
     with pytest.raises(Exception):
         constraint(input, target, input_adv)
+
+
+def test_constraint_mask():
+    input = torch.zeros((3, 2, 2))
+    perturbation = torch.ones((3, 2, 2))
+    mask = torch.tensor([[0.0, 1.0], [1.0, 0.0]])
+    target = {"perturbable_mask": mask}
+
+    constraint = Mask()
+
+    constraint(input, target, input + perturbation * mask)
+    with pytest.raises(Exception):
+        constraint(input, target, input + perturbation)
