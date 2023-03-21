@@ -4,9 +4,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-import importlib
-from unittest.mock import Mock, patch
-
 import pytest
 import torch
 

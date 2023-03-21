@@ -7,7 +7,6 @@
 from functools import partial
 from unittest.mock import Mock
 
-import pytest
 import torch
 from torch.optim import SGD
 
@@ -24,7 +23,7 @@ def test_adversary(input_data, target_data, perturbation):
     gain = Mock()
 
     adversary = Adversary(
-        composer=composer, perturber=perturber, optimizer=optimizer, max_iters=3, gain=gain
+        composer=composer, perturber=perturber, optimizer=optimizer, max_iters=max_iters, gain=gain
     )
 
     output_data = adversary(input_data, target_data)
