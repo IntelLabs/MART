@@ -41,9 +41,9 @@ def test_constraint_range():
     constraint(input, target, input + perturbation)
 
     with pytest.raises(Exception):
-        perturbation = torch.tensor([-1, 255])
+        perturbation = torch.tensor([0, -1, 255])
         constraint(input, target, input + perturbation)
-        perturbation = torch.tensor([1, 256])
+        perturbation = torch.tensor([0, 1, 256])
         constraint(input, target, input + perturbation)
 
 
