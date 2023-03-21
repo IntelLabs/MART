@@ -17,13 +17,19 @@ from mart.attack.perturber import Perturber
 
 def test_adversary(input_data, target_data, perturbation):
     composer = mart.attack.threat_model.Additive()
+    enforcer = Mock()
     perturber = Mock(return_value=perturbation)
     optimizer = Mock()
     max_iters = 3
     gain = Mock()
 
     adversary = Adversary(
-        composer=composer, perturber=perturber, optimizer=optimizer, max_iters=max_iters, gain=gain
+        composer=composer,
+        enforcer=enforcer,
+        perturber=perturber,
+        optimizer=optimizer,
+        max_iters=max_iters,
+        gain=gain,
     )
 
     output_data = adversary(input_data, target_data)
@@ -36,6 +42,7 @@ def test_adversary(input_data, target_data, perturbation):
 
 def test_adversary_with_model(input_data, target_data, perturbation):
     composer = mart.attack.threat_model.Additive()
+    enforcer = Mock()
     initializer = Mock()
     parameter_groups = Mock(return_value=[])
     perturber = Mock(return_value=perturbation, parameter_groups=parameter_groups)
@@ -45,7 +52,12 @@ def test_adversary_with_model(input_data, target_data, perturbation):
     gain = Mock(return_value=torch.tensor(0.0, requires_grad=True))
 
     adversary = Adversary(
-        composer=composer, perturber=perturber, optimizer=optimizer, max_iters=3, gain=gain
+        composer=composer,
+        enforcer=enforcer,
+        perturber=perturber,
+        optimizer=optimizer,
+        max_iters=3,
+        gain=gain,
     )
 
     output_data = adversary(input_data, target_data, model=model)
@@ -68,12 +80,18 @@ def test_adversary_perturber_hidden_params(input_data, target_data):
     perturber = Perturber(initializer)
 
     composer = mart.attack.threat_model.Additive()
+    enforcer = Mock()
     optimizer = Mock()
     gain = Mock(return_value=torch.tensor(0.0, requires_grad=True))
     model = Mock(return_value={})
 
     adversary = Adversary(
-        composer=composer, perturber=perturber, optimizer=optimizer, max_iters=1, gain=gain
+        composer=composer,
+        enforcer=enforcer,
+        perturber=perturber,
+        optimizer=optimizer,
+        max_iters=1,
+        gain=gain,
     )
     output_data = adversary(input_data, target_data, model=model)
 
@@ -88,6 +106,7 @@ def test_adversary_perturber_hidden_params(input_data, target_data):
 
 def test_adversary_perturbation(input_data, target_data):
     composer = mart.attack.threat_model.Additive()
+    enforcer = Mock()
     optimizer = partial(SGD, lr=1.0, maximize=True)
 
     def gain(logits):
@@ -100,7 +119,12 @@ def test_adversary_perturbation(input_data, target_data):
     perturber = Perturber(initializer)
 
     adversary = Adversary(
-        composer=composer, perturber=perturber, optimizer=optimizer, max_iters=1, gain=gain
+        composer=composer,
+        enforcer=enforcer,
+        perturber=perturber,
+        optimizer=optimizer,
+        max_iters=1,
+        gain=gain,
     )
 
     def model(input, target, model=None, **kwargs):

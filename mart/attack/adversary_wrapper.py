@@ -17,7 +17,11 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
     External adversaries commonly take input of NCWH-[0,1] and return input_adv in the same format.
     """
 
-    def __init__(self, adversary: Callable[[torch.Tensor, torch.Tensor, torch.nn.Module], None]):
+    def __init__(
+        self,
+        adversary: Callable[[torch.Tensor, torch.Tensor, torch.nn.Module], None],
+        enforcer: Callable,
+    ):
         """
 
         Args:
@@ -26,6 +30,7 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
         super().__init__()
 
         self.adversary = adversary
+        self.enforcer = enforcer
 
     def forward(
         self,
@@ -50,4 +55,6 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
 
         # Round to integer, in case of imprecise scaling.
         input_adv = (input_adv * 255).round()
+        self.enforcer(input, target, input_adv)
+
         return input_adv

@@ -8,6 +8,8 @@ defaults:
   - objective: zero_ap
   - gain: rcnn_training_loss
   - threat_model/composer@composer: batch_overlay
+  - threat_model/enforcer@enforcer: batch
+  - threat_model/enforcer/constraints@enforcer.constraints: [mask, pixel_range]
 
 # Make a 5-step attack for the demonstration purpose.
 optimizer:
