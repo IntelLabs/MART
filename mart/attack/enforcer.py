@@ -84,7 +84,7 @@ class Enforcer:
             constraint(input_adv, input=input, target=target)
 
     @torch.no_grad()
-    def __call__(self, input_adv, *, input, target):
+    def __call__(self, input_adv, *, input, target, **kwargs):
         self._check_constraints(input_adv, input=input, target=target)
 
 
