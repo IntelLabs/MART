@@ -1,4 +1,4 @@
 integer:
-  _target_: mart.attack.threat_model.Integer
+  _target_: mart.attack.enforcer.Integer
   rtol: 0
   atol: 0

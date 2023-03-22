@@ -1,4 +1,4 @@
 pixel_range:
-  _target_: mart.attack.threat_model.Range
+  _target_: mart.attack.enforcer.Range
   min: 0
   max: 255

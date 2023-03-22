@@ -1,5 +1,5 @@
 lp:
-  _target_: mart.attack.threat_model.Lp
+  _target_: mart.attack.enforcer.Lp
   eps: ???
   # p is inf by default.
   # p: ???

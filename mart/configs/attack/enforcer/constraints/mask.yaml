@@ -1,2 +1,2 @@
 mask:
-  _target_: mart.attack.threat_model.Mask
+  _target_: mart.attack.enforcer.Mask
