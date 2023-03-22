@@ -6,9 +6,9 @@ defaults:
   - perturber/projector: linf_additive_range
   - objective: misclassification
   - gain: cross_entropy
-  - threat_model/composer@composer: additive
-  - threat_model/enforcer@enforcer: default
-  - threat_model/enforcer/constraints@enforcer.constraints: [lp, pixel_range]
+  - composer: additive
+  - enforcer: default
+  - enforcer/constraints: [lp, pixel_range]
 
 enforcer:
   constraints:
