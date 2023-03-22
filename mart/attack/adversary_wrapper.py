@@ -21,13 +21,14 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
 
     def __init__(
         self,
-        adversary: Callable[[torch.Tensor, torch.Tensor, torch.nn.Module], None],
-        enforcer: Callable,
+        adversary: Callable[[Callable], Callable],
+        enforcer: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], None],
     ):
         """
 
         Args:
             adversary (functools.partial): A partial of an adversary object which awaits model.
+            enforcer (Callable): Enforcing constraints of an adversary.
         """
         super().__init__()
 
