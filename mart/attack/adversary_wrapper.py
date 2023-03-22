@@ -4,11 +4,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-from typing import Any, Callable, Dict, Optional, Union
+from __future__ import annotations
+
+from typing import Any, Callable
 
 import torch
-
-from .callbacks import Callback
 
 __all__ = ["NormalizedAdversaryAdapter"]
 
@@ -19,22 +19,28 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
     External adversaries commonly take input of NCWH-[0,1] and return input_adv in the same format.
     """
 
-    def __init__(self, adversary: Callable[[torch.Tensor, torch.Tensor, torch.nn.Module], None]):
+    def __init__(
+        self,
+        adversary: Callable[[Callable], Callable],
+        enforcer: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], None],
+    ):
         """
 
         Args:
             adversary (functools.partial): A partial of an adversary object which awaits model.
+            enforcer (Callable): Enforcing constraints of an adversary.
         """
         super().__init__()
 
         self.adversary = adversary
+        self.enforcer = enforcer
 
     def forward(
         self,
-        input: Union[torch.Tensor, tuple],
-        target: Union[torch.Tensor, Dict[str, Any], tuple],
-        model: Optional[torch.nn.Module] = None,
-        **kwargs
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        model: torch.nn.Module | None = None,
+        **kwargs,
     ):
 
         # Shortcut. Input is already updated in the attack loop.
@@ -48,5 +54,10 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
             return logits
 
         attack = self.adversary(model_wrapper)
+        input_adv = attack(input / 255, target)
 
-        return attack(input / 255, target) * 255
+        # Round to integer, in case of imprecise scaling.
+        input_adv = (input_adv * 255).round()
+        self.enforcer(input_adv, input=input, target=target)
+
+        return input_adv
