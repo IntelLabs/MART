@@ -7,7 +7,7 @@
 import pytest
 import torch
 
-from mart.attack.enforcer import Integer, Lp, Mask, Range
+from mart.attack.enforcer import ConstraintViolated, Integer, Lp, Mask, Range
 
 
 def test_constraint_range():
@@ -19,7 +19,7 @@ def test_constraint_range():
     perturbation = torch.tensor([0, 128, 255])
     constraint(input + perturbation, input=input, target=target)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ConstraintViolated):
         perturbation = torch.tensor([0, -1, 255])
         constraint(input + perturbation, input=input, target=target)
         perturbation = torch.tensor([0, 1, 256])
@@ -38,7 +38,7 @@ def test_constraint_l2():
     constraint(input + perturbation, input=input, target=target)
     constraint(batch_input + perturbation, input=batch_input, target=target)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ConstraintViolated):
         constraint(batch_input + perturbation * 2, input=input, target=target)
         constraint(batch_input + perturbation * 2, input=batch_input, target=target)
 
@@ -52,8 +52,8 @@ def test_constraint_integer():
     constraint(input_adv, input=input, target=target)
 
     input_adv = torch.tensor([1.0, 2.001])
-    with pytest.raises(Exception):
-        constraint(input_adv, input=input, targetg=target)
+    with pytest.raises(ConstraintViolated):
+        constraint(input_adv, input=input, target=target)
 
 
 def test_constraint_mask():
@@ -65,5 +65,5 @@ def test_constraint_mask():
     constraint = Mask()
 
     constraint(input + perturbation * mask, input=input, target=target)
-    with pytest.raises(Exception):
+    with pytest.raises(ConstraintViolated):
         constraint(input + perturbation, input=input, target=target)

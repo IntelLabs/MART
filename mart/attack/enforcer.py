@@ -12,6 +12,10 @@ from typing import Any
 import torch
 
 
+class ConstraintViolated(Exception):
+    pass
+
+
 class Constraint(abc.ABC):
     @abc.abstractclassmethod
     def __call__(self, input_adv, *, input, target) -> None:
@@ -25,7 +29,7 @@ class Range(Constraint):
 
     def __call__(self, input_adv, *, input, target):
         if torch.any(input_adv < self.min) or torch.any(input_adv > self.max):
-            raise ValueError(f"Adversarial input is outside [{self.min}, {self.max}].")
+            raise ConstraintViolated(f"Adversarial input is outside [{self.min}, {self.max}].")
 
 
 class Lp(Constraint):
@@ -40,7 +44,7 @@ class Lp(Constraint):
         norm_vals = perturbation.norm(p=self.p, dim=self.dim, keepdim=self.keepdim)
         norm_max = norm_vals.max()
         if norm_max > self.eps:
-            raise ValueError(
+            raise ConstraintViolated(
                 f"L-{self.p} norm of perturbation exceeds {self.eps}, reaching {norm_max}"
             )
 
@@ -55,7 +59,7 @@ class Integer(Constraint):
         if not torch.isclose(
             input_adv, input_adv.round(), rtol=self.rtol, atol=self.atol, equal_nan=self.equal_nan
         ).all():
-            raise ValueError("The adversarial example is not in the integer domain.")
+            raise ConstraintViolated("The adversarial example is not in the integer domain.")
 
 
 class Mask(Constraint):
@@ -68,7 +72,7 @@ class Mask(Constraint):
         imt_mask = (1 - mask).bool()
         perturbation = input_adv - input
         if perturbation.masked_select(imt_mask).any():
-            raise ValueError("Perturbable mask is violated.")
+            raise ConstraintViolated("Perturbable mask is violated.")
 
 
 class Enforcer(torch.nn.Module):
