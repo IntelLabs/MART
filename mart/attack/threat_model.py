@@ -48,8 +48,16 @@ class Lp(Constraint):
 
 
 class Integer(Constraint):
+    def __init__(self, rtol=1e-05, atol=1e-08, equal_nan=False):
+        self.rtol = rtol
+        self.atol = atol
+        self.equal_nan = equal_nan
+
     def __call__(self, input, target, input_adv):
-        torch.testing._comparison.assert_equal(input_adv, input_adv.round())
+        if not torch.isclose(
+            input_adv, input_adv.round(), rtol=self.rtol, atol=self.atol, equal_nan=self.equal_nan
+        ).all():
+            raise ValueError("The adversarial example is not in the integer domain.")
 
 
 class Mask(Constraint):
