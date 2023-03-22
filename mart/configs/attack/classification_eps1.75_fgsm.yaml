@@ -6,7 +6,7 @@ defaults:
   - perturber/projector: linf_additive_range
   - objective: misclassification
   - gain: cross_entropy
-  - composer@composer: additive
+  - composer: additive
   - enforcer: default
   - enforcer/constraints: [lp, pixel_range]
 
