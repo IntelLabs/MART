@@ -37,6 +37,8 @@ def test_adversary(input_data, target_data, perturbation):
     optimizer.assert_not_called()
     gain.assert_not_called()
     perturber.assert_called_once()
+    # The enforcer is only called when model is not None.
+    enforcer.assert_not_called()
     torch.testing.assert_close(output_data, input_data + perturbation)
 
 
@@ -64,6 +66,8 @@ def test_adversary_with_model(input_data, target_data, perturbation):
 
     parameter_groups.assert_called_once()
     optimizer.assert_called_once()
+    # The enforcer is only called when model is not None.
+    enforcer.assert_called_once()
     # max_iters+1 because Adversary examines one last time
     assert gain.call_count == max_iters + 1
     assert model.call_count == max_iters + 1
