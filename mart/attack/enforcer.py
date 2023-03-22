@@ -75,9 +75,8 @@ class Mask(Constraint):
             raise ConstraintViolated("Perturbable mask is violated.")
 
 
-class Enforcer(torch.nn.Module):
+class Enforcer:
     def __init__(self, constraints=None) -> None:
-        super().__init__()
         self.constraints = constraints or {}
 
     def _check_constraints(self, input_adv, *, input, target):
@@ -85,13 +84,13 @@ class Enforcer(torch.nn.Module):
             constraint(input_adv, input=input, target=target)
 
     @torch.no_grad()
-    def forward(self, input_adv, *, input, target):
+    def __call__(self, input_adv, *, input, target):
         self._check_constraints(input_adv, input=input, target=target)
 
 
 class BatchEnforcer(Enforcer):
     @torch.no_grad()
-    def forward(
+    def __call__(
         self,
         input_adv: torch.Tensor | tuple,
         *,
