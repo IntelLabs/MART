@@ -43,7 +43,7 @@ class BatchComposer(Composer):
         output = []
 
         for input_i, target_i, perturbation_i in zip(input, target, perturbation):
-            output_i = self.composer(input_i, target_i, perturbation_i, **kwargs)
+            output_i = self.composer(perturbation_i, input=input_i, target=target_i, **kwargs)
             output.append(output_i)
 
         if isinstance(input, torch.Tensor):
