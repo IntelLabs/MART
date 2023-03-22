@@ -12,10 +12,11 @@ from typing import Any
 import torch
 
 from .callbacks import Callback
+from .composer import Composer
+from .enforcer import Enforcer
 from .gain import Gain
 from .objective import Objective
 from .perturber import BatchPerturber, Perturber
-from .threat_model import Composer, Enforcer
 
 __all__ = ["Adversary"]
 

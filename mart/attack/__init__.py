@@ -2,10 +2,11 @@ from .adversary import *
 from .adversary_in_art import *
 from .adversary_wrapper import *
 from .callbacks import Callback
+from .composer import *
+from .enforcer import *
 from .gain import *
 from .gradient_modifier import *
 from .initializer import *
 from .objective import Objective
 from .perturber import *
 from .projector import *
-from .threat_model import *

@@ -7,7 +7,8 @@
 import pytest
 import torch
 
-from mart.attack.enforcer import Additive, Integer, Lp, Mask, Overlay, Range
+from mart.attack.composer import Additive, Overlay
+from mart.attack.enforcer import Integer, Lp, Mask, Range
 
 
 def test_additive_threat_model_forward(input_data, target_data, perturbation):
