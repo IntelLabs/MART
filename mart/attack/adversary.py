@@ -323,6 +323,6 @@ class Adversary(IterativeGenerator):
 
         if model is not None:
             # We only enforce constraints after the attack optimization ends.
-            self.enforcer(input, target, output)
+            self.enforcer(output, input, target)
 
         return output

@@ -35,13 +35,13 @@ def test_constraint_range():
     constraint = Range(min=0, max=255)
 
     perturbation = torch.tensor([0, 128, 255])
-    constraint(input, target, input + perturbation)
+    constraint(input + perturbation, input, target)
 
     with pytest.raises(Exception):
         perturbation = torch.tensor([0, -1, 255])
-        constraint(input, target, input + perturbation)
+        constraint(input + perturbation, input, target)
         perturbation = torch.tensor([0, 1, 256])
-        constraint(input, target, input + perturbation)
+        constraint(input + perturbation, input, target)
 
 
 def test_constraint_l2():
@@ -53,12 +53,12 @@ def test_constraint_l2():
 
     # (3*10*10)**0.5 = 17.3205
     perturbation = torch.ones((3, 10, 10))
-    constraint(input, target, input + perturbation)
-    constraint(batch_input, target, batch_input + perturbation)
+    constraint(input + perturbation, input, target)
+    constraint(batch_input + perturbation, batch_input, target)
 
     with pytest.raises(Exception):
-        constraint(input, target, batch_input + perturbation * 2)
-        constraint(batch_input, target, batch_input + perturbation * 2)
+        constraint(batch_input + perturbation * 2, input, target)
+        constraint(batch_input + perturbation * 2, batch_input, target)
 
 
 def test_constraint_integer():
@@ -67,11 +67,11 @@ def test_constraint_integer():
     constraint = Integer()
 
     input_adv = torch.tensor([1.0, 2.0])
-    constraint(input, target, input_adv)
+    constraint(input_adv, input, target)
 
     input_adv = torch.tensor([1.0, 2.001])
     with pytest.raises(Exception):
-        constraint(input, target, input_adv)
+        constraint(input_adv, input, target)
 
 
 def test_constraint_mask():
@@ -82,6 +82,6 @@ def test_constraint_mask():
 
     constraint = Mask()
 
-    constraint(input, target, input + perturbation * mask)
+    constraint(input + perturbation * mask, input, target)
     with pytest.raises(Exception):
-        constraint(input, target, input + perturbation)
+        constraint(input + perturbation, input, target)

@@ -57,6 +57,6 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
 
         # Round to integer, in case of imprecise scaling.
         input_adv = (input_adv * 255).round()
-        self.enforcer(input, target, input_adv)
+        self.enforcer(input_adv, input, target)
 
         return input_adv
