@@ -14,7 +14,7 @@ import torch
 
 class Constraint(abc.ABC):
     @abc.abstractclassmethod
-    def __call__(self, input_adv, input, target) -> None:
+    def __call__(self, input_adv, *, input, target) -> None:
         raise NotImplementedError
 
 
@@ -23,7 +23,7 @@ class Range(Constraint):
         self.min = min
         self.max = max
 
-    def __call__(self, input_adv, input, target):
+    def __call__(self, input_adv, *, input, target):
         if torch.any(input_adv < self.min) or torch.any(input_adv > self.max):
             raise ValueError(f"Adversarial input is outside [{self.min}, {self.max}].")
 
@@ -35,7 +35,7 @@ class Lp(Constraint):
         self.dim = dim
         self.keepdim = keepdim
 
-    def __call__(self, input_adv, input, target):
+    def __call__(self, input_adv, *, input, target):
         perturbation = input_adv - input
         norm_vals = perturbation.norm(p=self.p, dim=self.dim, keepdim=self.keepdim)
         norm_max = norm_vals.max()
@@ -51,7 +51,7 @@ class Integer(Constraint):
         self.atol = atol
         self.equal_nan = equal_nan
 
-    def __call__(self, input_adv, input, target):
+    def __call__(self, input_adv, *, input, target):
         if not torch.isclose(
             input_adv, input_adv.round(), rtol=self.rtol, atol=self.atol, equal_nan=self.equal_nan
         ).all():
@@ -59,7 +59,7 @@ class Integer(Constraint):
 
 
 class Mask(Constraint):
-    def __call__(self, input_adv, input, target):
+    def __call__(self, input_adv, *, input, target):
         # True/1 is mutable, False/0 is immutable.
         # mask.shape=(H, W)
         mask = target["perturbable_mask"]
@@ -76,13 +76,13 @@ class Enforcer(torch.nn.Module):
         super().__init__()
         self.constraints = constraints or {}
 
-    def _check_constraints(self, input_adv, input, target):
+    def _check_constraints(self, input_adv, *, input, target):
         for constraint in self.constraints.values():
-            constraint(input_adv, input, target)
+            constraint(input_adv, input=input, target=target)
 
     @torch.no_grad()
-    def forward(self, input_adv, input, target):
-        self._check_constraints(input_adv, input, target)
+    def forward(self, input_adv, *, input, target):
+        self._check_constraints(input_adv, input=input, target=target)
 
 
 class BatchEnforcer(Enforcer):
@@ -90,8 +90,9 @@ class BatchEnforcer(Enforcer):
     def forward(
         self,
         input_adv: torch.Tensor | tuple,
+        *,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
     ) -> torch.Tensor | tuple:
         for input_adv_i, input_i, target_i in zip(input_adv, input, target):
-            self._check_constraints(input_adv_i, input_i, target_i)
+            self._check_constraints(input_adv_i, input=input_i, target=target_i)

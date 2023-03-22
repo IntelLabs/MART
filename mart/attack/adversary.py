@@ -320,10 +320,10 @@ class Adversary(IterativeGenerator):
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
         perturbation = self.perturber(input, target)
-        output = self.composer(input, target, perturbation)
+        output = self.composer(perturbation, input=input, target=target)
 
         if model is not None:
             # We only enforce constraints after the attack optimization ends.
-            self.enforcer(output, input, target)
+            self.enforcer(output, input=input, target=target)
 
         return output

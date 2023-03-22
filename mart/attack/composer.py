@@ -18,9 +18,10 @@ class Composer(torch.nn.Module, abc.ABC):
     @abc.abstractclassmethod
     def forward(
         self,
+        perturbation: torch.Tensor | tuple,
+        *,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
-        perturbation: torch.Tensor | tuple,
     ) -> torch.Tensor | tuple:
         raise NotImplementedError
 
@@ -33,9 +34,10 @@ class BatchComposer(Composer):
 
     def forward(
         self,
+        perturbation: torch.Tensor | tuple,
+        *,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
-        perturbation: torch.Tensor | tuple,
         **kwargs,
     ) -> torch.Tensor | tuple:
         output = []
@@ -57,9 +59,10 @@ class Additive(Composer):
 
     def forward(
         self,
+        perturbation: torch.Tensor,
+        *,
         input: torch.Tensor,
         target: torch.Tensor | dict[str, Any],
-        perturbation: torch.Tensor,
     ) -> torch.Tensor:
         return input + perturbation
 
@@ -69,9 +72,10 @@ class Overlay(Composer):
 
     def forward(
         self,
+        perturbation: torch.Tensor,
+        *,
         input: torch.Tensor,
         target: torch.Tensor | dict[str, Any],
-        perturbation: torch.Tensor,
     ) -> torch.Tensor:
         # True is mutable, False is immutable.
         mask = target["perturbable_mask"]
