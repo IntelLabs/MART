@@ -48,7 +48,7 @@ class Lp(Constraint):
 
 
 class Integer(Constraint):
-    def __init__(self, rtol=1e-05, atol=1e-08, equal_nan=False):
+    def __init__(self, rtol=0, atol=0, equal_nan=False):
         self.rtol = rtol
         self.atol = atol
         self.equal_nan = equal_nan

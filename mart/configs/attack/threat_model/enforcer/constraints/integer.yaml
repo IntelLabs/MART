@@ -1,4 +1,4 @@
 integer:
   _target_: mart.attack.threat_model.Integer
-  rtol: 1e-05
-  atol: 1e-08
+  rtol: 0
+  atol: 0
