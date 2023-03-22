@@ -15,9 +15,9 @@ from .gradient_modifier import GradientModifier
 from .projector import Projector
 
 if TYPE_CHECKING:
+    from .composer import Composer
     from .initializer import Initializer
     from .objective import Objective
-    from .threat_model import ThreatModel
 
 __all__ = ["LitPerturber"]
 
@@ -30,7 +30,7 @@ class LitPerturber(pl.LightningModule):
         *,
         initializer: Initializer,
         optimizer: Callable,
-        threat_model: ThreatModel,
+        composer: Composer,
         gradient_modifier: GradientModifier | None = None,
         projector: Projector | None = None,
         gain: str = "loss",
@@ -41,7 +41,7 @@ class LitPerturber(pl.LightningModule):
         Args:
             initializer (Initializer): To initialize the perturbation.
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
-            threat_model (ThreatModel): A layer which injects perturbation to input, serving as the preprocessing layer to the target model.
+            composer (Composer): A module which composes adversarial input from input and perturbation.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
             projector (Projector): To project the perturbation into some space.
             gain (str): Which output to use as an adversarial gain function, which is a differentiable estimate of adversarial objective. (default: loss)
@@ -51,7 +51,7 @@ class LitPerturber(pl.LightningModule):
 
         self.initializer = initializer
         self.optimizer_fn = optimizer
-        self.threat_model = threat_model
+        self.composer = composer
         self.gradient_modifier = gradient_modifier or GradientModifier()
         self.projector = projector or Projector()
         self.gain_output = gain
@@ -113,5 +113,7 @@ class LitPerturber(pl.LightningModule):
         # Project perturbation...
         self.projector(self.perturbation, input, target)
 
-        # ...and apply threat model.
-        return self.threat_model(input, target, self.perturbation)
+        # Compose adversarial input.
+        input_adv = self.composer(self.perturbation, input=input, target=target)
+
+        return input_adv

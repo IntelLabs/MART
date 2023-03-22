@@ -1,3 +1,7 @@
+defaults:
+  - enforcer: default
+  - enforcer/constraints: [lp, pixel_range]
+
 _target_: mart.attack.NormalizedAdversaryAdapter
 adversary:
   _target_: mart.utils.adapters.PartialInstanceWrapper
@@ -17,3 +21,7 @@ adversary:
     _target_: mart.utils.adapters.CallableAdapter
     _partial_: true
     redirecting_fn: run_standard_evaluation
+enforcer:
+  constraints:
+    lp:
+      eps: 8

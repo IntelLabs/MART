@@ -5,7 +5,15 @@ defaults:
   - gradient_modifier: sign
   - projector: linf_additive_range
   - objective: misclassification
-  - threat_model: additive
+  - gain: cross_entropy
+  - composer: additive
+  - enforcer: default
+  - enforcer/constraints: [lp, pixel_range]
+
+enforcer:
+  constraints:
+    lp:
+      eps: 2
 
 optimizer:
   lr: 1

@@ -13,6 +13,7 @@ import torch
 
 from mart.utils import silent
 
+from .enforcer import Enforcer
 from .perturber import LitPerturber
 
 __all__ = ["Adversary"]
@@ -24,6 +25,7 @@ class Adversary(torch.nn.Module):
         *,
         trainer: pl.Trainer | None = None,
         perturber: LitPerturber | None = None,
+        enforcer: Enforcer,
         **kwargs,
     ):
         """_summary_
@@ -31,6 +33,7 @@ class Adversary(torch.nn.Module):
         Args:
             trainer (Trainer): A PyTorch-Lightning Trainer object used to fit the perturber.
             perturber (LitPerturber): A LitPerturber that manages perturbations.
+            enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
         """
         super().__init__()
 
@@ -53,6 +56,7 @@ class Adversary(torch.nn.Module):
         assert self.attacker.limit_train_batches > 0
 
         self.perturber = perturber or LitPerturber(**kwargs)
+        self.enforcer = enforcer
 
     @silent()
     def forward(self, **batch):
@@ -67,4 +71,10 @@ class Adversary(torch.nn.Module):
             self.attacker.fit(self.perturber, train_dataloaders=cycle([batch]))
 
         # Always use perturb the current input.
-        return self.perturber(**batch)
+        input_adv = self.perturber(**batch)
+
+        if "model" in batch and "sequence" in batch:
+            # We only enforce constraints after the attack optimization ends.
+            self.enforcer(input_adv, **batch)
+
+        return input_adv

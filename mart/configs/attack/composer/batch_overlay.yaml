@@ -1,0 +1,5 @@
+defaults:
+  - /attack/composer@composer: overlay
+
+_target_: mart.attack.BatchComposer
+composer: ???
