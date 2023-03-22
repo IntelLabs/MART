@@ -76,12 +76,11 @@ class Mask(Constraint):
 class Enforcer(torch.nn.Module):
     def __init__(self, constraints=None) -> None:
         super().__init__()
-        self.constraints = constraints
+        self.constraints = constraints or {}
 
     def _check_constraints(self, input, target, input_adv):
-        if self.constraints is not None:
-            for constraint in self.constraints.values():
-                constraint(input, target, input_adv)
+        for constraint in self.constraints.values():
+            constraint(input, target, input_adv)
 
     @torch.no_grad()
     def forward(self, input, target, input_adv):
