@@ -1,5 +1,5 @@
 defaults:
-  - /attack/threat_model/composer@composer: additive
+  - /attack/composer@composer: additive
 
 _target_: mart.attack.BatchComposer
 composer: ???
