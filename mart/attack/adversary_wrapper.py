@@ -10,54 +10,56 @@ from typing import Any, Callable
 
 import torch
 
-__all__ = ["NormalizedAdversaryAdapter"]
+__all__ = ["NormalizedAttackerAdapter"]
 
 
-class NormalizedAdversaryAdapter(torch.nn.Module):
+class NormalizedAttackerAdapter(torch.nn.Module):
     """A wrapper for running external classification adversaries in MART.
 
-    External adversaries commonly take input of NCWH-[0,1] and return input_adv in the same format.
+    External attack algorithms commonly take input of NCWH-[0,1] and return input_adv in the same
+    format.
     """
 
     def __init__(
         self,
-        adversary: Callable[[Callable], Callable],
-        enforcer: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], None],
+        attacker: Callable[[Callable], Callable],
     ):
         """
 
         Args:
-            adversary (functools.partial): A partial of an adversary object which awaits model.
-            enforcer (Callable): Enforcing constraints of an adversary.
+            attacker (functools.partial): A partial of an attacker object which awaits a model.
         """
         super().__init__()
 
-        self.adversary = adversary
-        self.enforcer = enforcer
+        self.attacker = attacker
+        self.input_adv = None
 
     def forward(
         self,
+        *,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module | None = None,
-        **kwargs,
     ):
-
-        # Shortcut. Input is already updated in the attack loop.
-        if model is None:
+        # Return adversarial input if it is already updated in the attack loop.
+        if self.input_adv is None:
             return input
+        else:
+            return self.input_adv
 
+    def fit(self, *, input, target, model, **kwargs):
         # Input NCHW [0,1]; Output logits.
         def model_wrapper(x):
             output = model(input=x * 255, target=target, model=None, **kwargs)
             logits = output["logits"]
             return logits
 
-        attack = self.adversary(model_wrapper)
+        attack = self.attacker(model_wrapper)
         input_adv = attack(input / 255, target)
 
         # Round to integer, in case of imprecise scaling.
         input_adv = (input_adv * 255).round()
-        self.enforcer(input_adv, input=input, target=target)
+
+        # Save to return later in forward().
+        self.input_adv = input_adv
 
         return input_adv
