@@ -20,24 +20,26 @@ __all__ = ["Adversary"]
 
 
 class Adversary(torch.nn.Module):
+    """An adversary module which generates and applies perturbation to input."""
+
     def __init__(
         self,
         *,
-        trainer: pl.Trainer | None = None,
-        perturber: Perturber | None = None,
         enforcer: Enforcer,
+        perturber: Perturber | None = None,
+        attacker: pl.Trainer | None = None,
         **kwargs,
     ):
         """_summary_
 
         Args:
-            trainer (Trainer): A PyTorch-Lightning Trainer object used to fit the perturber.
-            perturber (Perturber): A Perturber that manages perturbations.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
+            perturber (Perturber): A Perturber that manages perturbations.
+            attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturber.
         """
         super().__init__()
 
-        self.attacker = trainer or pl.Trainer(
+        self.attacker = attacker or pl.Trainer(
             accelerator="auto",  # FIXME: we need to get this on the same device as input...
             num_sanity_val_steps=0,
             logger=False,
