@@ -7,13 +7,13 @@
 from functools import partial
 from unittest.mock import Mock
 
+import pytorch_lightning as pl
 import torch
 from torch.optim import SGD
 
 import mart
 from mart.attack import Adversary, Perturber
 
-import pytorch_lightning as pl
 
 def test_adversary(input_data, target_data, perturbation):
     enforcer = Mock()

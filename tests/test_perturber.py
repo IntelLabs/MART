@@ -20,7 +20,9 @@ def test_forward(input_data, target_data):
     projector = Mock()
     composer = mart.attack.composer.Additive()
 
-    perturber = Perturber(initializer=initializer, optimizer=None, composer=composer, projector=projector)
+    perturber = Perturber(
+        initializer=initializer, optimizer=None, composer=composer, projector=projector
+    )
 
     for _ in range(2):
         output_data = perturber(input=input_data, target=target_data)
@@ -37,7 +39,9 @@ def test_configure_optimizers(input_data, target_data):
     projector = Mock()
     composer = mart.attack.composer.Additive()
 
-    perturber = Perturber(initializer=initializer, optimizer=optimizer, composer=composer, projector=projector)
+    perturber = Perturber(
+        initializer=initializer, optimizer=optimizer, composer=composer, projector=projector
+    )
 
     for _ in range(2):
         perturber.configure_optimizers()
@@ -55,9 +59,13 @@ def test_training_step(input_data, target_data):
     gain = Mock(shape=[])
     model = Mock(return_value={"loss": gain})
 
-    perturber = Perturber(initializer=initializer, optimizer=optimizer, composer=composer, projector=projector)
+    perturber = Perturber(
+        initializer=initializer, optimizer=optimizer, composer=composer, projector=projector
+    )
 
-    output = perturber.training_step({"input": input_data, "target": target_data, "model": model}, 0)
+    output = perturber.training_step(
+        {"input": input_data, "target": target_data, "model": model}, 0
+    )
 
     assert output == gain
 
@@ -70,9 +78,13 @@ def test_training_step_with_many_gain(input_data, target_data):
     gain = torch.tensor([1234, 5678])
     model = Mock(return_value={"loss": gain})
 
-    perturber = Perturber(initializer=initializer, optimizer=optimizer, composer=composer, projector=projector)
+    perturber = Perturber(
+        initializer=initializer, optimizer=optimizer, composer=composer, projector=projector
+    )
 
-    output = perturber.training_step({"input": input_data, "target": target_data, "model": model}, 0)
+    output = perturber.training_step(
+        {"input": input_data, "target": target_data, "model": model}, 0
+    )
 
     assert output == gain.sum()
 
@@ -86,9 +98,17 @@ def test_training_step_with_objective(input_data, target_data):
     model = Mock(return_value={"loss": gain})
     objective = Mock(return_value=torch.tensor([True, False], dtype=torch.bool))
 
-    perturber = Perturber(initializer=initializer, optimizer=optimizer, composer=composer, projector=projector, objective=objective)
+    perturber = Perturber(
+        initializer=initializer,
+        optimizer=optimizer,
+        composer=composer,
+        projector=projector,
+        objective=objective,
+    )
 
-    output = perturber.training_step({"input": input_data, "target": target_data, "model": model}, 0)
+    output = perturber.training_step(
+        {"input": input_data, "target": target_data, "model": model}, 0
+    )
 
     assert output == gain[1]
 
@@ -102,9 +122,15 @@ def test_configure_gradient_clipping():
     optimizer = Mock(param_groups=[{"params": Mock()}, {"params": Mock()}])
     gradient_modifier = Mock()
 
-    perturber = Perturber(optimizer=optimizer, gradient_modifier=gradient_modifier, initializer=None, composer=None, projector=None)
+    perturber = Perturber(
+        optimizer=optimizer,
+        gradient_modifier=gradient_modifier,
+        initializer=None,
+        composer=None,
+        projector=None,
+    )
     # We need to mock a trainer since LightningModule does some checks
-    perturber.trainer = Mock(gradient_clip_val=1., gradient_clip_algorithm="norm")
+    perturber.trainer = Mock(gradient_clip_val=1.0, gradient_clip_algorithm="norm")
 
     perturber.configure_gradient_clipping(optimizer, 0)
 
