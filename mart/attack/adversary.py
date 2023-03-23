@@ -50,7 +50,7 @@ class Adversary(torch.nn.Module):
                 logger=False,
                 max_epochs=0,
                 limit_train_batches=kwargs.pop("max_iters", 10),
-                callbacks=kwargs.pop("callbacks", {}),
+                callbacks=list(kwargs.pop("callbacks", {}).values()),  # dict to list of values
                 enable_model_summary=False,
                 enable_checkpointing=False,
                 enable_progress_bar=False,
