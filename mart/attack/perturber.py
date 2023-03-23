@@ -19,10 +19,10 @@ if TYPE_CHECKING:
     from .initializer import Initializer
     from .objective import Objective
 
-__all__ = ["LitPerturber"]
+__all__ = ["Perturber"]
 
 
-class LitPerturber(pl.LightningModule):
+class Perturber(pl.LightningModule):
     """Peturbation optimization module."""
 
     def __init__(

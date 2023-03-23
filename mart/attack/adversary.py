@@ -14,7 +14,7 @@ import torch
 from mart.utils import silent
 
 from .enforcer import Enforcer
-from .perturber import LitPerturber
+from .perturber import Perturber
 
 __all__ = ["Adversary"]
 
@@ -24,7 +24,7 @@ class Adversary(torch.nn.Module):
         self,
         *,
         trainer: pl.Trainer | None = None,
-        perturber: LitPerturber | None = None,
+        perturber: Perturber | None = None,
         enforcer: Enforcer,
         **kwargs,
     ):
@@ -32,7 +32,7 @@ class Adversary(torch.nn.Module):
 
         Args:
             trainer (Trainer): A PyTorch-Lightning Trainer object used to fit the perturber.
-            perturber (LitPerturber): A LitPerturber that manages perturbations.
+            perturber (Perturber): A Perturber that manages perturbations.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
         """
         super().__init__()
@@ -55,7 +55,7 @@ class Adversary(torch.nn.Module):
         assert self.attacker.max_epochs == 0
         assert self.attacker.limit_train_batches > 0
 
-        self.perturber = perturber or LitPerturber(**kwargs)
+        self.perturber = perturber or Perturber(**kwargs)
         self.enforcer = enforcer
 
     @silent()

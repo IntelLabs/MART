@@ -11,8 +11,7 @@ import torch
 from torch.optim import SGD
 
 import mart
-from mart.attack import Adversary
-from mart.attack.perturber import Perturber
+from mart.attack import Adversary, Perturber
 
 
 def test_adversary(input_data, target_data, perturbation):

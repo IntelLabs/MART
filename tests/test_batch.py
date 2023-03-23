@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 import pytest
 import torch
 
-from mart.attack.perturber import BatchPerturber, Perturber
+from mart.attack import Perturber
 
 
 @pytest.fixture(scope="function")
