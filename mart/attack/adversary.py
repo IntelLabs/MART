@@ -18,7 +18,7 @@ from .gain import Gain
 from .objective import Objective
 from .perturber import BatchPerturber, Perturber
 
-__all__ = ["Adversary"]
+__all__ = ["Adversary", "Attacker"]
 
 
 class AdversaryCallbackHookMixin(Callback):
@@ -54,7 +54,7 @@ class AdversaryCallbackHookMixin(Callback):
             callback.on_run_end(**kwargs)
 
 
-class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
+class Attacker(AdversaryCallbackHookMixin, torch.nn.Module):
     """The attack optimization loop.
 
     This class implements the following loop structure:
@@ -176,7 +176,7 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
     #   since we haven't implemented it yet.
     @torch.autocast("cuda", enabled=False)
     @torch.autocast("cpu", enabled=False)
-    def forward(
+    def fit(
         self,
         *,
         input: torch.Tensor | tuple,
@@ -289,21 +289,34 @@ class IterativeGenerator(AdversaryCallbackHookMixin, torch.nn.Module):
 
         self.opt.step()
 
+    def forward(
+        self,
+        *,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        **kwargs,
+    ):
+        return self.perturber(input, target)
 
-class Adversary(IterativeGenerator):
+
+class Adversary(torch.nn.Module):
     """An adversary module which generates and applies perturbation to input."""
 
-    def __init__(self, *, composer: Composer, enforcer: Enforcer, **kwargs):
+    def __init__(
+        self, *, composer: Composer, enforcer: Enforcer, attacker: Attacker | None = None, **kwargs
+    ):
         """_summary_
 
         Args:
             composer (Composer): A module which composes adversarial examples from input and perturbation.
             enforcer (Enforcer): A module which checks if adversarial examples satisfy constraints.
+            attacker (Attacker): A trainer-like object that computes attacks.
         """
-        super().__init__(**kwargs)
+        super().__init__()
 
         self.composer = composer
         self.enforcer = enforcer
+        self.attacker = attacker or Attacker(**kwargs)
 
     def forward(
         self,
@@ -315,11 +328,11 @@ class Adversary(IterativeGenerator):
         # Generate a perturbation only if we have a model. This will update
         # the parameters of self.perturber.
         if model is not None:
-            super().forward(input=input, target=target, model=model, **kwargs)
+            self.attacker.fit(input=input, target=target, model=model, **kwargs)
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
-        perturbation = self.perturber(input, target)
+        perturbation = self.attacker(input=input, target=target)
         output = self.composer(perturbation, input=input, target=target)
 
         if model is not None:
