@@ -98,7 +98,7 @@ class Perturber(pl.LightningModule):
         self, optimizer, optimizer_idx, gradient_clip_val=None, gradient_clip_algorithm=None
     ):
         # Configuring gradient clipping in pl.Trainer is still useful, so use it.
-        super().configure_gradient_clipping(optimizer, gradient_clip_val, gradient_clip_algorithm)
+        super().configure_gradient_clipping(optimizer, optimizer_idx, gradient_clip_val, gradient_clip_algorithm)
 
         for group in optimizer.param_groups:
             self.gradient_modifier(group["params"])
