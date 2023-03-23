@@ -21,7 +21,7 @@ from .perturber import BatchPerturber, Perturber
 __all__ = ["Adversary", "Attacker"]
 
 
-class AdversaryCallbackHookMixin(Callback):
+class AttackerCallbackHookMixin(Callback):
     """Define event hooks in the Adversary Loop for callbacks."""
 
     callbacks = {}
@@ -54,7 +54,7 @@ class AdversaryCallbackHookMixin(Callback):
             callback.on_run_end(**kwargs)
 
 
-class Attacker(AdversaryCallbackHookMixin, torch.nn.Module):
+class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
     """The attack optimization loop.
 
     This class implements the following loop structure:
