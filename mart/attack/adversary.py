@@ -82,6 +82,7 @@ class Attacker(AdversaryCallbackHookMixin, torch.nn.Module):
         self,
         *,
         perturber: BatchPerturber | Perturber,
+        composer: Composer,
         optimizer: torch.optim.Optimizer,
         max_iters: int,
         gain: Gain,
@@ -92,6 +93,7 @@ class Attacker(AdversaryCallbackHookMixin, torch.nn.Module):
 
         Args:
             perturber (BatchPerturber | Perturber): A module that stores perturbations.
+            composer (Composer): A module which composes adversarial examples from input and perturbation.
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
@@ -101,6 +103,7 @@ class Attacker(AdversaryCallbackHookMixin, torch.nn.Module):
         super().__init__()
 
         self.perturber = perturber
+        self.composer = composer
         self.optimizer_fn = optimizer
 
         self.max_iters = max_iters
@@ -296,25 +299,24 @@ class Attacker(AdversaryCallbackHookMixin, torch.nn.Module):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        return self.perturber(input, target)
+        perturbation = self.perturber(input, target)
+        output = self.composer(perturbation, input=input, target=target)
+
+        return output
 
 
 class Adversary(torch.nn.Module):
     """An adversary module which generates and applies perturbation to input."""
 
-    def __init__(
-        self, *, composer: Composer, enforcer: Enforcer, attacker: Attacker | None = None, **kwargs
-    ):
+    def __init__(self, *, enforcer: Enforcer, attacker: Attacker | None = None, **kwargs):
         """_summary_
 
         Args:
-            composer (Composer): A module which composes adversarial examples from input and perturbation.
             enforcer (Enforcer): A module which checks if adversarial examples satisfy constraints.
             attacker (Attacker): A trainer-like object that computes attacks.
         """
         super().__init__()
 
-        self.composer = composer
         self.enforcer = enforcer
         self.attacker = attacker or Attacker(**kwargs)
 
@@ -332,8 +334,7 @@ class Adversary(torch.nn.Module):
 
         # Get perturbation and apply threat model
         # The mask projector in perturber may require information from target.
-        perturbation = self.attacker(input=input, target=target)
-        output = self.composer(perturbation, input=input, target=target)
+        output = self.attacker(input=input, target=target)
 
         if model is not None:
             # We only enforce constraints after the attack optimization ends.
