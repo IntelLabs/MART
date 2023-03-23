@@ -57,10 +57,15 @@ class Perturber(pl.LightningModule):
         self.gain_output = gain
         self.objective_fn = objective
 
-    def configure_optimizers(self):
-        # Perturbation is lazily initialized but we need a reference to it for the optimizer
-        # FIXME: It would be nice if we didn't have to create this buffer every time someone calls fit.
+        self._reset()
+
+    def _reset(self):
         self.perturbation = torch.nn.UninitializedBuffer(requires_grad=True)
+
+    def configure_optimizers(self):
+        # Reset perturbation each time fit is called
+        # FIXME: It would be nice if we didn't have to do this every fit.
+        self._reset()
 
         return self.optimizer_fn([self.perturbation])
 
