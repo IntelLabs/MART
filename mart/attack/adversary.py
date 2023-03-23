@@ -75,7 +75,12 @@ class Adversary(torch.nn.Module):
         if "model" in batch and "sequence" in batch:
             # Late bind attacker on same device as input
             if isinstance(self.attacker, partial):
-                device = batch["input"].device
+                inputs = batch["input"]
+
+                if isinstance(inputs, tuple):
+                    inputs = inputs[0]
+
+                device = inputs.device
 
                 if device.type == "cuda":
                     accelerator = "gpu"
