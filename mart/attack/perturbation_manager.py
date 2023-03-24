@@ -103,17 +103,19 @@ class PerturbationManager:
             for perturbation_i, input_i, target_i in zip(perturbation, input, target):
                 self._project(perturbation_i, input_i, target_i, modality=modality)
 
+    @property
     def parameter_groups(self):
         param_groups = self._parameter_groups(self._perturbation)
         return param_groups
 
     def _parameter_groups(self, pert, modality=None):
-        """Return parameter groups as a list of dictionaries."""
+        """Recursively return parameter groups as a list of dictionaries."""
 
         if isinstance(pert, torch.Tensor):
             return [{"params": pert} | self.optim_params[modality]]
         elif isinstance(pert, dict):
             ret = [self._parameter_groups(pert_i, modality) for modality, pert_i in pert.items()]
+            # Concatenate a list of lists.
             return list(itertools.chain.from_iterable(ret))
         elif isinstance(pert, list) or isinstance(pert, tuple):
             param_list = []

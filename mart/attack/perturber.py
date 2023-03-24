@@ -75,10 +75,13 @@ class Perturber(pl.LightningModule):
     def perturbation(self):
         return self.pert_manager.perturbation
 
+    @property
+    def parameter_groups(self):
+        return self.pert_manager.parameter_groups
+
     def configure_optimizers(self):
         # Parameter initialization is done in Adversary before fit() by invoking initialize(input).
-        param_groups = self.pert_manager.parameter_groups()
-        return self.optimizer_fn(param_groups)
+        return self.optimizer_fn(self.parameter_groups)
 
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally
