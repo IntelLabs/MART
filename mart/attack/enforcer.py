@@ -11,6 +11,8 @@ from typing import Any
 
 import torch
 
+__all__ = ["ModalityEnforcer"]
+
 
 class ConstraintViolated(Exception):
     pass
@@ -86,6 +88,26 @@ class Enforcer:
     @torch.no_grad()
     def __call__(self, input_adv, *, input, target, **kwargs):
         self._check_constraints(input_adv, input=input, target=target)
+
+
+class ModalityEnforcer(Enforcer):
+    def __init__(self, sub_enforcers=None) -> None:
+        self.sub_enforcers = sub_enforcers
+
+    def _enforce(self, input_adv, *, input, target, modality=None):
+        if isinstance(input_adv, torch.Tensor):
+            self.sub_enforcers[modality](input_adv, input=input, target=target)
+        elif isinstance(input_adv, dict):
+            for modality in input_adv:
+                self._enforce(
+                    input_adv[modality], input=input[modality], target=target, modality=modality
+                )
+        elif isinstance(input_adv, list) or isinstance(input_adv, tuple):
+            for input_adv_i, input_i, target_i in zip(input_adv, input, target):
+                self._enforce(input_adv_i, input=input_i, target=target_i)
+
+    def __call__(self, input_adv, *, input, target, **kwargs):
+        self._enforce(input_adv, input=input, target=target)
 
 
 class BatchEnforcer(Enforcer):
