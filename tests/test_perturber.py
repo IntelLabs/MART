@@ -24,6 +24,8 @@ def test_forward(input_data, target_data):
         initializer=initializer, optimizer=None, composer=composer, projector=projector
     )
 
+    perturber.configure_perturbation(input_data)
+
     for _ in range(2):
         output_data = perturber(input=input_data, target=target_data)
 
@@ -42,6 +44,8 @@ def test_configure_optimizers(input_data, target_data):
     perturber = Perturber(
         initializer=initializer, optimizer=optimizer, composer=composer, projector=projector
     )
+
+    perturber.configure_perturbation(input_data)
 
     for _ in range(2):
         perturber.configure_optimizers()

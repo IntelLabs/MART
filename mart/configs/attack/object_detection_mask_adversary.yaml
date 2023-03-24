@@ -6,8 +6,8 @@ defaults:
   - projector: mask_range
   - callbacks: [image_visualizer]
   - objective: zero_ap
-  - composer: batch_overlay
-  - enforcer: batch
+  - composer: overlay
+  - enforcer: default
   - enforcer/constraints: [mask, pixel_range]
 
 # Make a 5-step attack for the demonstration purpose.

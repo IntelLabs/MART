@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import pytorch_lightning as pl
 import torch
+from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from .gradient_modifier import GradientModifier
 from .projector import Projector
@@ -57,17 +58,30 @@ class Perturber(pl.LightningModule):
         self.gain_output = gain
         self.objective_fn = objective
 
-        self._reset()
+        self.perturbation = None
 
-    def _reset(self):
-        self.perturbation = torch.nn.UninitializedBuffer(requires_grad=True)
+    def configure_perturbation(self, input: torch.Tensor | tuple):
+        def create_and_initialize(inp):
+            pert = torch.empty_like(inp)
+            self.initializer(pert)
+            return pert
+
+        if not isinstance(input, tuple):
+            self.perturbation = create_and_initialize(input)
+        else:
+            self.perturbation = tuple(create_and_initialize(inp) for inp in input)
 
     def configure_optimizers(self):
-        # Reset perturbation each time fit is called
-        # FIXME: It would be nice if we didn't have to do this every fit.
-        self._reset()
+        if self.perturbation is None:
+            raise MisconfigurationException(
+                "You need to call the Perturber.configure_perturbation before fit."
+            )
 
-        return self.optimizer_fn([self.perturbation])
+        params = self.perturbation
+        if not isinstance(params, tuple):
+            params = (params,)
+
+        return self.optimizer_fn(params)
 
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally
@@ -112,15 +126,21 @@ class Perturber(pl.LightningModule):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        # Materialize perturbation and initialize it
-        if torch.nn.parameter.is_lazy(self.perturbation):
-            self.perturbation.materialize(input.shape, device=input.device, dtype=torch.float32)
-            self.initializer(self.perturbation)
+        if self.perturbation is None:
+            raise MisconfigurationException(
+                "You need to call the Perturber.configure_perturbation before forward."
+            )
 
-        # Project perturbation...
-        self.projector(self.perturbation, input, target)
+        def project_and_compose(pert, inp, tar):
+            self.projector(pert, inp, tar)
+            return self.composer(pert, input=inp, target=tar)
 
-        # Compose adversarial input.
-        input_adv = self.composer(self.perturbation, input=input, target=target)
+        if not isinstance(self.perturbation, tuple):
+            input_adv = project_and_compose(self.perturbation, input, target)
+        else:
+            input_adv = tuple(
+                project_and_compose(pert, inp, tar)
+                for pert, inp, tar in zip(self.perturbation, input, target)
+            )
 
         return input_adv
