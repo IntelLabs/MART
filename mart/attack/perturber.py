@@ -79,6 +79,7 @@ class Perturber(pl.LightningModule):
 
         params = self.perturbation
         if not isinstance(params, tuple):
+            # FIXME: Should we treat the batch dimension as independent parameters?
             params = (params,)
 
         return self.optimizer_fn(params)
