@@ -6,7 +6,8 @@ defaults:
   - projector@projector.rgb: mask_range
   # - callbacks: [progress_bar, image_visualizer]
   - objective: zero_ap
-  - composer: batch_overlay
+  - composer: modality
+  - composer@composer.sub_composers.rgb: overlay
   - enforcer: batch
   - enforcer/constraints: [mask, pixel_range]
 
