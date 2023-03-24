@@ -74,6 +74,7 @@ class Adversary(torch.nn.Module):
         # get a loss.
         if "model" in batch and "sequence" in batch:
             # Late bind attacker on same device as input
+            # FIXME: It would be nice if we could do something like: self.attacker.configure_accelerator()
             if isinstance(self.attacker, partial):
                 inputs = batch["input"]
 
