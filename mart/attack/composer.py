@@ -11,7 +11,7 @@ from typing import Any
 
 import torch
 
-__all__ = ["BatchComposer"]
+__all__ = ["BatchComposer", "ModalityComposer"]
 
 
 class Composer(torch.nn.Module, abc.ABC):
@@ -54,6 +54,48 @@ class BatchComposer(Composer):
         else:
             output = tuple(output)
 
+        return output
+
+
+class ModalityComposer(Composer):
+    def __init__(self, sub_composers: dict | Composer):
+        super().__init__()
+
+        # Backward compatibility, in case modality is unknown, and not given in input.
+        if isinstance(sub_composers, Composer):
+            sub_composers = {None: sub_composers}
+
+        self.sub_composers = sub_composers
+
+    def _compose(self, perturbation, *, input, target, modality=None):
+        """Recursively compose output from perturbation and input."""
+        if isinstance(perturbation, torch.Tensor):
+            output = self.sub_composers[modality](perturbation, input=input, target=target)
+            return output
+        elif isinstance(perturbation, dict):
+            output = {}
+            for modality, pert in perturbation.items():
+                output[modality] = self._compose(
+                    pert, input=input[modality], target=target, modality=modality
+                )
+            return output
+        elif isinstance(perturbation, list) or isinstance(perturbation, tuple):
+            output = []
+            for pert_i, input_i, target_i in zip(perturbation, input, target):
+                output.append(self._compose(pert_i, input=input_i, target=target_i))
+            if isinstance(perturbation, tuple):
+                output = tuple(output)
+            return output
+
+    def forward(
+        self,
+        perturbation: torch.Tensor | tuple,
+        *,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        **kwargs,
+    ) -> torch.Tensor | tuple:
+        output = self._compose(perturbation, input=input, target=target)
         return output
 
 
