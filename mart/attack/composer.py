@@ -43,8 +43,11 @@ class BatchComposer(Composer):
         output = []
 
         for input_i, target_i, perturbation_i in zip(input, target, perturbation):
-            output_i = self.composer(perturbation_i, input=input_i, target=target_i, **kwargs)
-            output.append(output_i)
+            # FIXME: Make it modality-aware.
+            output_i = self.composer(
+                perturbation_i["rgb"], input=input_i["rgb"], target=target_i, **kwargs
+            )
+            output.append({"rgb": output_i})
 
         if isinstance(input, torch.Tensor):
             output = torch.stack(output)
@@ -82,6 +85,7 @@ class Overlay(Composer):
 
         # Convert mask to a Tensor with same torch.dtype and torch.device as input,
         #   because some data modules (e.g. Armory) gives binary mask.
+        # FIXME: input can be a dictionary {"rgb": tensor}
         mask = mask.to(input)
 
         return input * (1 - mask) + perturbation * mask

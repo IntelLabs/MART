@@ -96,6 +96,8 @@ class BatchEnforcer(Enforcer):
         *,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
+        **kwargs,
     ) -> torch.Tensor | tuple:
         for input_adv_i, input_i, target_i in zip(input_adv, input, target):
-            self._check_constraints(input_adv_i, input=input_i, target=target_i)
+            # FIXME: Make it modality-aware.
+            self._check_constraints(input_adv_i["rgb"], input=input_i["rgb"], target=target_i)
