@@ -8,8 +8,10 @@ defaults:
   - objective: zero_ap
   - composer: modality
   - composer@composer.sub_composers.rgb: overlay
-  - enforcer: batch
-  - enforcer/constraints: [mask, pixel_range]
+  - enforcer: modality
+  - enforcer@enforcer.sub_enforcers.rgb: default
+  - enforcer/constraints@enforcer.sub_enforcers.rgb.constraints:
+      [mask, pixel_range]
 
 # Make a 5-step attack for the demonstration purpose.
 optimizer:
