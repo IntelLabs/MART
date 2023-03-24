@@ -11,8 +11,6 @@ from typing import Any
 
 import torch
 
-__all__ = ["BatchComposer"]
-
 
 class Composer(torch.nn.Module, abc.ABC):
     @abc.abstractclassmethod
@@ -24,32 +22,6 @@ class Composer(torch.nn.Module, abc.ABC):
         target: torch.Tensor | dict[str, Any] | list[Any],
     ) -> torch.Tensor | list[torch.Tensor]:
         raise NotImplementedError
-
-
-class BatchComposer(Composer):
-    def __init__(self, composer: Composer):
-        super().__init__()
-
-        self.composer = composer
-
-    def forward(
-        self,
-        perturbation: torch.Tensor | list[torch.Tensor],
-        *,
-        input: torch.Tensor | list[torch.Tensor],
-        target: torch.Tensor | dict[str, Any] | list[Any],
-        **kwargs,
-    ) -> torch.Tensor | list[torch.Tensor]:
-        output = []
-
-        for input_i, target_i, perturbation_i in zip(input, target, perturbation):
-            output_i = self.composer(perturbation_i, input=input_i, target=target_i, **kwargs)
-            output.append(output_i)
-
-        if isinstance(input, torch.Tensor):
-            output = torch.stack(output)
-
-        return output
 
 
 class Additive(Composer):
