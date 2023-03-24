@@ -60,16 +60,16 @@ class Perturber(pl.LightningModule):
 
         self.perturbation = None
 
-    def configure_perturbation(self, input: torch.Tensor | tuple):
+    def configure_perturbation(self, input: torch.Tensor | list[torch.Tensor]):
         def create_and_initialize(inp):
             pert = torch.empty_like(inp, dtype=torch.float, requires_grad=True)
             self.initializer(pert)
             return pert
 
-        if not isinstance(input, tuple):
+        if not isinstance(input, list):
             self.perturbation = create_and_initialize(input)
         else:
-            self.perturbation = tuple(create_and_initialize(inp) for inp in input)
+            self.perturbation = [create_and_initialize(inp) for inp in input]
 
     def configure_optimizers(self):
         if self.perturbation is None:
@@ -78,7 +78,7 @@ class Perturber(pl.LightningModule):
             )
 
         params = self.perturbation
-        if not isinstance(params, tuple):
+        if not isinstance(params, list):
             # FIXME: Should we treat the batch dimension as independent parameters?
             params = (params,)
 
@@ -123,8 +123,8 @@ class Perturber(pl.LightningModule):
     def forward(
         self,
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | list[torch.Tensor],
+        target: torch.Tensor | dict[str, Any] | list[Any],
         **kwargs,
     ):
         if self.perturbation is None:
@@ -136,12 +136,12 @@ class Perturber(pl.LightningModule):
             self.projector(pert, inp, tar)
             return self.composer(pert, input=inp, target=tar)
 
-        if not isinstance(self.perturbation, tuple):
+        if not isinstance(self.perturbation, list):
             input_adv = project_and_compose(self.perturbation, input, target)
         else:
-            input_adv = tuple(
+            input_adv = [
                 project_and_compose(pert, inp, tar)
                 for pert, inp, tar in zip(self.perturbation, input, target)
-            )
+            ]
 
         return input_adv

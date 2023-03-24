@@ -86,6 +86,6 @@ class CocoDetection(CocoDetection_):
         return image, target_dict
 
 
-# Source: https://github.com/pytorch/vision/blob/dc07ac2add8285e16a716564867d0b4b953f6735/references/detection/utils.py#L203
 def collate_fn(batch):
-    return tuple(zip(*batch))
+    # [(x0, y0), ...,  (xN, yN)] -> ([x0, ..., xN], [y0, ..., yN])
+    return tuple(map(list, zip(*batch)))

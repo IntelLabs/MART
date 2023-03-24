@@ -68,7 +68,8 @@ class Adversary(torch.nn.Module):
         self.enforcer = enforcer
 
     @silent()
-    def forward(self, *, input: torch.Tensor | tuple, **batch):
+    def forward(self, *, input: torch.Tensor | list[torch.Tensor], **batch):
+        print("input =", input.__class__)
         # Adversary lives within a sequence of model. To signal the adversary should attack, one
         # must pass a model to attack when calling the adversary. Since we do not know where the
         # Adversary lives inside the model, we also need the remaining sequence to be able to
@@ -85,7 +86,7 @@ class Adversary(torch.nn.Module):
 
         return input_adv
 
-    def _attack(self, input: torch.Tensor | tuple, **kwargs):
+    def _attack(self, input: torch.Tensor | list[torch.Tensor], **kwargs):
         batch = {"input": input, **kwargs}
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
@@ -94,7 +95,7 @@ class Adversary(torch.nn.Module):
         attacker.fit_loop.max_epochs += 1
         attacker.fit(self.perturber, train_dataloaders=cycle([batch]))
 
-    def _initialize_attack(self, input: torch.Tensor | tuple):
+    def _initialize_attack(self, input: torch.Tensor | list[torch.Tensor]):
         # Configure perturber to use batch inputs
         self.perturber.configure_perturbation(input)
 
@@ -102,7 +103,7 @@ class Adversary(torch.nn.Module):
             return self.attacker
 
         # Convert torch.device to PL accelerator
-        device = input[0].device if isinstance(input, tuple) else input.device
+        device = input[0].device if isinstance(input, list) else input.device
 
         if device.type == "cuda":
             accelerator = "gpu"
@@ -120,13 +121,13 @@ class Adversary(torch.nn.Module):
 
     def _enforce(
         self,
-        input_adv: torch.Tensor | tuple,
+        input_adv: torch.Tensor | list[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | list[torch.Tensor],
+        target: torch.Tensor | dict[str, Any] | list[Any],
         **kwargs,
     ):
-        if not isinstance(input_adv, tuple):
+        if not isinstance(input_adv, list):
             self.enforcer(input_adv, input=input, target=target)
         else:
             for inp_adv, inp, tar in zip(input_adv, input, target):
