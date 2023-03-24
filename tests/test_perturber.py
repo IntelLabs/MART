@@ -9,11 +9,27 @@ from unittest.mock import Mock, patch
 
 import pytest
 import torch
+from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 import mart
 from mart.attack.adversary import Adversary
 from mart.attack.perturber import Perturber
 
+
+def test_configure_perturbation(input_data):
+    initializer = Mock()
+    projector = Mock()
+    composer = Mock()
+
+    perturber = Perturber(
+        initializer=initializer, optimizer=None, composer=composer, projector=projector
+    )
+
+    perturber.configure_perturbation(input_data)
+
+    initializer.assert_called_once()
+    projector.assert_not_called()
+    composer.assert_not_called()
 
 def test_forward(input_data, target_data):
     initializer = mart.attack.initializer.Constant(1337)
@@ -35,6 +51,19 @@ def test_forward(input_data, target_data):
     assert projector.call_count == 2
 
 
+def test_forward_fails(input_data, target_data):
+    initializer = mart.attack.initializer.Constant(1337)
+    projector = Mock()
+    composer = mart.attack.composer.Additive()
+
+    perturber = Perturber(
+        initializer=initializer, optimizer=None, composer=composer, projector=projector
+    )
+
+    with pytest.raises(MisconfigurationException):
+        output_data = perturber(input=input_data, target=target_data)
+
+
 def test_configure_optimizers(input_data, target_data):
     initializer = mart.attack.initializer.Constant(1337)
     optimizer = Mock()
@@ -53,6 +82,39 @@ def test_configure_optimizers(input_data, target_data):
 
     assert optimizer.call_count == 2
     assert projector.call_count == 2
+
+
+def test_configure_optimizers_fails():
+    initializer = mart.attack.initializer.Constant(1337)
+    optimizer = Mock()
+    projector = Mock()
+    composer = mart.attack.composer.Additive()
+
+    perturber = Perturber(
+        initializer=initializer, optimizer=optimizer, composer=composer, projector=projector
+    )
+
+    with pytest.raises(MisconfigurationException):
+        perturber.configure_optimizers()
+
+
+def test_optimizer_parameters_with_gradient(input_data, target_data):
+    initializer = mart.attack.initializer.Constant(1337)
+    optimizer = lambda params: torch.optim.SGD(params, lr=0)
+    projector = Mock()
+    composer = mart.attack.composer.Additive()
+
+    perturber = Perturber(
+        initializer=initializer, optimizer=optimizer, composer=composer, projector=projector
+    )
+
+    perturber.configure_perturbation(input_data)
+    opt = perturber.configure_optimizers()
+
+    # Make sure each parameter in optimizer requires a gradient
+    for param_group in opt.param_groups:
+        for param in param_group["params"]:
+            assert param.requires_grad
 
 
 def test_training_step(input_data, target_data):

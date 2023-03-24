@@ -62,7 +62,7 @@ class Perturber(pl.LightningModule):
 
     def configure_perturbation(self, input: torch.Tensor | tuple):
         def create_and_initialize(inp):
-            pert = torch.empty_like(inp)
+            pert = torch.empty_like(inp, dtype=torch.float, requires_grad=True)
             self.initializer(pert)
             return pert
 
@@ -74,7 +74,7 @@ class Perturber(pl.LightningModule):
     def configure_optimizers(self):
         if self.perturbation is None:
             raise MisconfigurationException(
-                "You need to call the Perturber.configure_perturbation before fit."
+                "You need to call the configure_perturbation before fit."
             )
 
         params = self.perturbation
@@ -129,7 +129,7 @@ class Perturber(pl.LightningModule):
     ):
         if self.perturbation is None:
             raise MisconfigurationException(
-                "You need to call the Perturber.configure_perturbation before forward."
+                "You need to call the configure_perturbation before forward."
             )
 
         def project_and_compose(pert, inp, tar):
