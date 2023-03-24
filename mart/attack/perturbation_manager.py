@@ -49,11 +49,18 @@ class PerturbationManager:
 
     @property
     def perturbation(self):
-        # Return perturbation that is homomorphic with input, even if the underlying perturbation could be its sub-components.
+        """Return perturbation that is homomorphic with input."""
+        # TODO: Compose perturbation from sub-componenets.
         return self._perturbation
 
     def initialize(self, input):
-        # Create raw perturbation that is used to produce parameter groups for optimization.
+        """Create and initialize raw perturbation components.
+
+        With raw perturbation components, we can
+            1. compose perturbation that is homomorphic to input.
+            2. compose parameter groups for optimization.
+        """
+        # TODO: Raw perturbation is not necessarily homorphic with input.
         self._perturbation = self._initialize(input)
 
     def _initialize(self, input, modality=None):
@@ -67,7 +74,8 @@ class PerturbationManager:
             self.initializer[modality](pert)
 
             # Gradient modifier hook.
-            # TODO: self.gradient_modifier[modality](pert)
+            # FIXME: use actual gradient modifier, self.gradient_modifier[modality](pert)
+            #        The current implementation of gradient modifiers is not hookable.
             if self.gradient_modifier is not None:
                 pert.register_hook(lambda grad: grad.sign())
 
