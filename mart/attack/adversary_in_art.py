@@ -82,17 +82,17 @@ class MartToArtAttackAdapter:
             x (np.ndarray): NHWC, [0, 1]
 
         Returns:
-            tuple: a tuple of tensors in CHW, [0, 255].
+            list[torch.Tensor]: a list of tensors in CHW, [0, 255].
         """
         input = torch.tensor(x).permute((0, 3, 1, 2)).to(self._device) * 255
-        input = tuple(inp_ for inp_ in input)
+        input = [inp_ for inp_ in input]
         return input
 
-    def convert_input_mart_to_art(self, input: tuple):
+    def convert_input_mart_to_art(self, input: list[torch.Tensor]):
         """Convert MART input to the ART's format.
 
         Args:
-            input (tuple): a tuple of tensors in CHW, [0, 255].
+            input (list[torch.Tensor]): a list of tensors in CHW, [0, 255].
 
         Returns:
             np.ndarray: NHWC, [0, 1]
@@ -112,7 +112,7 @@ class MartToArtAttackAdapter:
             y_patch_metadata (_type_): _description_
 
         Returns:
-            tuple: a tuple of target dictionaies.
+            list: a list of target dictionaies.
         """
         # Copy y to target, and convert ndarray to pytorch tensors accordingly.
         target = []
@@ -131,7 +131,5 @@ class MartToArtAttackAdapter:
             # Use image_id as the file_name because we don't have the file name.
             target_i["file_name"] = f"{yi['image_id'][0]}.jpg"
             target.append(target_i)
-
-        target = tuple(target)
 
         return target

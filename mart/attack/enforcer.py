@@ -92,10 +92,10 @@ class BatchEnforcer(Enforcer):
     @torch.no_grad()
     def __call__(
         self,
-        input_adv: torch.Tensor | tuple,
+        input_adv: torch.Tensor | list[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-    ) -> torch.Tensor | tuple:
+        input: torch.Tensor | list[torch.Tensor],
+        target: torch.Tensor | dict[str, Any] | list[Any],
+    ) -> torch.Tensor | list[torch.Tensor]:
         for input_adv_i, input_i, target_i in zip(input_adv, input, target):
             self._check_constraints(input_adv_i, input=input_i, target=target_i)

@@ -37,8 +37,8 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
 
     def forward(
         self,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | list[torch.Tensor],
+        target: torch.Tensor | dict[str, Any] | list[Any],
         model: torch.nn.Module | None = None,
         **kwargs,
     ):

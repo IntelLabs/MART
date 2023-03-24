@@ -18,11 +18,11 @@ class Composer(torch.nn.Module, abc.ABC):
     @abc.abstractclassmethod
     def forward(
         self,
-        perturbation: torch.Tensor | tuple,
+        perturbation: torch.Tensor | list[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-    ) -> torch.Tensor | tuple:
+        input: torch.Tensor | list[torch.Tensor],
+        target: torch.Tensor | dict[str, Any] | list[Any],
+    ) -> torch.Tensor | list[torch.Tensor]:
         raise NotImplementedError
 
 
@@ -34,12 +34,12 @@ class BatchComposer(Composer):
 
     def forward(
         self,
-        perturbation: torch.Tensor | tuple,
+        perturbation: torch.Tensor | list[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | list[torch.Tensor],
+        target: torch.Tensor | dict[str, Any] | list[Any],
         **kwargs,
-    ) -> torch.Tensor | tuple:
+    ) -> torch.Tensor | list[torch.Tensor]:
         output = []
 
         for input_i, target_i, perturbation_i in zip(input, target, perturbation):
@@ -48,8 +48,6 @@ class BatchComposer(Composer):
 
         if isinstance(input, torch.Tensor):
             output = torch.stack(output)
-        else:
-            output = tuple(output)
 
         return output
 
