@@ -78,7 +78,8 @@ class Adversary(torch.nn.Module):
                 inputs = batch["input"]
 
                 if isinstance(inputs, tuple):
-                    inputs = inputs[0]
+                    # FIXME: Make it modality-aware to get a tensor.
+                    inputs = inputs[0]["rgb"]
 
                 device = inputs.device
 
