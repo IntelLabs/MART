@@ -100,6 +100,10 @@ class Adversary(torch.nn.Module):
             # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
             # We use Trainer.limit_train_batches to control the number of attack iterations.
             self.attacker.fit_loop.max_epochs += 1
+
+            # Initialize perturbation with input.
+            self.perturber.initialize(**batch)
+
             self.attacker.fit(self.perturber, train_dataloaders=cycle([batch]))
 
         # Always use perturb the current input.

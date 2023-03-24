@@ -12,6 +12,7 @@ import pytorch_lightning as pl
 import torch
 
 from .gradient_modifier import GradientModifier
+from .perturbation_manager import PerturbationManager
 from .projector import Projector
 
 if TYPE_CHECKING:
@@ -35,6 +36,7 @@ class Perturber(pl.LightningModule):
         projector: Projector | None = None,
         gain: str = "loss",
         objective: Objective | None = None,
+        optim_params: dict | None = None,
     ):
         """_summary_
 
@@ -49,25 +51,34 @@ class Perturber(pl.LightningModule):
         """
         super().__init__()
 
-        self.initializer = initializer
         self.optimizer_fn = optimizer
         self.composer = composer
-        self.gradient_modifier = gradient_modifier or GradientModifier()
-        self.projector = projector or Projector()
         self.gain_output = gain
         self.objective_fn = objective
 
-        self._reset()
+        # An object manage the perturbation in both the tensor and the parameter form.
+        # FIXME: gradient_modifier should be a hook operating on .grad directly.
+        self.pert_manager = PerturbationManager(
+            initializer=initializer,
+            gradient_modifier=gradient_modifier,
+            projector=projector,
+            optim_params=optim_params,
+        )
 
-    def _reset(self):
-        self.perturbation = torch.nn.UninitializedBuffer(requires_grad=True)
+    def initialize(self, *, input, **kwargs):
+        self.pert_manager.initialize(input)
+
+    def project(self, input, target):
+        return self.pert_manager.project(input, target)
+
+    @property
+    def perturbation(self):
+        return self.pert_manager.perturbation
 
     def configure_optimizers(self):
-        # Reset perturbation each time fit is called
-        # FIXME: It would be nice if we didn't have to do this every fit.
-        self._reset()
-
-        return self.optimizer_fn([self.perturbation])
+        # Parameter initialization is done in Adversary before fit() by invoking initialize(input).
+        param_groups = self.pert_manager.parameter_groups()
+        return self.optimizer_fn(param_groups)
 
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally
@@ -94,17 +105,6 @@ class Perturber(pl.LightningModule):
 
         return gain
 
-    def configure_gradient_clipping(
-        self, optimizer, optimizer_idx, gradient_clip_val=None, gradient_clip_algorithm=None
-    ):
-        # Configuring gradient clipping in pl.Trainer is still useful, so use it.
-        super().configure_gradient_clipping(
-            optimizer, optimizer_idx, gradient_clip_val, gradient_clip_algorithm
-        )
-
-        for group in optimizer.param_groups:
-            self.gradient_modifier(group["params"])
-
     def forward(
         self,
         *,
@@ -112,13 +112,8 @@ class Perturber(pl.LightningModule):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        # Materialize perturbation and initialize it
-        if torch.nn.parameter.is_lazy(self.perturbation):
-            self.perturbation.materialize(input.shape, device=input.device, dtype=torch.float32)
-            self.initializer(self.perturbation)
-
         # Project perturbation...
-        self.projector(self.perturbation, input, target)
+        self.project(input, target)
 
         # Compose adversarial input.
         input_adv = self.composer(self.perturbation, input=input, target=target)
