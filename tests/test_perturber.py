@@ -5,6 +5,7 @@
 #
 
 import importlib
+from functools import partial
 from unittest.mock import Mock, patch
 
 import pytest
@@ -30,6 +31,7 @@ def test_configure_perturbation(input_data):
     initializer.assert_called_once()
     projector.assert_not_called()
     composer.assert_not_called()
+
 
 def test_forward(input_data, target_data):
     initializer = mart.attack.initializer.Constant(1337)
@@ -100,7 +102,7 @@ def test_configure_optimizers_fails():
 
 def test_optimizer_parameters_with_gradient(input_data, target_data):
     initializer = mart.attack.initializer.Constant(1337)
-    optimizer = lambda params: torch.optim.SGD(params, lr=0)
+    optimizer = partial(torch.optim.SGD, lr=0)
     projector = Mock()
     composer = mart.attack.composer.Additive()
 
