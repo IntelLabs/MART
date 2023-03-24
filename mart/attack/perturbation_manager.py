@@ -22,21 +22,27 @@ class PerturbationManager:
         optim_params: dict | None = None,
     ) -> None:
 
+        # In case gradient_modifier or projector is None.
+        def nop(*args, **kwargs):
+            pass
+
+        gradient_modifier = gradient_modifier or nop
+        projector = projector or nop
+
+        # Backward compatibility, in case modality is unknown, and not given in input.
         if not isinstance(initializer, dict):
             initializer = {None: initializer}
-
-        if gradient_modifier is None and not isinstance(gradient_modifier, dict):
+        if not isinstance(gradient_modifier, dict):
             gradient_modifier = {None: gradient_modifier}
-
-        if projector is not None and not isinstance(projector, dict):
+        if not isinstance(projector, dict):
             projector = {None: projector}
+
+        # In case optimization parameters are not given.
+        optim_params = optim_params or {modality: {} for modality in initializer.keys()}
 
         self.initializer = initializer
         self.gradient_modifier = gradient_modifier
         self.projector = projector
-
-        if optim_params is None:
-            optim_params = {None: {}} | {modality: {} for modality in self.initializer.keys()}
         self.optim_params = optim_params
 
         self._perturbation = None
