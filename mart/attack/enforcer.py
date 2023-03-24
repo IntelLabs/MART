@@ -86,16 +86,3 @@ class Enforcer:
     @torch.no_grad()
     def __call__(self, input_adv, *, input, target, **kwargs):
         self._check_constraints(input_adv, input=input, target=target)
-
-
-class BatchEnforcer(Enforcer):
-    @torch.no_grad()
-    def __call__(
-        self,
-        input_adv: torch.Tensor | tuple,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-    ) -> torch.Tensor | tuple:
-        for input_adv_i, input_i, target_i in zip(input_adv, input, target):
-            self._check_constraints(input_adv_i, input=input_i, target=target_i)
