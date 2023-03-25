@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple
 
 import hydra
+import torch
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Callback
@@ -26,6 +27,7 @@ __all__ = [
     "log_hyperparameters",
     "save_file",
     "task_wrapper",
+    "get_tensor_device",
 ]
 
 log = pylogger.get_pylogger(__name__)
@@ -272,3 +274,22 @@ def get_resume_checkpoint(config: DictConfig) -> Tuple[DictConfig]:
         config = hydra.compose(config_name, overrides=overrides)
 
     return config
+
+
+def get_tensor_device(data):
+    """Get device of the first tensor hidden in dict/list/tuple."""
+
+    def _get_first_tensor(data):
+        if isinstance(data, torch.Tensor):
+            return data
+        elif isinstance(data, list) or isinstance(data, tuple) or isinstance(data, dict):
+            data = data.values() if isinstance(data, dict) else data
+            for sub_data in data:
+                ret = _get_first_tensor(sub_data)
+                if ret is not None:
+                    return ret
+        else:
+            return None
+
+    tensor = _get_first_tensor(data)
+    return tensor.device
