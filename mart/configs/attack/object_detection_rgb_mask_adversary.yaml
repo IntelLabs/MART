@@ -1,0 +1,26 @@
+defaults:
+  - adversary
+  - optimizer: sgd
+  - initializer@initializer.rgb: constant
+  - gradient_modifier@gradient_modifier.rgb: sign
+  - projector@projector.rgb: mask_range
+  # - callbacks: [progress_bar, image_visualizer]
+  - objective: zero_ap
+  - composer: modality
+  - composer@composer.sub_composers.rgb: overlay
+  - enforcer: modality
+  - enforcer@enforcer.sub_enforcers.rgb: default
+  - enforcer/constraints@enforcer.sub_enforcers.rgb.constraints:
+      [mask, pixel_range]
+
+# Make a 5-step attack for the demonstration purpose.
+optimizer:
+  lr: 55
+
+max_iters: 5
+
+gain: "loss"
+
+initializer:
+  rgb:
+    constant: 127
