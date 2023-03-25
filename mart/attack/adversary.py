@@ -12,7 +12,7 @@ from itertools import cycle
 import pytorch_lightning as pl
 import torch
 
-from mart.utils import silent
+from mart.utils import get_tensor_device, silent
 
 from .enforcer import Enforcer
 from .perturber import Perturber
@@ -76,12 +76,7 @@ class Adversary(torch.nn.Module):
             # Late bind attacker on same device as input
             if isinstance(self.attacker, partial):
                 inputs = batch["input"]
-
-                if isinstance(inputs, tuple):
-                    # FIXME: Make it modality-aware to get a tensor.
-                    inputs = inputs[0]["rgb"]
-
-                device = inputs.device
+                device = get_tensor_device(inputs)
 
                 if device.type == "cuda":
                     accelerator = "gpu"
