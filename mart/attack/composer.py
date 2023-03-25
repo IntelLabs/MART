@@ -27,8 +27,13 @@ class Composer(torch.nn.Module, abc.ABC):
 
 
 class ModalityComposer(Composer):
-    def __init__(self, sub_composers: dict[str, Composer]):
+    def __init__(self, sub_composers: dict[str, Composer] | Composer):
         super().__init__()
+
+        # Backward compatibility for datasets which do not have modality tokens.
+        if isinstance(sub_composers, Composer):
+            sub_composers = {None: sub_composers}
+
         self.sub_composers = sub_composers
 
     def _compose(self, perturbation, *, input, target, modality=None):

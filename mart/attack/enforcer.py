@@ -91,7 +91,12 @@ class Enforcer:
 
 
 class ModalityEnforcer(Enforcer):
-    def __init__(self, sub_enforcers=None) -> None:
+    def __init__(self, sub_enforcers: dict | Enforcer) -> None:
+
+        # Backward compatibility for datasets which do not have modality tokens.
+        if isinstance(sub_enforcers, Enforcer):
+            sub_enforcers = {None: sub_enforcers}
+
         self.sub_enforcers = sub_enforcers
 
     def _enforce(self, input_adv, *, input, target, modality=None):
