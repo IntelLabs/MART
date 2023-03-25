@@ -115,6 +115,11 @@ class Perturber(pl.LightningModule):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
+        if self.perturbation is None:
+            # TODO: raise Exception?
+            #       The optimizer won't get parameters earlier if this happens.
+            self.initialize(input=input, target=target)
+
         # Project perturbation...
         self.project(input, target)
 
