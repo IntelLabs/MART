@@ -17,7 +17,7 @@ def test_perturbation_tensor():
     assert pert.shape == pert.shape
     assert (pert == 0).all()
 
-    param_groups = pert_manager.parameter_groups()
+    param_groups = pert_manager.parameter_groups
     assert isinstance(param_groups, Iterable)
     assert param_groups[0]["params"].requires_grad
 
@@ -32,7 +32,7 @@ def test_perturbation_dict():
     assert (pert["rgb"] == 0).all()
     assert (pert["depth"] == 1).all()
 
-    param_groups = pert_manager.parameter_groups()
+    param_groups = pert_manager.parameter_groups
     assert len(param_groups) == 2
     param_groups = list(param_groups)
     assert param_groups[0]["params"].requires_grad
@@ -54,7 +54,7 @@ def test_perturbation_tuple_dict():
     assert (pert[1]["rgb"] == 0).all()
     assert (pert[1]["depth"] == 1).all()
 
-    param_groups = pert_manager.parameter_groups()
+    param_groups = pert_manager.parameter_groups
     assert len(param_groups) == 4
     param_groups = list(param_groups)
     assert param_groups[0]["params"].requires_grad
