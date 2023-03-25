@@ -76,6 +76,7 @@ class Adversary(torch.nn.Module):
             # Late bind attacker on same device as input
             if isinstance(self.attacker, partial):
                 inputs = batch["input"]
+                # The tensor may hide behind dict/list/tuple.
                 device = get_tensor_device(inputs)
 
                 if device.type == "cuda":
