@@ -20,8 +20,6 @@ optimizer:
 
 max_iters: 1
 
-gain: "loss"
-
 initializer:
   constant: 0
 

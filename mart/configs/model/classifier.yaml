@@ -34,16 +34,12 @@ validation_sequence:
   - preprocessor:
       tensor: input
   - logits: ["preprocessor"]
-  - loss:
-      input: logits
-      target: target
   - preds:
       input: logits
   - output:
       preds: preds
       target: target
       logits: logits
-      loss: loss
 
 # The simplified version.
 #   We treat a list as the `_call_with_args_` parameter.
@@ -53,11 +49,9 @@ test_sequence:
   seq020:
     logits: ["preprocessor"]
   seq030:
-    loss: ["logits", "target"]
-  seq040:
     preds: ["logits"]
-  seq050:
-    output: { preds: preds, target: target, logits: logits, loss: loss }
+  seq040:
+    output: { preds: preds, target: target, logits: logits }
 
 modules:
   preprocessor: ???

@@ -8,15 +8,17 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import cycle
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytorch_lightning as pl
 import torch
 
 from mart.utils import silent
 
-from .enforcer import Enforcer
 from .perturber import Perturber
+
+if TYPE_CHECKING:
+    from .enforcer import Enforcer
 
 __all__ = ["Adversary"]
 
@@ -103,7 +105,7 @@ class Adversary(torch.nn.Module):
             return self.attacker
 
         # Convert torch.device to PL accelerator
-        device = input[0].device if isinstance(input, list) else input.device
+        device = self.perturber.device
 
         if device.type == "cuda":
             accelerator = "gpu"

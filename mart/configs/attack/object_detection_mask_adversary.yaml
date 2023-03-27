@@ -6,6 +6,7 @@ defaults:
   - projector: mask_range
   - callbacks: [image_visualizer]
   - objective: zero_ap
+  - gain: rcnn_training_loss
   - composer: overlay
   - enforcer: default
   - enforcer/constraints: [mask, pixel_range]
@@ -15,8 +16,6 @@ optimizer:
   lr: 55
 
 max_iters: 5
-
-gain: "loss"
 
 initializer:
   constant: 127

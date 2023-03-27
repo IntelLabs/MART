@@ -50,21 +50,10 @@ validation_sequence:
     losses_and_detections: ["preprocessor", "target"]
 
   seq030:
-    loss:
-      # Sum up the losses.
-      [
-        "losses_and_detections.training.loss_objectness",
-        "losses_and_detections.training.loss_rpn_box_reg",
-        "losses_and_detections.training.loss_classifier",
-        "losses_and_detections.training.loss_box_reg",
-      ]
-
-  seq040:
     output:
       {
         "preds": "losses_and_detections.eval",
         "target": "target",
-        "loss": "loss",
         "rpn_loss.loss_objectness": "losses_and_detections.training.loss_objectness",
         "rpn_loss.loss_rpn_box_reg": "losses_and_detections.training.loss_rpn_box_reg",
         "box_loss.loss_classifier": "losses_and_detections.training.loss_classifier",
@@ -79,21 +68,10 @@ test_sequence:
     losses_and_detections: ["preprocessor", "target"]
 
   seq030:
-    loss:
-      # Sum up the losses.
-      [
-        "losses_and_detections.training.loss_objectness",
-        "losses_and_detections.training.loss_rpn_box_reg",
-        "losses_and_detections.training.loss_classifier",
-        "losses_and_detections.training.loss_box_reg",
-      ]
-
-  seq040:
     output:
       {
         "preds": "losses_and_detections.eval",
         "target": "target",
-        "loss": "loss",
         "rpn_loss.loss_objectness": "losses_and_detections.training.loss_objectness",
         "rpn_loss.loss_rpn_box_reg": "losses_and_detections.training.loss_rpn_box_reg",
         "box_loss.loss_classifier": "losses_and_detections.training.loss_classifier",

@@ -17,6 +17,7 @@ from .projector import Projector
 
 if TYPE_CHECKING:
     from .composer import Composer
+    from .gain import Gain
     from .initializer import Initializer
     from .objective import Objective
 
@@ -32,9 +33,9 @@ class Perturber(pl.LightningModule):
         initializer: Initializer,
         optimizer: Callable,
         composer: Composer,
+        gain: Gain,
         gradient_modifier: GradientModifier | None = None,
         projector: Projector | None = None,
-        gain: str = "loss",
         objective: Objective | None = None,
     ):
         """_summary_
@@ -43,9 +44,9 @@ class Perturber(pl.LightningModule):
             initializer (Initializer): To initialize the perturbation.
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             composer (Composer): A module which composes adversarial input from input and perturbation.
+            gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
             projector (Projector): To project the perturbation into some space.
-            gain (str): Which output to use as an adversarial gain function, which is a differentiable estimate of adversarial objective. (default: loss)
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
         """
         super().__init__()
@@ -55,7 +56,7 @@ class Perturber(pl.LightningModule):
         self.composer = composer
         self.gradient_modifier = gradient_modifier or GradientModifier()
         self.projector = projector or Projector()
-        self.gain_output = gain
+        self.gain_fn = gain
         self.objective_fn = objective
 
         self.perturbation = None
@@ -94,7 +95,8 @@ class Perturber(pl.LightningModule):
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
-        gain = outputs[self.gain_output]
+        # Use CallWith to dispatch **outputs.
+        gain = self.gain_fn(**outputs)
 
         # objective_fn is optional, because adversaries may never reach their objective.
         if self.objective_fn is not None:
