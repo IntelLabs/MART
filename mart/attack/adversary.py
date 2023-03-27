@@ -71,7 +71,6 @@ class Adversary(torch.nn.Module):
 
     @silent()
     def forward(self, *, input: torch.Tensor | list[torch.Tensor], **batch):
-        print("input =", input.__class__)
         # Adversary lives within a sequence of model. To signal the adversary should attack, one
         # must pass a model to attack when calling the adversary. Since we do not know where the
         # Adversary lives inside the model, we also need the remaining sequence to be able to
