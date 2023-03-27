@@ -104,7 +104,7 @@ class Adversary(torch.nn.Module):
             return self.attacker
 
         # Convert torch.device to PL accelerator
-        device = input[0].device if isinstance(input, tuple) else input.device
+        device = self.perturber.device
 
         if device.type == "cuda":
             accelerator = "gpu"
