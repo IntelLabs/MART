@@ -8,6 +8,12 @@ import os
 from typing import Any, Callable, List, Optional
 
 import numpy as np
+import torch
+from torch.utils.data._utils.collate import (  # WHY ARE THESE PRIVATE?!
+    collate,
+    collate_tensor_fn,
+    default_collate_fn_map,
+)
 from torchvision.datasets.coco import CocoDetection as CocoDetection_
 from torchvision.datasets.folder import default_loader
 
@@ -86,6 +92,20 @@ class CocoDetection(CocoDetection_):
         return image, target_dict
 
 
+def _collate_tensor_fn(batch, *, collate_fn_map=None):
+    """Handle the case when all elements in list are not the same shape.
+
+    Instead of throwing an exception, we just leave them as a list of Tensors.
+    """
+
+    if not all([x.shape == batch[0].shape for x in batch]):
+        return batch
+
+    return collate_tensor_fn(batch, collate_fn_map=collate_fn_map)
+
+
 def collate_fn(batch):
-    # [(x0, y0), ...,  (xN, yN)] -> ([x0, ..., xN], [y0, ..., yN])
-    return tuple(map(list, zip(*batch)))
+    collate_fn_map = default_collate_fn_map.copy()
+    collate_fn_map[torch.Tensor] = _collate_tensor_fn
+
+    return collate(batch, collate_fn_map=collate_fn_map)
