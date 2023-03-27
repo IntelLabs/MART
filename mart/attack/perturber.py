@@ -67,10 +67,12 @@ class Perturber(pl.LightningModule):
             self.initializer(pert)
             return pert
 
-        if not isinstance(input, list):
-            self.perturbation = create_and_initialize(input)
-        else:
+        if isinstance(input, list):
             self.perturbation = [create_and_initialize(inp) for inp in input]
+        elif isinstance(input, dict):
+            raise NotImplementedError
+        else:
+            self.perturbation = create_and_initialize(input)
 
     def configure_optimizers(self):
         if self.perturbation is None:
@@ -79,6 +81,7 @@ class Perturber(pl.LightningModule):
             )
 
         params = self.perturbation
+        # FIXME: Figure out how to handle perturbation for dict inputs
         if not isinstance(params, list):
             # FIXME: Should we treat the batch dimension as independent parameters?
             params = (params,)
@@ -138,12 +141,14 @@ class Perturber(pl.LightningModule):
             self.projector(pert, inp, tar)
             return self.composer(pert, input=inp, target=tar)
 
-        if not isinstance(self.perturbation, list):
-            input_adv = project_and_compose(self.perturbation, input, target)
-        else:
+        if isinstance(self.perturbation, list):
             input_adv = [
                 project_and_compose(pert, inp, tar)
                 for pert, inp, tar in zip(self.perturbation, input, target)
             ]
+        elif isinstance(self.perturbation, dict):
+            raise NotImplementedError
+        else:
+            input_adv = project_and_compose(self.perturbation, input, target)
 
         return input_adv
