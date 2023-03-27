@@ -99,7 +99,7 @@ def _collate_tensor_fn(batch, *, collate_fn_map=None):
     """
 
     if not all([x.shape == batch[0].shape for x in batch]):
-        return batch
+        return list(batch)
 
     return collate_tensor_fn(batch, collate_fn_map=collate_fn_map)
 
