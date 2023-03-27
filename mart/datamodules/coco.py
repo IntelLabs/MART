@@ -108,4 +108,11 @@ def collate_fn(batch):
     collate_fn_map = default_collate_fn_map.copy()
     collate_fn_map[torch.Tensor] = _collate_tensor_fn
 
-    return collate(batch, collate_fn_map=collate_fn_map)
+    images, targets = collate(batch, collate_fn_map=collate_fn_map)
+
+    # dict of lists to list of dicts for backwards compatibility
+    if isinstance(targets, dict):
+        targets = [dict(zip(targets.keys(), values)) for values in zip(*targets.values())]
+
+    # FIXME: Ideally we would just return a dict with {"input": images, **targets}
+    return images, targets
