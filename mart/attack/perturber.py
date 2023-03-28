@@ -122,28 +122,12 @@ class Perturber(pl.LightningModule):
         for group in optimizer.param_groups:
             self.gradient_modifier(group["params"])
 
-    def forward(
-        self,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        **kwargs,
-    ):
+    def forward(self, **batch):
         if self.perturbation is None:
             raise MisconfigurationException(
                 "You need to call the configure_perturbation before forward."
             )
 
-        def project_and_compose(pert, inp, tar):
-            self.projector(pert, inp, tar)
-            return self.composer(pert, input=inp, target=tar)
+        self.projector(self.perturbation, **batch)
 
-        if not isinstance(self.perturbation, tuple):
-            input_adv = project_and_compose(self.perturbation, input, target)
-        else:
-            input_adv = tuple(
-                project_and_compose(pert, inp, tar)
-                for pert, inp, tar in zip(self.perturbation, input, target)
-            )
-
-        return input_adv
+        return self.composer(self.perturbation, **batch)
