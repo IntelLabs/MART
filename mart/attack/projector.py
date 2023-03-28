@@ -17,13 +17,13 @@ class Projector:
     @torch.no_grad()
     def __call__(
         self,
-        perturbation: torch.Tensor | tuple,
+        perturbation: torch.Tensor | list[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | list[torch.Tensor],
+        target: torch.Tensor | dict[str, Any] | list[Any],
         **kwargs,
     ) -> None:
-        if isinstance(perturbation, tuple):
+        if isinstance(perturbation, list):
             for perturbation_i, input_i, target_i in zip(perturbation, input, target):
                 self.project(perturbation_i, input=input_i, target=target_i)
         else:
@@ -31,10 +31,10 @@ class Projector:
 
     def project(
         self,
-        perturbation: torch.Tensor | tuple,
+        perturbation: torch.Tensor | list[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | list[torch.Tensor],
+        target: torch.Tensor | dict[str, Any] | list[Any],
     ) -> None:
         pass
 
@@ -48,10 +48,10 @@ class Compose(Projector):
     @torch.no_grad()
     def __call__(
         self,
-        perturbation: torch.Tensor | tuple,
+        perturbation: torch.Tensor | list[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | list[torch.Tensor],
+        target: torch.Tensor | dict[str, Any] | list[Any],
         **kwargs,
     ) -> None:
         for projector in self.projectors:

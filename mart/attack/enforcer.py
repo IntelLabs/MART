@@ -19,12 +19,12 @@ class ConstraintViolated(Exception):
 class Constraint(abc.ABC):
     def __call__(
         self,
-        input_adv: torch.Tensor | tuple,
+        input_adv: torch.Tensor | list[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | list[torch.Tensor],
+        target: torch.Tensor | dict[str, Any] | list[Any],
     ) -> None:
-        if isinstance(input_adv, tuple):
+        if isinstance(input_adv, list):
             for input_adv_i, input_i, target_i in zip(input_adv, input, target):
                 self.verify(input_adv_i, input=input_i, target=target_i)
         else:
@@ -103,10 +103,10 @@ class Enforcer:
     @torch.no_grad()
     def __call__(
         self,
-        input_adv: torch.Tensor | tuple,
+        input_adv: torch.Tensor | list[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | list[torch.Tensor],
+        target: torch.Tensor | dict[str, Any] | list[Any],
         **kwargs,
     ) -> None:
         for constraint in self.constraints.values():
