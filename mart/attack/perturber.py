@@ -67,12 +67,10 @@ class Perturber(pl.LightningModule):
             self.initializer(pert)
             return pert
 
-        if isinstance(input, list):
-            self.perturbation = [create_and_initialize(inp) for inp in input]
-        elif isinstance(input, dict):
-            raise NotImplementedError
-        else:
+        if not isinstance(input, list):
             self.perturbation = create_and_initialize(input)
+        else:
+            self.perturbation = [create_and_initialize(inp) for inp in input]
 
     def configure_optimizers(self):
         if self.perturbation is None:
@@ -81,10 +79,9 @@ class Perturber(pl.LightningModule):
             )
 
         params = self.perturbation
-        # FIXME: Figure out how to handle perturbation for dict inputs
         if not isinstance(params, list):
             # FIXME: Should we treat the batch dimension as independent parameters?
-            params = (params,)
+            params = [params]
 
         return self.optimizer_fn(params)
 
@@ -125,30 +122,12 @@ class Perturber(pl.LightningModule):
         for group in optimizer.param_groups:
             self.gradient_modifier(group["params"])
 
-    def forward(
-        self,
-        *,
-        input: torch.Tensor | list[torch.Tensor],
-        target: torch.Tensor | dict[str, Any] | list[Any],
-        **kwargs,
-    ):
+    def forward(self, **batch):
         if self.perturbation is None:
             raise MisconfigurationException(
                 "You need to call the configure_perturbation before forward."
             )
 
-        def project_and_compose(pert, inp, tar):
-            self.projector(pert, inp, tar)
-            return self.composer(pert, input=inp, target=tar)
+        self.projector(self.perturbation, **batch)
 
-        if isinstance(self.perturbation, list):
-            input_adv = [
-                project_and_compose(pert, inp, tar)
-                for pert, inp, tar in zip(self.perturbation, input, target)
-            ]
-        elif isinstance(self.perturbation, dict):
-            raise NotImplementedError
-        else:
-            input_adv = project_and_compose(self.perturbation, input, target)
-
-        return input_adv
+        return self.composer(self.perturbation, **batch)

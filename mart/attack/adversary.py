@@ -70,36 +70,36 @@ class Adversary(torch.nn.Module):
         self.enforcer = enforcer
 
     @silent()
-    def forward(self, *, input: torch.Tensor | list[torch.Tensor], **batch):
+    def forward(self, **batch):
         # Adversary lives within a sequence of model. To signal the adversary should attack, one
         # must pass a model to attack when calling the adversary. Since we do not know where the
         # Adversary lives inside the model, we also need the remaining sequence to be able to
         # get a loss.
         if "model" in batch and "sequence" in batch:
-            self._attack(input=input, **batch)
+            self._attack(**batch)
 
         # Always use perturb the current input.
-        input_adv = self.perturber(input=input, **batch)
+        input_adv = self.perturber(**batch)
 
         # Enforce constraints after the attack optimization ends.
         if "model" in batch and "sequence" in batch:
-            self._enforce(input_adv, input=input, **batch)
+            self.enforcer(input_adv, **batch)
 
         return input_adv
 
-    def _attack(self, input: torch.Tensor | list[torch.Tensor], **kwargs):
-        batch = {"input": input, **kwargs}
+    def _attack(self, input, **batch):
+        batch = {"input": input, **batch}
+
+        # Configure and reset perturber to use batch inputs
+        self.perturber.configure_perturbation(input)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
-        attacker = self._initialize_attack(input)
+        attacker = self._get_attacker(input)
         attacker.fit_loop.max_epochs += 1
         attacker.fit(self.perturber, train_dataloaders=cycle([batch]))
 
-    def _initialize_attack(self, input: torch.Tensor | list[torch.Tensor]):
-        # Configure perturber to use batch inputs
-        self.perturber.configure_perturbation(input)
-
+    def _get_attacker(self, input):
         if not isinstance(self.attacker, partial):
             return self.attacker
 
@@ -119,17 +119,3 @@ class Adversary(torch.nn.Module):
         self.attacker = self.attacker(accelerator=accelerator, devices=devices)
 
         return self.attacker
-
-    def _enforce(
-        self,
-        input_adv: torch.Tensor | list[torch.Tensor],
-        *,
-        input: torch.Tensor | list[torch.Tensor],
-        target: torch.Tensor | dict[str, Any] | list[Any],
-        **kwargs,
-    ):
-        if not isinstance(input_adv, list):
-            self.enforcer(input_adv, input=input, target=target)
-        else:
-            for inp_adv, inp, tar in zip(input_adv, input, target):
-                self.enforcer(inp_adv, input=inp, target=tar)
