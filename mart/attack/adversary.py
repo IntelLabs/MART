@@ -8,14 +8,17 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import cycle
+from typing import TYPE_CHECKING, Any
 
 import pytorch_lightning as pl
 import torch
 
 from mart.utils import get_tensor_device, silent
 
-from .enforcer import Enforcer
 from .perturber import Perturber
+
+if TYPE_CHECKING:
+    from .enforcer import Enforcer
 
 __all__ = ["Adversary"]
 
@@ -67,46 +70,66 @@ class Adversary(torch.nn.Module):
         self.enforcer = enforcer
 
     @silent()
-    def forward(self, **batch):
+    def forward(self, *, input: torch.Tensor | tuple, **batch):
         # Adversary lives within a sequence of model. To signal the adversary should attack, one
         # must pass a model to attack when calling the adversary. Since we do not know where the
         # Adversary lives inside the model, we also need the remaining sequence to be able to
         # get a loss.
         if "model" in batch and "sequence" in batch:
-            # Late bind attacker on same device as input
-            if isinstance(self.attacker, partial):
-                inputs = batch["input"]
-                # The tensor may hide behind dict/list/tuple.
-                device = get_tensor_device(inputs)
-
-                if device.type == "cuda":
-                    accelerator = "gpu"
-                    devices = [device.index]
-
-                elif device.type == "cpu":
-                    accelerator = "cpu"
-                    devices = None
-
-                else:
-                    accelerator = device.type
-                    devices = [device.index]
-
-                self.attacker = self.attacker(accelerator=accelerator, devices=devices)
-
-            # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
-            # We use Trainer.limit_train_batches to control the number of attack iterations.
-            self.attacker.fit_loop.max_epochs += 1
-
-            # Initialize perturbation with input.
-            self.perturber.initialize(**batch)
-
-            self.attacker.fit(self.perturber, train_dataloaders=cycle([batch]))
+            self._attack(input=input, **batch)
 
         # Always use perturb the current input.
-        input_adv = self.perturber(**batch)
+        input_adv = self.perturber(input=input, **batch)
 
+        # Enforce constraints after the attack optimization ends.
         if "model" in batch and "sequence" in batch:
-            # We only enforce constraints after the attack optimization ends.
-            self.enforcer(input_adv, **batch)
+            self._enforce(input_adv, input=input, **batch)
 
         return input_adv
+
+    def _attack(self, input: torch.Tensor | tuple, **kwargs):
+        batch = {"input": input, **kwargs}
+
+        # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
+        # We use Trainer.limit_train_batches to control the number of attack iterations.
+        attacker = self._initialize_attack(input)
+        attacker.fit_loop.max_epochs += 1
+        attacker.fit(self.perturber, train_dataloaders=cycle([batch]))
+
+    def _initialize_attack(self, input: torch.Tensor | tuple):
+        # Configure perturber to use batch inputs
+        self.perturber.configure_perturbation(input)
+
+        if not isinstance(self.attacker, partial):
+            return self.attacker
+
+        # Convert torch.device to PL accelerator
+        device = self.perturber.device
+
+        if device.type == "cuda":
+            accelerator = "gpu"
+            devices = [device.index]
+        elif device.type == "cpu":
+            accelerator = "cpu"
+            devices = None
+        else:
+            accelerator = device.type
+            devices = [device.index]
+
+        self.attacker = self.attacker(accelerator=accelerator, devices=devices)
+
+        return self.attacker
+
+    def _enforce(
+        self,
+        input_adv: torch.Tensor | tuple,
+        *,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        **kwargs,
+    ):
+        if not isinstance(input_adv, tuple):
+            self.enforcer(input_adv, input=input, target=target)
+        else:
+            for inp_adv, inp, tar in zip(input_adv, input, target):
+                self.enforcer(inp_adv, input=inp, target=tar)

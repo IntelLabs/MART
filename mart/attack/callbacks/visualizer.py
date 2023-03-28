@@ -32,7 +32,7 @@ class PerturbedImageVisualizer(Callback):
 
     def on_train_end(self, trainer, model):
         # FIXME: We should really just save this to outputs instead of recomputing adv_input
-        adv_input = model(self.input, self.target)
+        adv_input = model(input=self.input, target=self.target)
 
         for img, tgt in zip(adv_input, self.target):
             fname = tgt["file_name"]

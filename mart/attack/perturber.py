@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import pytorch_lightning as pl
 import torch
+from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from .gradient_modifier import GradientModifier
 from .perturbation_manager import PerturbationManager
@@ -17,6 +18,7 @@ from .projector import Projector
 
 if TYPE_CHECKING:
     from .composer import Composer
+    from .gain import Gain
     from .initializer import Initializer
     from .objective import Objective
 
@@ -32,9 +34,9 @@ class Perturber(pl.LightningModule):
         initializer: Initializer,
         optimizer: Callable,
         composer: Composer,
+        gain: Gain,
         gradient_modifier: GradientModifier | None = None,
         projector: Projector | None = None,
-        gain: str = "loss",
         objective: Objective | None = None,
         optim_params: dict | None = None,
     ):
@@ -44,16 +46,16 @@ class Perturber(pl.LightningModule):
             initializer (Initializer): To initialize the perturbation.
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             composer (Composer): A module which composes adversarial input from input and perturbation.
+            gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
             projector (Projector): To project the perturbation into some space.
-            gain (str): Which output to use as an adversarial gain function, which is a differentiable estimate of adversarial objective. (default: loss)
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
         """
         super().__init__()
 
         self.optimizer_fn = optimizer
         self.composer = composer
-        self.gain_output = gain
+        self.gain_fn = gain
         self.objective_fn = objective
 
         # An object manage the perturbation in both the tensor and the parameter form.
@@ -93,7 +95,8 @@ class Perturber(pl.LightningModule):
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
-        gain = outputs[self.gain_output]
+        # Use CallWith to dispatch **outputs.
+        gain = self.gain_fn(**outputs)
 
         # objective_fn is optional, because adversaries may never reach their objective.
         if self.objective_fn is not None:
@@ -116,9 +119,9 @@ class Perturber(pl.LightningModule):
         **kwargs,
     ):
         if self.perturbation is None:
-            # TODO: raise Exception?
-            #       The optimizer won't get parameters earlier if this happens.
-            self.initialize(input=input, target=target)
+            raise MisconfigurationException(
+                "You need to call the configure_perturbation before forward."
+            )
 
         # Project perturbation...
         self.project(input, target)

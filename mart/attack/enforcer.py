@@ -86,7 +86,7 @@ class Enforcer:
             constraint(input_adv, input=input, target=target)
 
     @torch.no_grad()
-    def __call__(self, input_adv, *, input, target, **kwargs):
+    def __call__(self, input_adv, *, input, target):
         self._check_constraints(input_adv, input=input, target=target)
 
 
@@ -113,18 +113,3 @@ class ModalityEnforcer(Enforcer):
 
     def __call__(self, input_adv, *, input, target, **kwargs):
         self._enforce(input_adv, input=input, target=target)
-
-
-class BatchEnforcer(Enforcer):
-    @torch.no_grad()
-    def __call__(
-        self,
-        input_adv: torch.Tensor | tuple,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        **kwargs,
-    ) -> torch.Tensor | tuple:
-        for input_adv_i, input_i, target_i in zip(input_adv, input, target):
-            # FIXME: Make it modality-aware.
-            self._check_constraints(input_adv_i["rgb"], input=input_i["rgb"], target=target_i)

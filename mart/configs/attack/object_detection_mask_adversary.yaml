@@ -4,8 +4,9 @@ defaults:
   - initializer: constant
   - gradient_modifier: sign
   - projector: mask_range
-  # - callbacks: [progress_bar, image_visualizer]
+  - callbacks: [image_visualizer]
   - objective: zero_ap
+  - gain: rcnn_training_loss
   - composer: modality
   - composer@composer.sub_composers: overlay
   - enforcer: modality
@@ -17,8 +18,6 @@ optimizer:
   lr: 55
 
 max_iters: 5
-
-gain: "loss"
 
 initializer:
   constant: 127
