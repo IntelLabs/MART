@@ -95,7 +95,7 @@ class PerturbationManager:
         """Recursively project perturbation tensors that may hide behind dictionaries, list or
         tuple."""
         if isinstance(input, torch.Tensor):
-            self.projector[modality](perturbation, input, target)
+            self.projector[modality](perturbation, input=input, target=target)
         elif isinstance(input, dict):
             for modality_i, input_i in input.items():
                 self._project(perturbation[modality_i], input_i, target, modality=modality_i)

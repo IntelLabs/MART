@@ -96,7 +96,7 @@ class ModalityComposer(Composer):
                 output = tuple(output)
             return output
 
-    def forward(
+    def __call__(
         self,
         perturbation: torch.Tensor | tuple,
         *,
@@ -106,3 +106,13 @@ class ModalityComposer(Composer):
     ) -> torch.Tensor | tuple:
         output = self._compose(perturbation, input=input, target=target)
         return output
+
+    # We have to implement an abstract method...
+    def compose(
+        self,
+        perturbation: torch.Tensor,
+        *,
+        input: torch.Tensor,
+        target: torch.Tensor | dict[str, Any],
+    ) -> torch.Tensor:
+        pass
