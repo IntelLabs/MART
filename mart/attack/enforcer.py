@@ -19,8 +19,27 @@ class ConstraintViolated(Exception):
 
 
 class Constraint(abc.ABC):
-    @abc.abstractclassmethod
-    def __call__(self, input_adv, *, input, target) -> None:
+    def __call__(
+        self,
+        input_adv: torch.Tensor | tuple,
+        *,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+    ) -> None:
+        if isinstance(input_adv, tuple):
+            for input_adv_i, input_i, target_i in zip(input_adv, input, target):
+                self.verify(input_adv_i, input=input_i, target=target_i)
+        else:
+            self.verify(input_adv, input=input, target=target)
+
+    @abc.abstractmethod
+    def verify(
+        self,
+        input_adv: torch.Tensor,
+        *,
+        input: torch.Tensor,
+        target: torch.Tensor | dict[str, Any],
+    ) -> None:
         raise NotImplementedError
 
 
@@ -29,19 +48,21 @@ class Range(Constraint):
         self.min = min
         self.max = max
 
-    def __call__(self, input_adv, *, input, target):
+    def verify(self, input_adv, *, input, target):
         if torch.any(input_adv < self.min) or torch.any(input_adv > self.max):
             raise ConstraintViolated(f"Adversarial input is outside [{self.min}, {self.max}].")
 
 
 class Lp(Constraint):
-    def __init__(self, eps: float, p: int | float | None = torch.inf, dim=None, keepdim=False):
+    def __init__(
+        self, eps: float, p: int | float = torch.inf, dim: int | None = None, keepdim: bool = False
+    ):
         self.p = p
         self.eps = eps
         self.dim = dim
         self.keepdim = keepdim
 
-    def __call__(self, input_adv, *, input, target):
+    def verify(self, input_adv, *, input, target):
         perturbation = input_adv - input
         norm_vals = perturbation.norm(p=self.p, dim=self.dim, keepdim=self.keepdim)
         norm_max = norm_vals.max()
@@ -52,12 +73,12 @@ class Lp(Constraint):
 
 
 class Integer(Constraint):
-    def __init__(self, rtol=0, atol=0, equal_nan=False):
+    def __init__(self, rtol: float = 0.0, atol: float = 0.0, equal_nan: bool = False):
         self.rtol = rtol
         self.atol = atol
         self.equal_nan = equal_nan
 
-    def __call__(self, input_adv, *, input, target):
+    def verify(self, input_adv, *, input, target):
         if not torch.isclose(
             input_adv, input_adv.round(), rtol=self.rtol, atol=self.atol, equal_nan=self.equal_nan
         ).all():
@@ -65,7 +86,7 @@ class Integer(Constraint):
 
 
 class Mask(Constraint):
-    def __call__(self, input_adv, *, input, target):
+    def verify(self, input_adv, *, input, target):
         # True/1 is mutable, False/0 is immutable.
         # mask.shape=(H, W)
         mask = target["perturbable_mask"]
@@ -78,16 +99,20 @@ class Mask(Constraint):
 
 
 class Enforcer:
-    def __init__(self, constraints=None) -> None:
+    def __init__(self, constraints: dict[str, Constraint] | None = None) -> None:
         self.constraints = constraints or {}
 
-    def _check_constraints(self, input_adv, *, input, target):
+    @torch.no_grad()
+    def __call__(
+        self,
+        input_adv: torch.Tensor | tuple,
+        *,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        **kwargs,
+    ) -> None:
         for constraint in self.constraints.values():
             constraint(input_adv, input=input, target=target)
-
-    @torch.no_grad()
-    def __call__(self, input_adv, *, input, target):
-        self._check_constraints(input_adv, input=input, target=target)
 
 
 class ModalityEnforcer(Enforcer):
