@@ -4,37 +4,23 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-from __future__ import annotations
-
-from typing import Any
+import abc
+from typing import Any, Dict, List, Optional, Union
 
 import torch
 
+__all__ = ["Projector"]
 
-class Projector:
+
+class Projector(abc.ABC):
     """A projector modifies nn.Parameter's data."""
 
     @torch.no_grad()
     def __call__(
         self,
-        perturbation: torch.Tensor | tuple,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        **kwargs,
-    ) -> None:
-        if isinstance(perturbation, tuple):
-            for perturbation_i, input_i, target_i in zip(perturbation, input, target):
-                self.project(perturbation_i, input=input_i, target=target_i)
-        else:
-            self.project(perturbation, input=input, target=target)
-
-    def project(
-        self,
-        perturbation: torch.Tensor | tuple,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        tensor: torch.Tensor,
+        input: torch.Tensor,
+        target: Union[torch.Tensor, Dict[str, Any]],
     ) -> None:
         pass
 
@@ -42,20 +28,18 @@ class Projector:
 class Compose(Projector):
     """Apply a list of perturbation modifier."""
 
-    def __init__(self, projectors: list[Projector]):
+    def __init__(self, projectors: List[Projector]):
         self.projectors = projectors
 
     @torch.no_grad()
     def __call__(
         self,
-        perturbation: torch.Tensor | tuple,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        **kwargs,
+        tensor: torch.Tensor,
+        input: torch.Tensor,
+        target: Union[torch.Tensor, Dict[str, Any]],
     ) -> None:
         for projector in self.projectors:
-            projector(perturbation, input=input, target=target)
+            projector(tensor, input, target)
 
     def __repr__(self):
         projector_names = [repr(p) for p in self.projectors]
@@ -65,15 +49,26 @@ class Compose(Projector):
 class Range(Projector):
     """Clamp the perturbation so that the output is range-constrained."""
 
-    def __init__(self, quantize: bool = False, min: int | float = 0, max: int | float = 255):
+    def __init__(
+        self,
+        quantize: Optional[bool] = False,
+        min: Optional[Union[int, float]] = 0,
+        max: Optional[Union[int, float]] = 255,
+    ):
         self.quantize = quantize
         self.min = min
         self.max = max
 
-    def project(self, perturbation, *, input, target):
+    @torch.no_grad()
+    def __call__(
+        self,
+        tensor: torch.Tensor,
+        input: torch.Tensor,
+        target: Union[torch.Tensor, Dict[str, Any]],
+    ) -> None:
         if self.quantize:
-            perturbation.round_()
-        perturbation.clamp_(self.min, self.max)
+            tensor.round_()
+        tensor.clamp_(self.min, self.max)
 
     def __repr__(self):
         return (
@@ -87,15 +82,26 @@ class RangeAdditive(Projector):
     The projector assumes an additive perturbation threat model.
     """
 
-    def __init__(self, quantize: bool = False, min: int | float = 0, max: int | float = 255):
+    def __init__(
+        self,
+        quantize: Optional[bool] = False,
+        min: Optional[Union[int, float]] = 0,
+        max: Optional[Union[int, float]] = 255,
+    ):
         self.quantize = quantize
         self.min = min
         self.max = max
 
-    def project(self, perturbation, *, input, target):
+    @torch.no_grad()
+    def __call__(
+        self,
+        tensor: torch.Tensor,
+        input: torch.Tensor,
+        target: Union[torch.Tensor, Dict[str, Any]],
+    ) -> None:
         if self.quantize:
-            perturbation.round_()
-        perturbation.clamp_(self.min - input, self.max - input)
+            tensor.round_()
+        tensor.clamp_(self.min - input, self.max - input)
 
     def __repr__(self):
         return (
@@ -106,7 +112,7 @@ class RangeAdditive(Projector):
 class Lp(Projector):
     """Project perturbations to Lp norm, only if the Lp norm is larger than eps."""
 
-    def __init__(self, eps: int | float, p: int | float = torch.inf):
+    def __init__(self, eps: float, p: Optional[Union[int, float]] = torch.inf):
         """_summary_
 
         Args:
@@ -117,32 +123,55 @@ class Lp(Projector):
         self.p = p
         self.eps = eps
 
-    def project(self, perturbation, *, input, target):
-        pert_norm = perturbation.norm(p=self.p)
+    @torch.no_grad()
+    def __call__(
+        self,
+        tensor: torch.Tensor,
+        input: torch.Tensor,
+        target: Union[torch.Tensor, Dict[str, Any]],
+    ) -> None:
+        pert_norm = tensor.norm(p=self.p)
         if pert_norm > self.eps:
             # We only upper-bound the norm.
-            perturbation.mul_(self.eps / pert_norm)
+            tensor.mul_(self.eps / pert_norm)
 
 
 class LinfAdditiveRange(Projector):
     """Make sure the perturbation is within the Linf norm ball, and "input + perturbation" is
     within the [min, max] range."""
 
-    def __init__(self, eps: int | float, min: int | float = 0, max: int | float = 255):
+    def __init__(
+        self,
+        eps: float,
+        min: Optional[Union[int, float]] = 0,
+        max: Optional[Union[int, float]] = 255,
+    ):
         self.eps = eps
         self.min = min
         self.max = max
 
-    def project(self, perturbation, *, input, target):
+    @torch.no_grad()
+    def __call__(
+        self,
+        tensor: torch.Tensor,
+        input: torch.Tensor,
+        target: Union[torch.Tensor, Dict[str, Any]],
+    ) -> None:
         eps_min = (input - self.eps).clamp(self.min, self.max) - input
         eps_max = (input + self.eps).clamp(self.min, self.max) - input
 
-        perturbation.clamp_(eps_min, eps_max)
+        tensor.clamp_(eps_min, eps_max)
 
 
 class Mask(Projector):
-    def project(self, perturbation, *, input, target):
-        perturbation.mul_(target["perturbable_mask"])
+    @torch.no_grad()
+    def __call__(
+        self,
+        tensor: torch.Tensor,
+        input: torch.Tensor,
+        target: Union[torch.Tensor, Dict[str, Any]],
+    ) -> None:
+        tensor.mul_(target["perturbable_mask"])
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
