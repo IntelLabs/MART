@@ -67,10 +67,12 @@ class Perturber(pl.LightningModule):
             self.initializer(pert)
             return pert
 
-        if not isinstance(input, list):
-            self.perturbation = create_and_initialize(input)
-        else:
+        if isinstance(input, list):
             self.perturbation = [create_and_initialize(inp) for inp in input]
+        elif isinstance(input, dict):
+            raise NotImplementedError
+        else:
+            self.perturbation = create_and_initialize(input)
 
     def configure_optimizers(self):
         if self.perturbation is None:
