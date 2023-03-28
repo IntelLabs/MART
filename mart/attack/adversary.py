@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 import pytorch_lightning as pl
 import torch
 
-from mart.utils import get_tensor_device, silent
+from mart.utils import silent
 
 from .perturber import Perturber
 
