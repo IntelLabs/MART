@@ -6,7 +6,7 @@
 
 import torch
 
-from mart.attack.composer import Additive, Overlay
+from mart.attack.composer import Additive, ModalityComposer, Overlay
 
 
 def test_additive_composer_forward(input_data, target_data, perturbation):
@@ -25,3 +25,23 @@ def test_overlay_composer_forward(input_data, target_data, perturbation):
     mask = mask.to(input_data)
     expected_output = input_data * (1 - mask) + perturbation
     torch.testing.assert_close(output, expected_output, equal_nan=True)
+
+
+def test_modality_composer_forward(input_data, target_data, perturbation):
+    input = [{"rgb": input_data, "depth": input_data}]
+    target = [target_data]
+    pert = [{"rgb": perturbation, "depth": perturbation}]
+
+    rgb_composer = Additive()
+    depth_composer = Overlay()
+    modality_composer = ModalityComposer(rgb=rgb_composer, depth=depth_composer)
+
+    output = modality_composer(pert, input=input, target=target)
+    expected_output = [
+        {
+            "rgb": rgb_composer(perturbation, input=input_data, target=target_data),
+            "depth": depth_composer(perturbation, input=input_data, target=target_data),
+        }
+    ]
+    torch.testing.assert_close(output[0]["rgb"], expected_output[0]["rgb"], equal_nan=True)
+    torch.testing.assert_close(output[0]["depth"], expected_output[0]["depth"], equal_nan=True)
