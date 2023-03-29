@@ -112,9 +112,9 @@ class Enforcer:
 
     def __call__(
         self,
-        input_adv: torch.Tensor | tuple[torch.Tensor] | dict[str, torch.Tensor],
+        input_adv: torch.Tensor | tuple | list[torch.Tensor] | dict[str, torch.Tensor],
         *,
-        input: torch.Tensor | tuple[torch.Tensor] | dict[str, torch.Tensor],
+        input: torch.Tensor | tuple | list[torch.Tensor] | dict[str, torch.Tensor],
         target: torch.Tensor | dict[str, Any],
         modality: str = "constraints",
         **kwargs,
