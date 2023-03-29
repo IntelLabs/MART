@@ -101,14 +101,17 @@ class Enforcer:
     def _enforce(self, input_adv, *, input, target, modality="constraints"):
         # Set modality="constraints" by default, so that it is backward compatible with existing configs without modalities.
         if isinstance(input_adv, torch.Tensor):
+            # Finally we can verify constraints on tensor, per its modality.
             for constraint in self.modality_constraints[modality].values():
                 constraint(input_adv, input=input, target=target)
         elif isinstance(input_adv, dict):
+            # The dict input has modalities specified in keys, passing them recursively.
             for modality in input_adv:
                 self._enforce(
                     input_adv[modality], input=input[modality], target=target, modality=modality
                 )
         elif isinstance(input_adv, list) or isinstance(input_adv, tuple):
+            # The list or tuple input is a collection of sub-input.
             for input_adv_i, input_i, target_i in zip(input_adv, input, target):
                 self._enforce(input_adv_i, input=input_i, target=target_i)
 
