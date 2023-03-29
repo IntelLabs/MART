@@ -5,6 +5,7 @@
 #
 
 from typing import Any, Dict, Optional, Union
+from collections import namedtuple
 
 import torch
 
@@ -71,7 +72,14 @@ class Perturber(Callback, torch.nn.Module):
 
         # A backward hook that will be called when a gradient w.r.t the Tensor is computed.
         if self.gradient_modifier is not None:
-            self.perturbation.register_hook(self.gradient_modifier)
+            def gradient_modifier(grad):
+                # Create fake tensor with cloned grad so we can use in-place operations
+                FakeTensor = namedtuple("FakeTensor", ["grad"])
+                param = FakeTensor(grad=grad.clone())
+                self.gradient_modifier([param])
+                return param.grad
+
+            self.perturbation.register_hook(gradient_modifier)
 
         self.initializer(self.perturbation)
 
