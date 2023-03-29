@@ -21,10 +21,10 @@ class ConstraintViolated(Exception):
 class Constraint(abc.ABC):
     def __call__(
         self,
-        input_adv: torch.Tensor | tuple,
+        input_adv: torch.Tensor,
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor,
+        target: torch.Tensor | dict[str, Any],
     ) -> None:
         self.verify(input_adv, input=input, target=target)
 
