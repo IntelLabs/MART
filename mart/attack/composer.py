@@ -67,19 +67,14 @@ class Overlay(Composer):
 
 
 class ModalityComposer(Composer):
-    def __init__(self, sub_composers: dict[str, Composer] | Composer):
-        super().__init__()
+    def __init__(self, **modality_composers):
+        self.modality_composers = modality_composers
 
-        # Backward compatibility for datasets which do not have modality tokens.
-        if isinstance(sub_composers, Composer):
-            sub_composers = {None: sub_composers}
-
-        self.sub_composers = sub_composers
-
-    def _compose(self, perturbation, *, input, target, modality=None):
+    def _compose(self, perturbation, *, input, target, modality="default"):
         """Recursively compose output from perturbation and input."""
         if isinstance(perturbation, torch.Tensor):
-            output = self.sub_composers[modality](perturbation, input=input, target=target)
+            composer = self.modality_composers[modality]
+            output = composer(perturbation, input=input, target=target)
             return output
         elif isinstance(perturbation, dict):
             output = {}

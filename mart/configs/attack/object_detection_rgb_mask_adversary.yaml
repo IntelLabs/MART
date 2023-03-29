@@ -9,7 +9,7 @@ defaults:
   - objective: zero_ap
   - gain: rcnn_training_loss
   - composer: modality
-  - composer@composer.sub_composers.rgb: overlay
+  - composer@composer.rgb: overlay
   - enforcer: modality
   - enforcer/constraints@enforcer.rgb: [mask, pixel_range]
 
