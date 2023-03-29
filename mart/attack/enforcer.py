@@ -127,7 +127,7 @@ class Enforcer:
             # The dict input has modalities specified in keys, passing them recursively.
             for modality in input_adv:
                 self(input_adv[modality], input=input[modality], target=target, modality=modality)
-        elif isinstance(input_adv, list) or isinstance(input_adv, tuple):
+        elif isinstance(input_adv, (list, tuple)):
             # The list or tuple input is a collection of sub-input.
             for input_adv_i, input_i, target_i in zip(input_adv, input, target):
                 self(input_adv_i, input=input_i, target=target_i)
