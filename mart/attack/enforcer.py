@@ -26,6 +26,7 @@ class Constraint(abc.ABC):
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
     ) -> None:
+        # TODO: Now we can get rid of this.
         if isinstance(input_adv, tuple):
             for input_adv_i, input_i, target_i in zip(input_adv, input, target):
                 self.verify(input_adv_i, input=input_i, target=target_i)
@@ -117,6 +118,10 @@ class Enforcer:
 
 class ModalityEnforcer(Enforcer):
     def __init__(self, **modality_constraints: dict[str, dict[str, Constraint]]) -> None:
+        # Backward compatible for existing configs without modalities.
+        if len(modality_constraints) == 1 and "constraints" in modality_constraints:
+            modality_constraints = {"default": modality_constraints}
+
         self.modality_constraints = modality_constraints
 
     def _enforce(self, input_adv, *, input, target, modality="default"):
