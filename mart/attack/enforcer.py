@@ -128,6 +128,6 @@ class Enforcer:
             for modality in input_adv:
                 self(input_adv[modality], input=input[modality], target=target, modality=modality)
         elif isinstance(input_adv, (list, tuple)):
-            # The list or tuple input is a collection of sub-input.
+            # The list or tuple input is a collection of sub-input and sub-target.
             for input_adv_i, input_i, target_i in zip(input_adv, input, target):
                 self(input_adv_i, input=input_i, target=target_i)
