@@ -11,28 +11,9 @@ from typing import Any
 
 import torch
 
-__all__ = ["BatchComposer"]
 
-
-class Composer(torch.nn.Module, abc.ABC):
-    @abc.abstractclassmethod
-    def forward(
-        self,
-        perturbation: torch.Tensor | tuple,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-    ) -> torch.Tensor | tuple:
-        raise NotImplementedError
-
-
-class BatchComposer(Composer):
-    def __init__(self, composer: Composer):
-        super().__init__()
-
-        self.composer = composer
-
-    def forward(
+class Composer(abc.ABC):
+    def __call__(
         self,
         perturbation: torch.Tensor | tuple,
         *,
@@ -40,43 +21,38 @@ class BatchComposer(Composer):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ) -> torch.Tensor | tuple:
-        output = []
-
-        for input_i, target_i, perturbation_i in zip(input, target, perturbation):
-            output_i = self.composer(perturbation_i, input=input_i, target=target_i, **kwargs)
-            output.append(output_i)
-
-        if isinstance(input, torch.Tensor):
-            output = torch.stack(output)
+        if isinstance(perturbation, tuple):
+            input_adv = tuple(
+                self.compose(perturbation_i, input=input_i, target=target_i)
+                for perturbation_i, input_i, target_i in zip(perturbation, input, target)
+            )
         else:
-            output = tuple(output)
+            input_adv = self.compose(perturbation, input=input, target=target)
 
-        return output
+        return input_adv
 
-
-class Additive(Composer):
-    """We assume an adversary adds perturbation to the input."""
-
-    def forward(
+    @abc.abstractmethod
+    def compose(
         self,
         perturbation: torch.Tensor,
         *,
         input: torch.Tensor,
         target: torch.Tensor | dict[str, Any],
     ) -> torch.Tensor:
+        raise NotImplementedError
+
+
+class Additive(Composer):
+    """We assume an adversary adds perturbation to the input."""
+
+    def compose(self, perturbation, *, input, target):
         return input + perturbation
 
 
 class Overlay(Composer):
     """We assume an adversary overlays a patch to the input."""
 
-    def forward(
-        self,
-        perturbation: torch.Tensor,
-        *,
-        input: torch.Tensor,
-        target: torch.Tensor | dict[str, Any],
-    ) -> torch.Tensor:
+    def compose(self, perturbation, *, input, target):
         # True is mutable, False is immutable.
         mask = target["perturbable_mask"]
 

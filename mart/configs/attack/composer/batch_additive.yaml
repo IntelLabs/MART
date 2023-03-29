@@ -1,5 +1,0 @@
-defaults:
-  - /attack/composer@composer: additive
-
-_target_: mart.attack.BatchComposer
-composer: ???
