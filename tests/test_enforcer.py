@@ -7,7 +7,7 @@
 import pytest
 import torch
 
-from mart.attack.enforcer import ConstraintViolated, Integer, Lp, Mask, Range
+from mart.attack.enforcer import ConstraintViolated, Enforcer, Integer, Lp, Mask, Range
 
 
 def test_constraint_range():
@@ -67,3 +67,50 @@ def test_constraint_mask():
     constraint(input + perturbation * mask, input=input, target=target)
     with pytest.raises(ConstraintViolated):
         constraint(input + perturbation, input=input, target=target)
+
+
+def test_enforcer_non_modality():
+    enforcer = Enforcer(constraints={"range": Range(min=0, max=255)})
+
+    input = torch.tensor([0, 0, 0])
+    perturbation = torch.tensor([0, 128, 255])
+    input_adv = input + perturbation
+    target = None
+
+    # tensor input.
+    enforcer(input_adv, input=input, target=target)
+    # list of tensor input.
+    enforcer([input_adv], input=[input], target=[target])
+
+    perturbation = torch.tensor([0, -1, 255])
+    input_adv = input + perturbation
+
+    with pytest.raises(ConstraintViolated):
+        enforcer(input_adv, input=input, target=target)
+
+    with pytest.raises(ConstraintViolated):
+        enforcer([input_adv], input=[input], target=[target])
+
+
+def test_enforcer_modality():
+    # Assume a rgb modality.
+    enforcer = Enforcer(rgb={"range": Range(min=0, max=255)})
+
+    input = torch.tensor([0, 0, 0])
+    perturbation = torch.tensor([0, 128, 255])
+    input_adv = input + perturbation
+    target = None
+
+    # Dictionary input.
+    enforcer({"rgb": input_adv}, input={"rgb": input}, target=target)
+    # List of dictionary input.
+    enforcer([{"rgb": input_adv}], input=[{"rgb": input}], target=[target])
+
+    perturbation = torch.tensor([0, -1, 255])
+    input_adv = input + perturbation
+
+    with pytest.raises(ConstraintViolated):
+        enforcer({"rgb": input_adv}, input={"rgb": input}, target=target)
+
+    with pytest.raises(ConstraintViolated):
+        enforcer([{"rgb": input_adv}], input=[{"rgb": input}], target=[target])
