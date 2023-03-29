@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-from typing import Any, Dict, Optional, Union
 from collections import namedtuple
+from typing import Any, Dict, Optional, Union
 
 import torch
 
@@ -72,6 +72,7 @@ class Perturber(Callback, torch.nn.Module):
 
         # A backward hook that will be called when a gradient w.r.t the Tensor is computed.
         if self.gradient_modifier is not None:
+
             def gradient_modifier(grad):
                 # Create fake tensor with cloned grad so we can use in-place operations
                 FakeTensor = namedtuple("FakeTensor", ["grad"])

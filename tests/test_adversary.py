@@ -12,8 +12,8 @@ from torch.optim import SGD
 
 import mart
 from mart.attack import Adversary
-from mart.attack.perturber import Perturber
 from mart.attack.gradient_modifier import Sign
+from mart.attack.perturber import Perturber
 
 
 def test_adversary(input_data, target_data, perturbation):
@@ -147,6 +147,7 @@ def test_adversary_perturbation(input_data, target_data):
     new_input_data = torch.cat([input_data, input_data])
     output3 = adversary(new_input_data, target_data, model=model)
 
+
 def test_adversary_gradient(input_data, target_data):
     composer = mart.attack.composer.Additive()
     enforcer = Mock()
@@ -154,7 +155,11 @@ def test_adversary_gradient(input_data, target_data):
 
     # Force zeros, positive and negative gradients
     def gain(logits):
-        return (0*logits[0, :, :]).mean() + (0.1*logits[1, :, :]).mean() + (-0.1*logits[2, :, :]).mean()
+        return (
+            (0 * logits[0, :, :]).mean()
+            + (0.1 * logits[1, :, :]).mean()  # noqa: W503
+            + (-0.1 * logits[2, :, :]).mean()  # noqa: W503
+        )
 
     # Perturbation initialized as zero.
     def initializer(x):
