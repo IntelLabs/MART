@@ -101,13 +101,10 @@ class Mask(Constraint):
 
 class Enforcer:
     def __init__(self, **modality_constraints: dict[str, dict[str, Constraint]]) -> None:
-        # Backward compatible for existing configs without modalities.
-        if len(modality_constraints) == 1 and "constraints" in modality_constraints:
-            modality_constraints = {"default": modality_constraints}
-
         self.modality_constraints = modality_constraints
 
-    def _enforce(self, input_adv, *, input, target, modality="default"):
+    def _enforce(self, input_adv, *, input, target, modality="constraints"):
+        # Set modality="constraitns" by default, so that it is backward compatible with existing configs without modalities.
         if isinstance(input_adv, torch.Tensor):
             for constraint in self.modality_constraints[modality].values():
                 constraint(input_adv, input=input, target=target)
