@@ -11,7 +11,7 @@ from typing import Any
 
 import torch
 
-__all__ = ["ModalityEnforcer"]
+__all__ = ["Enforcer"]
 
 
 class ConstraintViolated(Exception):
@@ -100,23 +100,6 @@ class Mask(Constraint):
 
 
 class Enforcer:
-    def __init__(self, constraints: dict[str, Constraint] | None = None) -> None:
-        self.constraints = constraints or {}
-
-    @torch.no_grad()
-    def __call__(
-        self,
-        input_adv: torch.Tensor | tuple,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        **kwargs,
-    ) -> None:
-        for constraint in self.constraints.values():
-            constraint(input_adv, input=input, target=target)
-
-
-class ModalityEnforcer(Enforcer):
     def __init__(self, **modality_constraints: dict[str, dict[str, Constraint]]) -> None:
         # Backward compatible for existing configs without modalities.
         if len(modality_constraints) == 1 and "constraints" in modality_constraints:
