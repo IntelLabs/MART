@@ -8,6 +8,7 @@ defaults:
   - objective: zero_ap
   - gain: rcnn_training_loss
   - composer: overlay
+  - enforcer: default
   - enforcer/constraints@enforcer.rgb: [mask, pixel_range]
 
 # Make a 5-step attack for the demonstration purpose.
