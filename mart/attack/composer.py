@@ -11,6 +11,8 @@ from typing import Any
 
 import torch
 
+__all__ = ["ModalityComposer"]
+
 
 class Composer(abc.ABC):
     def __call__(
@@ -61,3 +63,50 @@ class Overlay(Composer):
         mask = mask.to(input)
 
         return input * (1 - mask) + perturbation * mask
+
+
+class ModalityComposer(Composer):
+    def __init__(self, **modality_composers):
+        self.modality_composers = modality_composers
+
+    def __call__(
+        self,
+        perturbation: torch.Tensor | tuple,
+        *,
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
+        modality: str = "default",
+        **kwargs,
+    ) -> torch.Tensor | tuple:
+        """Recursively compose output from perturbation and input."""
+        if isinstance(perturbation, torch.Tensor):
+            # Finally we can compose output with tensors.
+            composer = self.modality_composers[modality]
+            output = composer(perturbation, input=input, target=target)
+            return output
+        elif isinstance(perturbation, dict):
+            # The dict input has modalities specified in keys, passing them recursively.
+            output = {}
+            for modality in perturbation.keys():
+                output[modality] = self(
+                    perturbation[modality], input=input[modality], target=target, modality=modality
+                )
+            return output
+        elif isinstance(perturbation, (list, tuple)):
+            # The list or tuple input is a collection of sub-input and sub-target.
+            output = []
+            for pert_i, input_i, target_i in zip(perturbation, input, target):
+                output.append(self(pert_i, input=input_i, target=target_i))
+            if isinstance(perturbation, tuple):
+                output = tuple(output)
+            return output
+
+    # We have to implement an abstract method...
+    def compose(
+        self,
+        perturbation: torch.Tensor,
+        *,
+        input: torch.Tensor,
+        target: torch.Tensor | dict[str, Any],
+    ) -> torch.Tensor:
+        pass
