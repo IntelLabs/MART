@@ -137,5 +137,6 @@ class ModalityEnforcer(Enforcer):
             for input_adv_i, input_i, target_i in zip(input_adv, input, target):
                 self._enforce(input_adv_i, input=input_i, target=target_i)
 
+    @torch.no_grad()
     def __call__(self, input_adv, *, input, target, **kwargs):
         self._enforce(input_adv, input=input, target=target)
