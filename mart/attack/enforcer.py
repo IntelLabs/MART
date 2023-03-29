@@ -26,12 +26,7 @@ class Constraint(abc.ABC):
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
     ) -> None:
-        # TODO: Now we can get rid of this.
-        if isinstance(input_adv, tuple):
-            for input_adv_i, input_i, target_i in zip(input_adv, input, target):
-                self.verify(input_adv_i, input=input_i, target=target_i)
-        else:
-            self.verify(input_adv, input=input, target=target)
+        self.verify(input_adv, input=input, target=target)
 
     @abc.abstractmethod
     def verify(
