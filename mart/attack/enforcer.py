@@ -11,6 +11,8 @@ from typing import Any
 
 import torch
 
+__all__ = ["ModalityEnforcer"]
+
 
 class ConstraintViolated(Exception):
     pass
@@ -111,3 +113,24 @@ class Enforcer:
     ) -> None:
         for constraint in self.constraints.values():
             constraint(input_adv, input=input, target=target)
+
+
+class ModalityEnforcer(Enforcer):
+    def __init__(self, **modality_constraints: dict[str, dict[str, Constraint]]) -> None:
+        self.modality_constraints = modality_constraints
+
+    def _enforce(self, input_adv, *, input, target, modality="default"):
+        if isinstance(input_adv, torch.Tensor):
+            for constraint in self.modality_constraints[modality].values():
+                constraint(input_adv, input=input, target=target)
+        elif isinstance(input_adv, dict):
+            for modality in input_adv:
+                self._enforce(
+                    input_adv[modality], input=input[modality], target=target, modality=modality
+                )
+        elif isinstance(input_adv, list) or isinstance(input_adv, tuple):
+            for input_adv_i, input_i, target_i in zip(input_adv, input, target):
+                self._enforce(input_adv_i, input=input_i, target=target_i)
+
+    def __call__(self, input_adv, *, input, target, **kwargs):
+        self._enforce(input_adv, input=input, target=target)
