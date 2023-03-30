@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import itertools
 from typing import TYPE_CHECKING, Any, Callable
 
 import pytorch_lightning as pl
@@ -13,7 +14,6 @@ import torch
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from .gradient_modifier import GradientModifier
-from .perturbation_manager import PerturbationManager
 from .projector import Projector
 
 if TYPE_CHECKING:
@@ -58,28 +58,102 @@ class Perturber(pl.LightningModule):
         self.gain_fn = gain
         self.objective_fn = objective
 
-        # An object manage the perturbation in both the tensor and the parameter form.
         # FIXME: gradient_modifier should be a hook operating on .grad directly.
-        self.pert_manager = PerturbationManager(
-            initializer=initializer,
-            gradient_modifier=gradient_modifier,
-            projector=projector,
-            optim_params=optim_params,
-        )
+
+        # In case gradient_modifier or projector is None.
+        def nop(*args, **kwargs):
+            pass
+
+        gradient_modifier = gradient_modifier or nop
+        projector = projector or nop
+
+        # Backward compatibility, in case modality is unknown, and not given in input.
+        if not isinstance(initializer, dict):
+            initializer = {"default": initializer}
+        if not isinstance(gradient_modifier, dict):
+            gradient_modifier = {"default": gradient_modifier}
+        if not isinstance(projector, dict):
+            projector = {"default": projector}
+
+        # In case optimization parameters are not given.
+        optim_params = optim_params or {modality: {} for modality in initializer.keys()}
+
+        self.initializer = initializer
+        self.gradient_modifier = gradient_modifier
+        self.projector = projector
+        self.optim_params = optim_params
+
+        self.perturbation = None
 
     def configure_perturbation(self, input):
-        self.pert_manager.initialize(input)
+        # Recursively configure perturbation in tensor.
+        self.perturbation = self._configure_perturbation(input)
 
-    def project(self, input, target):
-        return self.pert_manager.project(input, target)
+    def _configure_perturbation(self, input, modality="default"):
+        """Recursively create and initialize perturbation that is homomorphic as input; Hook
+        gradient modifiers."""
+        if isinstance(input, torch.Tensor):
+            # Create.
+            pert = torch.empty_like(input, requires_grad=True)
 
-    @property
-    def perturbation(self):
-        return self.pert_manager.perturbation
+            # Initialize.
+            self.initializer[modality](pert)
+
+            # Gradient modifier hook.
+            # FIXME: use actual gradient modifier, self.gradient_modifier[modality](pert)
+            #        The current implementation of gradient modifiers is not hookable.
+            if self.gradient_modifier is not None:
+                pert.register_hook(lambda grad: grad.sign())
+
+            return pert
+        elif isinstance(input, dict):
+            return {
+                modality: self._configure_perturbation(inp, modality)
+                for modality, inp in input.items()
+            }
+        elif isinstance(input, list):
+            return [self._configure_perturbation(inp) for inp in input]
+        elif isinstance(input, tuple):
+            return tuple(self._configure_perturbation(inp) for inp in input)
 
     @property
     def parameter_groups(self):
-        return self.pert_manager.parameter_groups
+        """Extract parameter groups for optimization from perturbation tensor(s)."""
+        param_groups = self._parameter_groups(self.perturbation)
+        return param_groups
+
+    def _parameter_groups(self, pert, modality="default"):
+        """Recursively return parameter groups as a list of dictionaries."""
+
+        if isinstance(pert, torch.Tensor):
+            return [{"params": pert} | self.optim_params[modality]]
+        elif isinstance(pert, dict):
+            ret = [self._parameter_groups(pert_i, modality) for modality, pert_i in pert.items()]
+            # Concatenate a list of lists.
+            return list(itertools.chain.from_iterable(ret))
+        elif isinstance(pert, list) or isinstance(pert, tuple):
+            param_list = []
+            for pert_i in pert:
+                param_list.extend(self._parameter_groups(pert_i))
+            return param_list
+
+    def project(self, input, target):
+        if self.projector is not None:
+            self._project(self.perturbation, input=input, target=target)
+
+    def _project(self, perturbation, *, input, target, modality="default"):
+        """Recursively project perturbation tensors that may hide behind dictionaries, list or
+        tuple."""
+        if isinstance(input, torch.Tensor):
+            self.projector[modality](perturbation, input=input, target=target)
+        elif isinstance(input, dict):
+            for modality_i, input_i in input.items():
+                self._project(
+                    perturbation[modality_i], input=input_i, target=target, modality=modality_i
+                )
+        elif isinstance(input, list) or isinstance(input, tuple):
+            for perturbation_i, input_i, target_i in zip(perturbation, input, target):
+                self._project(perturbation_i, input=input_i, target=target_i, modality=modality)
 
     def configure_optimizers(self):
         # Parameter initialization is done in Adversary before fit() by invoking initialize(input).
