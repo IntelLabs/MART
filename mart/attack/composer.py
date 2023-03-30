@@ -17,13 +17,19 @@ __all__ = ["ModalityComposer"]
 class Composer(abc.ABC):
     def __call__(
         self,
-        perturbation: torch.Tensor,
+        perturbation: torch.Tensor | tuple,
         *,
-        input: torch.Tensor,
-        target: torch.Tensor | dict[str, Any],
+        input: torch.Tensor | tuple,
+        target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
-    ) -> torch.Tensor:
-        input_adv = self.compose(perturbation, input=input, target=target)
+    ) -> torch.Tensor | tuple:
+        if isinstance(perturbation, tuple):
+            input_adv = tuple(
+                self.compose(perturbation_i, input=input_i, target=target_i)
+                for perturbation_i, input_i, target_i in zip(perturbation, input, target)
+            )
+        else:
+            input_adv = self.compose(perturbation, input=input, target=target)
 
         return input_adv
 
