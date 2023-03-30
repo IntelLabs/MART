@@ -75,10 +75,23 @@ class ModalityComposer(Composer):
         *,
         input: torch.Tensor | tuple,
         target: torch.Tensor | dict[str, Any] | tuple,
-        modality: str = "default",
         **kwargs,
     ) -> torch.Tensor | tuple:
+        # Get rid of batch-aware in Composer.__call__(), because we have the recursive self.compose().
+        input_adv = self.compose(perturbation, input=input, target=target)
+        return input_adv
+
+    def compose(
+        self,
+        perturbation: torch.Tensor | dict[str, torch.Tensor] | tuple | list,
+        *,
+        input: torch.Tensor | dict[str, torch.Tensor] | tuple | list,
+        target: torch.Tensor | dict[str, Any] | tuple | list,
+        modality: str = "default",
+    ) -> torch.Tensor:
         """Recursively compose output from perturbation and input."""
+        assert type(perturbation) == type(input)
+
         if isinstance(perturbation, torch.Tensor):
             # Finally we can compose output with tensors.
             composer = self.modality_composers[modality]
@@ -88,7 +101,7 @@ class ModalityComposer(Composer):
             # The dict input has modalities specified in keys, passing them recursively.
             output = {}
             for modality in perturbation.keys():
-                output[modality] = self(
+                output[modality] = self.compose(
                     perturbation[modality], input=input[modality], target=target, modality=modality
                 )
             return output
@@ -96,17 +109,9 @@ class ModalityComposer(Composer):
             # The list or tuple input is a collection of sub-input and sub-target.
             output = []
             for pert_i, input_i, target_i in zip(perturbation, input, target):
-                output.append(self(pert_i, input=input_i, target=target_i))
+                output.append(self.compose(pert_i, input=input_i, target=target_i))
             if isinstance(perturbation, tuple):
                 output = tuple(output)
             return output
-
-    # We have to implement an abstract method...
-    def compose(
-        self,
-        perturbation: torch.Tensor,
-        *,
-        input: torch.Tensor,
-        target: torch.Tensor | dict[str, Any],
-    ) -> torch.Tensor:
-        pass
+        else:
+            raise ValueError(f"Unsupported data type of perturbation: {type(perturbation)}.")
