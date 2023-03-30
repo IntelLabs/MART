@@ -2,26 +2,30 @@ defaults:
   - enforcer: default
   - enforcer/constraints: [lp, pixel_range]
 
-_target_: mart.attack.NormalizedAdversaryAdapter
-adversary:
-  _target_: mart.utils.adapters.PartialInstanceWrapper
-  partial:
-    _target_: autoattack.AutoAttack
-    _partial_: true
-    # AutoAttack needs to specify device for PyTorch tensors: cpu/cuda
-    # We can not use ${trainer.accelerator} because the vocabulary is different: cpu/gpu
-    # device: cpu
-    norm: Linf
-    # 8/255
-    eps: 0.03137254901960784
-    version: custom
-    attacks_to_run:
-      - apgd-dlr
-  wrapper:
-    _target_: mart.utils.adapters.CallableAdapter
-    _partial_: true
-    redirecting_fn: run_standard_evaluation
+_target_: mart.attack.Adversary
+
 enforcer:
   constraints:
     lp:
       eps: 8
+
+attacker:
+  _target_: mart.attack.NormalizedAttackerAdapter
+  attacker:
+    _target_: mart.utils.adapters.PartialInstanceWrapper
+    partial:
+      _target_: autoattack.AutoAttack
+      _partial_: true
+      # AutoAttack needs to specify device for PyTorch tensors: cpu/cuda
+      # We can not use ${trainer.accelerator} because the vocabulary is different: cpu/gpu
+      # device: cpu
+      norm: Linf
+      # 8/255
+      eps: 0.03137254901960784
+      version: custom
+      attacks_to_run:
+        - apgd-dlr
+    wrapper:
+      _target_: mart.utils.adapters.CallableAdapter
+      _partial_: true
+      redirecting_fn: run_standard_evaluation

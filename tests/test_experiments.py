@@ -158,7 +158,7 @@ def test_cifar10_cnn_autoattack_experiment(classification_cfg, tmp_path):
         "++datamodule.train_dataset.num_classes=10",
         "fit=false",
         "+attack@model.modules.input_adv_test=classification_autoattack",
-        '+model.modules.input_adv_test.adversary.partial.device="cpu"',
+        '+model.modules.input_adv_test.attacker.attacker.partial.device="cpu"',
         "+trainer.limit_test_batches=1",
     ] + overrides
     run_sh_command(command)
