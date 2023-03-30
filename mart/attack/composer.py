@@ -66,6 +66,12 @@ class Overlay(Composer):
 
 
 class ModalityComposer(Composer):
+    """A modality-aware composer.
+
+    Example usage: `ModalityComposer(rgb=Overlay(), depth=Additive())`. Note that
+    `ModalityComposer(default=Additive())` is equivalent with `Additive()`.
+    """
+
     def __init__(self, **modality_composers):
         self.modality_composers = modality_composers
 
@@ -77,7 +83,7 @@ class ModalityComposer(Composer):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ) -> torch.Tensor | tuple:
-        # Get rid of batch-aware in Composer.__call__(), because we have the recursive self.compose().
+        # Bypass batch-aware in Composer.__call__(), because we have the recursive self.compose().
         input_adv = self.compose(perturbation, input=input, target=target)
         return input_adv
 
