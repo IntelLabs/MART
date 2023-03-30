@@ -1,4 +1,4 @@
 defaults:
   - constraints: null
 
-_target_: mart.attack.enforcer.Enforcer
+_target_: mart.attack.Enforcer
