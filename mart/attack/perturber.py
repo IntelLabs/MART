@@ -156,7 +156,11 @@ class Perturber(pl.LightningModule):
                 self._project(perturbation_i, input=input_i, target=target_i, modality=modality)
 
     def configure_optimizers(self):
-        # Parameter initialization is done in Adversary before fit() by invoking initialize(input).
+        # parameter_groups is generated from perturbation.
+        if self.perturbation is None:
+            raise MisconfigurationException(
+                "You need to call the configure_perturbation before fit."
+            )
         return self.optimizer_fn(self.parameter_groups)
 
     def training_step(self, batch, batch_idx):
