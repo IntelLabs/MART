@@ -11,30 +11,14 @@ from typing import Any
 
 import torch
 
-__all__ = ["Additive", "Overlay", "ModalityComposer"]
+__all__ = ["Composer"]
 
 
-class Composer(abc.ABC):
-    def __call__(
-        self,
-        perturbation: torch.Tensor | tuple,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        **kwargs,
-    ) -> torch.Tensor | tuple:
-        if isinstance(perturbation, tuple):
-            input_adv = tuple(
-                self.compose(perturbation_i, input=input_i, target=target_i)
-                for perturbation_i, input_i, target_i in zip(perturbation, input, target)
-            )
-        else:
-            input_adv = self.compose(perturbation, input=input, target=target)
-
-        return input_adv
+class Method(abc.ABC):
+    """Composition method base class."""
 
     @abc.abstractmethod
-    def compose(
+    def __call__(
         self,
         perturbation: torch.Tensor,
         *,
@@ -44,17 +28,17 @@ class Composer(abc.ABC):
         raise NotImplementedError
 
 
-class Additive(Composer):
+class Additive(Method):
     """We assume an adversary adds perturbation to the input."""
 
-    def compose(self, perturbation, *, input, target):
+    def __call__(self, perturbation, *, input, target):
         return input + perturbation
 
 
-class Overlay(Composer):
+class Overlay(Method):
     """We assume an adversary overlays a patch to the input."""
 
-    def compose(self, perturbation, *, input, target):
+    def __call__(self, perturbation, *, input, target):
         # True is mutable, False is immutable.
         mask = target["perturbable_mask"]
 
@@ -65,59 +49,48 @@ class Overlay(Composer):
         return input * (1 - mask) + perturbation * mask
 
 
-class ModalityComposer(Composer):
+class Composer:
     """A modality-aware composer.
 
-    Example usage: `ModalityComposer(rgb=Overlay(), depth=Additive())`. Note that
-    `ModalityComposer(default=Additive())` is equivalent with `Additive()`.
+    Example usage: `Composer(rgb=Overlay(), depth=Additive())`. Non-modality composer can be
+    defined as `Composer(method=Additive())`.
     """
 
-    def __init__(self, **modality_composers):
-        self.modality_composers = modality_composers
+    def __init__(self, **modality_methods):
+        self.modality_methods = modality_methods
 
     def __call__(
-        self,
-        perturbation: torch.Tensor | tuple,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        **kwargs,
-    ) -> torch.Tensor | tuple:
-        # Bypass batch-aware in Composer.__call__(), because we have the recursive self.compose().
-        input_adv = self.compose(perturbation, input=input, target=target)
-        return input_adv
-
-    def compose(
         self,
         perturbation: torch.Tensor | dict[str, torch.Tensor] | tuple | list,
         *,
         input: torch.Tensor | dict[str, torch.Tensor] | tuple | list,
         target: torch.Tensor | dict[str, Any] | tuple | list,
-        modality: str = "default",
+        modality: str = "method",
     ) -> torch.Tensor:
         """Recursively compose output from perturbation and input."""
         assert type(perturbation) == type(input)
 
         if isinstance(perturbation, torch.Tensor):
             # Finally we can compose output with tensors.
-            composer = self.modality_composers[modality]
-            output = composer(perturbation, input=input, target=target)
+            method = self.modality_methods[modality]
+            output = method(perturbation, input=input, target=target)
             return output
         elif isinstance(perturbation, dict):
             # The dict input has modalities specified in keys, passing them recursively.
+            # For non-modality input that does not have dict, modality="method" by default.
             output = {}
             for modality in perturbation.keys():
-                output[modality] = self.compose(
+                output[modality] = self(
                     perturbation[modality], input=input[modality], target=target, modality=modality
                 )
             return output
         elif isinstance(perturbation, (list, tuple)):
+            # We assume a modality-dictionary only contains tensors, but not list/tuple.
+            assert modality == "method"
             # The list or tuple input is a collection of sub-input and sub-target.
             output = []
             for pert_i, input_i, target_i in zip(perturbation, input, target):
-                output.append(
-                    self.compose(pert_i, input=input_i, target=target_i, modality=modality)
-                )
+                output.append(self(pert_i, input=input_i, target=target_i, modality=modality))
             if isinstance(perturbation, tuple):
                 output = tuple(output)
             return output

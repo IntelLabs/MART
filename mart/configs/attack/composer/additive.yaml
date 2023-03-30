@@ -1,1 +1,3 @@
-_target_: mart.attack.composer.Additive
+_target_: mart.attack.Composer
+method:
+  _target_: mart.attack.composer.Additive
