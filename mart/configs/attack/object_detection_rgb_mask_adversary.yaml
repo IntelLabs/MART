@@ -10,7 +10,7 @@ defaults:
   - gain: rcnn_training_loss
   - composer: modality
   - composer@composer.rgb: overlay
-  - enforcer: modality
+  - enforcer: default
   - enforcer/constraints@enforcer.rgb: [mask, pixel_range]
 
 # Make a 5-step attack for the demonstration purpose.
