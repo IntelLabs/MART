@@ -67,7 +67,7 @@ class Perturber(pl.LightningModule):
             optim_params=optim_params,
         )
 
-    def initialize(self, *, input, **kwargs):
+    def configure_perturbation(self, input):
         self.pert_manager.initialize(input)
 
     def project(self, input, target):
