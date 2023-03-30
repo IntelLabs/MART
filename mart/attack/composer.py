@@ -109,7 +109,9 @@ class ModalityComposer(Composer):
             # The list or tuple input is a collection of sub-input and sub-target.
             output = []
             for pert_i, input_i, target_i in zip(perturbation, input, target):
-                output.append(self.compose(pert_i, input=input_i, target=target_i))
+                output.append(
+                    self.compose(pert_i, input=input_i, target=target_i, modality=modality)
+                )
             if isinstance(perturbation, tuple):
                 output = tuple(output)
             return output
