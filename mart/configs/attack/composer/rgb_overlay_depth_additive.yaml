@@ -1,0 +1,5 @@
+defaults:
+  - .@rgb: overlay
+  - .@depth: additive
+
+_target_: mart.attack.ModalityComposer
