@@ -81,6 +81,8 @@ def test_enforcer_non_modality():
     enforcer(input_adv, input=input, target=target)
     # list of tensor input.
     enforcer([input_adv], input=[input], target=[target])
+    # tuple of tensor input.
+    enforcer((input_adv,), input=(input,), target=(target,))
 
     perturbation = torch.tensor([0, -1, 255])
     input_adv = input + perturbation
@@ -90,6 +92,9 @@ def test_enforcer_non_modality():
 
     with pytest.raises(ConstraintViolated):
         enforcer([input_adv], input=[input], target=[target])
+
+    with pytest.raises(ConstraintViolated):
+        enforcer((input_adv,), input=(input,), target=(target,))
 
 
 def test_enforcer_modality():
@@ -105,6 +110,8 @@ def test_enforcer_modality():
     enforcer({"rgb": input_adv}, input={"rgb": input}, target=target)
     # List of dictionary input.
     enforcer([{"rgb": input_adv}], input=[{"rgb": input}], target=[target])
+    # Tuple of dictionary input.
+    enforcer(({"rgb": input_adv},), input=({"rgb": input},), target=(target,))
 
     perturbation = torch.tensor([0, -1, 255])
     input_adv = input + perturbation
@@ -114,3 +121,6 @@ def test_enforcer_modality():
 
     with pytest.raises(ConstraintViolated):
         enforcer([{"rgb": input_adv}], input=[{"rgb": input}], target=[target])
+
+    with pytest.raises(ConstraintViolated):
+        enforcer(({"rgb": input_adv},), input=({"rgb": input},), target=(target,))
