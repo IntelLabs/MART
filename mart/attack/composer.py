@@ -11,7 +11,7 @@ from typing import Any
 
 import torch
 
-__all__ = ["ModalityComposer"]
+__all__ = ["Additive", "Overlay", "ModalityComposer"]
 
 
 class Composer(abc.ABC):
