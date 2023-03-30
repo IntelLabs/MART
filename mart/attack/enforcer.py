@@ -119,6 +119,8 @@ class Enforcer:
         modality: str = "constraints",
         **kwargs,
     ):
+        assert type(input_adv) == type(input)
+
         if isinstance(input_adv, torch.Tensor):
             # Finally we can verify constraints on tensor, per its modality.
             # Set modality="constraints" by default, so that it is backward compatible with existing configs without modalities.
@@ -131,3 +133,5 @@ class Enforcer:
             # The list or tuple input is a collection of sub-input and sub-target.
             for input_adv_i, input_i, target_i in zip(input_adv, input, target):
                 self(input_adv_i, input=input_i, target=target_i)
+        else:
+            raise ValueError(f"Unsupported data type of input_adv: {type(input_adv)}.")
