@@ -137,7 +137,7 @@ class Perturber(pl.LightningModule):
                 param_list.extend(self._parameter_groups(pert_i))
             return param_list
 
-    def project(self, input, target):
+    def project(self, *, input, target, **kwargs):
         if self.projector is not None:
             self._project(self.perturbation, input=input, target=target)
 
@@ -202,7 +202,7 @@ class Perturber(pl.LightningModule):
             )
 
         # Project perturbation...
-        self.project(input, target)
+        self.project(input=input, target=target)
 
         # Compose adversarial input.
         input_adv = self.composer(self.perturbation, input=input, target=target)
