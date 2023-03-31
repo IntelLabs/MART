@@ -15,11 +15,12 @@ __all__ = ["PerturbedImageVisualizer"]
 class PerturbedImageVisualizer(Callback):
     """Save adversarial images as files."""
 
-    def __init__(self, folder):
+    def __init__(self, folder, modality="rgb"):
         super().__init__()
 
         # FIXME: This should use the Trainer's logging directory.
         self.folder = folder
+        self.modality = modality
         self.convert = ToPILImage()
 
         if not os.path.isdir(self.folder):
@@ -35,6 +36,9 @@ class PerturbedImageVisualizer(Callback):
         adv_input = model(input=self.input, target=self.target)
 
         for img, tgt in zip(adv_input, self.target):
+            # Modality aware.
+            if isinstance(img, dict):
+                img = img[self.modality]
             fname = tgt["file_name"]
             fpath = os.path.join(self.folder, fname)
             im = self.convert(img / 255)
