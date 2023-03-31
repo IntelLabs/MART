@@ -92,7 +92,6 @@ class Perturber(pl.LightningModule):
         def create_and_initialize(data, *, input, target, modality="default"):
             # Though data and target are not used, they are required placeholders for modality_dispatch().
             pert = torch.empty_like(input, requires_grad=True)
-            # Initialize.
             self.initializer[modality](pert)
             return pert
 
@@ -142,7 +141,9 @@ class Perturber(pl.LightningModule):
         )
 
     def compose(self, perturbation, *, input, target, **kwargs):
-        return modality_dispatch(self.composer, perturbation, input=input, target=target)
+        return modality_dispatch(
+            self.composer, perturbation, input=input, target=target, modality="default"
+        )
 
     def configure_optimizers(self):
         # parameter_groups is generated from perturbation.
