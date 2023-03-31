@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import itertools
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable
 
