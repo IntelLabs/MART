@@ -4,8 +4,7 @@ defaults:
   - initializer@initializer.rgb: constant
   - gradient_modifier@gradient_modifier.rgb: sign
   - projector@projector.rgb: mask_range
-  # TODO: Modality-aware visualizer
-  # - callbacks: [image_visualizer]
+  - callbacks: [image_visualizer]
   - objective: zero_ap
   - gain: rcnn_training_loss
   - composer@composer.rgb: overlay
