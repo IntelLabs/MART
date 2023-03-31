@@ -121,16 +121,22 @@ class Perturber(pl.LightningModule):
         """Recursively return parameter groups as a list of dictionaries."""
 
         if isinstance(pert, torch.Tensor):
+            # Return a list of dictionary instead of a dictionary, easier to extend later.
             return [{"params": pert} | self.optim_params[modality]]
         elif isinstance(pert, dict):
-            ret = [self._parameter_groups(pert_i, modality) for modality, pert_i in pert.items()]
-            # Concatenate a list of lists.
-            return list(itertools.chain.from_iterable(ret))
-        elif isinstance(pert, list) or isinstance(pert, tuple):
+            param_list = []
+            for modality, pert_i in pert.items():
+                ret_modality = self._parameter_groups(pert_i, modality=modality)
+                param_list.extend(ret_modality)
+            return param_list
+        elif isinstance(pert, (list, tuple)):
             param_list = []
             for pert_i in pert:
-                param_list.extend(self._parameter_groups(pert_i))
+                ret_i = self._parameter_groups(pert_i, modality=modality)
+                param_list.extend(ret_i)
             return param_list
+        else:
+            raise ValueError(f"Unsupported data type of input: {type(pert)}.")
 
     def project(self, *, input, target, **kwargs):
         if self.projector is not None:
