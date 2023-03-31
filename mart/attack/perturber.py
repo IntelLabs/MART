@@ -200,10 +200,7 @@ class Perturber(pl.LightningModule):
                 "You need to call the configure_perturbation before forward."
             )
 
-        # Project perturbation...
         self.project(self.perturbation, **batch)
-
-        # Compose adversarial input.
         input_adv = self.compose(self.perturbation, **batch)
 
         return input_adv
