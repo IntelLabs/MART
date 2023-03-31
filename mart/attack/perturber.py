@@ -137,14 +137,14 @@ class Perturber(pl.LightningModule):
         else:
             raise ValueError(f"Unsupported data type of input: {type(pert)}.")
 
-    def project(self, *, input, target, **kwargs):
+    def project(self, perturbation, *, input, target, **kwargs):
         if self.projector is not None:
             modality_dispatch(
-                self.projector, self.perturbation, input=input, target=target, modality="default"
+                self.projector, perturbation, input=input, target=target, modality="default"
             )
 
-    def compose(self, *, input, target):
-        return modality_dispatch(self.composer, self.perturbation, input=input, target=target)
+    def compose(self, perturbation, *, input, target, **kwargs):
+        return modality_dispatch(self.composer, perturbation, input=input, target=target)
 
     def configure_optimizers(self):
         # parameter_groups is generated from perturbation.
@@ -180,22 +180,16 @@ class Perturber(pl.LightningModule):
 
         return gain
 
-    def forward(
-        self,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        **kwargs,
-    ):
+    def forward(self, **batch):
         if self.perturbation is None:
             raise MisconfigurationException(
                 "You need to call the configure_perturbation before forward."
             )
 
         # Project perturbation...
-        self.project(input=input, target=target)
+        self.project(self.perturbation, **batch)
 
         # Compose adversarial input.
-        input_adv = self.compose(input=input, target=target)
+        input_adv = self.compose(self.perturbation, **batch)
 
         return input_adv
