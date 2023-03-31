@@ -13,6 +13,8 @@ import pytorch_lightning as pl
 import torch
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
+from mart.utils import modality_dispatch
+
 from .gradient_modifier import GradientModifier
 from .projector import Projector
 
@@ -139,21 +141,12 @@ class Perturber(pl.LightningModule):
 
     def project(self, *, input, target, **kwargs):
         if self.projector is not None:
-            self._project(self.perturbation, input=input, target=target)
+            modality_dispatch(
+                self.projector, self.perturbation, input=input, target=target, modality="default"
+            )
 
-    def _project(self, perturbation, *, input, target, modality="default"):
-        """Recursively project perturbation tensors that may hide behind dictionaries, list or
-        tuple."""
-        if isinstance(input, torch.Tensor):
-            self.projector[modality](perturbation, input=input, target=target)
-        elif isinstance(input, dict):
-            for modality_i, input_i in input.items():
-                self._project(
-                    perturbation[modality_i], input=input_i, target=target, modality=modality_i
-                )
-        elif isinstance(input, list) or isinstance(input, tuple):
-            for perturbation_i, input_i, target_i in zip(perturbation, input, target):
-                self._project(perturbation_i, input=input_i, target=target_i, modality=modality)
+    def compose(self, *, input, target):
+        return modality_dispatch(self.composer, self.perturbation, input=input, target=target)
 
     def configure_optimizers(self):
         # parameter_groups is generated from perturbation.
@@ -205,6 +198,6 @@ class Perturber(pl.LightningModule):
         self.project(input=input, target=target)
 
         # Compose adversarial input.
-        input_adv = self.composer(self.perturbation, input=input, target=target)
+        input_adv = self.compose(input=input, target=target)
 
         return input_adv
