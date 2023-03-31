@@ -88,7 +88,7 @@ class Perturber(pl.LightningModule):
 
         self.perturbation = None
 
-    def configure_perturbation(self, input):
+    def configure_perturbation(self, input: torch.Tensor | tuple | tuple[dict[str, torch.Tensor]]):
         def create_init_grad(data, *, input, target, modality="default"):
             pert = torch.empty_like(input, requires_grad=True)
             # Initialize.
