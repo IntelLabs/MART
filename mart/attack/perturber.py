@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Callable
 
 import pytorch_lightning as pl
 import torch
@@ -55,12 +55,10 @@ class Perturber(pl.LightningModule):
         """
         super().__init__()
 
+        # Modality-neutral objects.
         self.optimizer_fn = optimizer
-        self.composer = composer
         self.gain_fn = gain
         self.objective_fn = objective
-
-        # FIXME: gradient_modifier should be a hook operating on .grad directly.
 
         # In case gradient_modifier or projector is None.
         def nop(*args, **kwargs):
@@ -69,6 +67,7 @@ class Perturber(pl.LightningModule):
         gradient_modifier = gradient_modifier or nop
         projector = projector or nop
 
+        # Modality-specific objects.
         # Backward compatibility, in case modality is unknown, and not given in input.
         if not isinstance(initializer, dict):
             initializer = {"default": initializer}
@@ -76,34 +75,34 @@ class Perturber(pl.LightningModule):
             gradient_modifier = {"default": gradient_modifier}
         if not isinstance(projector, dict):
             projector = {"default": projector}
+        if not isinstance(composer, dict):
+            composer = {"default": composer}
 
         # Backward compatibility, in case optimization parameters are not given.
-        optim_params = optim_params or {modality: {} for modality in initializer.keys()}
+        if optim_params is None:
+            optim_params = {modality: {} for modality in initializer.keys()}
 
+        # Modality-specific objects.
         self.initializer = initializer
         self.gradient_modifier = gradient_modifier
         self.projector = projector
+        self.composer = composer
         self.optim_params = optim_params
 
         self.perturbation = None
 
     def configure_perturbation(self, input: torch.Tensor | tuple | tuple[dict[str, torch.Tensor]]):
-        def create_init_grad(data, *, input, target, modality="default"):
+        def create_and_initialize(data, *, input, target, modality="default"):
             # Though data and target are not used, they are required placeholders for modality_dispatch().
             pert = torch.empty_like(input, requires_grad=True)
             # Initialize.
             self.initializer[modality](pert)
-
-            # Gradient modifier hook.
-            # FIXME: use actual gradient modifier, self.gradient_modifier[modality](pert)
-            #        The current implementation of gradient modifiers is not hookable.
-            if self.gradient_modifier is not None:
-                pert.register_hook(lambda grad: grad.sign())
             return pert
 
         # Make a dictionary of modality-function.
         modality_func = {
-            modality: partial(create_init_grad, modality=modality) for modality in self.initializer
+            modality: partial(create_and_initialize, modality=modality)
+            for modality in self.initializer
         }
 
         # Recursively configure perturbation in tensor.
@@ -123,7 +122,8 @@ class Perturber(pl.LightningModule):
 
         if isinstance(pert, torch.Tensor):
             # Return a list of dictionary instead of a dictionary, easier to extend later.
-            return [{"params": pert} | self.optim_params[modality]]
+            # Add the modality notation so that we can perform gradient modification later.
+            return [{"params": pert, "modality": modality} | self.optim_params[modality]]
         elif isinstance(pert, dict):
             param_list = []
             for modality, pert_i in pert.items():
@@ -181,6 +181,18 @@ class Perturber(pl.LightningModule):
             gain = gain.sum()
 
         return gain
+
+    def configure_gradient_clipping(
+        self, optimizer, optimizer_idx, gradient_clip_val=None, gradient_clip_algorithm=None
+    ):
+        # Configuring gradient clipping in pl.Trainer is still useful, so use it.
+        super().configure_gradient_clipping(
+            optimizer, optimizer_idx, gradient_clip_val, gradient_clip_algorithm
+        )
+
+        for group in optimizer.param_groups:
+            modality = "default" if "modality" not in group else group["modality"]
+            self.gradient_modifier[modality](group["params"])
 
     def forward(self, **batch):
         if self.perturbation is None:
