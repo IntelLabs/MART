@@ -78,7 +78,7 @@ class Perturber(pl.LightningModule):
         if not isinstance(projector, dict):
             projector = {"default": projector}
 
-        # In case optimization parameters are not given.
+        # Backward compatibility, in case optimization parameters are not given.
         optim_params = optim_params or {modality: {} for modality in initializer.keys()}
 
         self.initializer = initializer
@@ -101,6 +101,7 @@ class Perturber(pl.LightningModule):
                 pert.register_hook(lambda grad: grad.sign())
             return pert
 
+        # Make a dictionary of modality-function.
         modality_func = {
             modality: partial(create_init_grad, modality=modality) for modality in self.initializer
         }
