@@ -22,7 +22,10 @@ def modality_dispatch(
     target: torch.Tensor | dict[str, Any],
     modality: str = "default",
 ):
-    """Recursively dispatch data and input to functions of the same modality."""
+    """Recursively dispatch data and input/target to functions of the same modality.
+
+    The function returns an object that is homomorphic to input and data.
+    """
 
     assert type(data) == type(input)
 
