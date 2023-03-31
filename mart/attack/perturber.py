@@ -60,12 +60,9 @@ class Perturber(pl.LightningModule):
         self.gain_fn = gain
         self.objective_fn = objective
 
-        # In case gradient_modifier or projector is None.
-        def nop(*args, **kwargs):
-            pass
-
-        gradient_modifier = gradient_modifier or nop
-        projector = projector or nop
+        # Replace None with nop().
+        gradient_modifier = gradient_modifier or GradientModifier()
+        projector = projector or Projector()
 
         # Modality-specific objects.
         # Backward compatibility, in case modality is unknown, and not given in input.
@@ -140,10 +137,9 @@ class Perturber(pl.LightningModule):
             raise ValueError(f"Unsupported data type of input: {type(pert)}.")
 
     def project(self, perturbation, *, input, target, **kwargs):
-        if self.projector is not None:
-            modality_dispatch(
-                self.projector, perturbation, input=input, target=target, modality="default"
-            )
+        modality_dispatch(
+            self.projector, perturbation, input=input, target=target, modality="default"
+        )
 
     def compose(self, perturbation, *, input, target, **kwargs):
         return modality_dispatch(self.composer, perturbation, input=input, target=target)
