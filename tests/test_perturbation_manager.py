@@ -7,7 +7,7 @@ from mart.attack.initializer import Constant
 from mart.attack.perturber import Perturber
 
 
-def test_perturbation_tensor():
+def test_perturbation_tensor_to_param_groups():
     input_data = torch.tensor([1.0, 2.0])
     initializer = Constant(constant=0)
 
@@ -24,7 +24,7 @@ def test_perturbation_tensor():
     assert param_groups[0]["params"].requires_grad
 
 
-def test_perturbation_dict():
+def test_perturbation_dict_to_param_groups():
     input_data = {"rgb": torch.tensor([1.0, 2.0]), "depth": torch.tensor([1.0, 2.0])}
     initializer = {"rgb": Constant(constant=0), "depth": Constant(constant=1)}
     perturber = Perturber(initializer=initializer, optimizer=Mock(), composer=Mock(), gain=Mock())
@@ -42,7 +42,7 @@ def test_perturbation_dict():
     # assert (param_groups[0]["params"] == 0).all()
 
 
-def test_perturbation_tuple_dict():
+def test_perturbation_tuple_dict_to_param_groups():
     input_data = (
         {"rgb": torch.tensor([1.0, 2.0]), "depth": torch.tensor([3.0, 4.0])},
         {"rgb": torch.tensor([-1.0, -2.0]), "depth": torch.tensor([-3.0, -4.0])},
