@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import itertools
+from functools import partial
 from typing import TYPE_CHECKING, Any, Callable
 
 import pytorch_lightning as pl
@@ -88,16 +89,8 @@ class Perturber(pl.LightningModule):
         self.perturbation = None
 
     def configure_perturbation(self, input):
-        # Recursively configure perturbation in tensor.
-        self.perturbation = self._configure_perturbation(input)
-
-    def _configure_perturbation(self, input, modality="default"):
-        """Recursively create and initialize perturbation that is homomorphic as input; Hook
-        gradient modifiers."""
-        if isinstance(input, torch.Tensor):
-            # Create.
+        def create_init_grad(data, *, input, target, modality="default"):
             pert = torch.empty_like(input, requires_grad=True)
-
             # Initialize.
             self.initializer[modality](pert)
 
@@ -106,17 +99,16 @@ class Perturber(pl.LightningModule):
             #        The current implementation of gradient modifiers is not hookable.
             if self.gradient_modifier is not None:
                 pert.register_hook(lambda grad: grad.sign())
-
             return pert
-        elif isinstance(input, dict):
-            return {
-                modality: self._configure_perturbation(inp, modality)
-                for modality, inp in input.items()
-            }
-        elif isinstance(input, list):
-            return [self._configure_perturbation(inp) for inp in input]
-        elif isinstance(input, tuple):
-            return tuple(self._configure_perturbation(inp) for inp in input)
+
+        modality_func = {
+            modality: partial(create_init_grad, modality=modality) for modality in self.initializer
+        }
+
+        # Recursively configure perturbation in tensor.
+        self.perturbation = modality_dispatch(
+            modality_func, input, input=input, target=input, modality="default"
+        )
 
     @property
     def parameter_groups(self):
