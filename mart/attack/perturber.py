@@ -89,6 +89,7 @@ class Perturber(pl.LightningModule):
 
     def configure_perturbation(self, input: torch.Tensor | tuple | tuple[dict[str, torch.Tensor]]):
         def create_init_grad(data, *, input, target, modality="default"):
+            # Though data and target are not used, they are required placeholders for modality_dispatch().
             pert = torch.empty_like(input, requires_grad=True)
             # Initialize.
             self.initializer[modality](pert)
@@ -106,6 +107,7 @@ class Perturber(pl.LightningModule):
         }
 
         # Recursively configure perturbation in tensor.
+        # Though only input=input is used, we have to fill the placeholders of data and target.
         self.perturbation = modality_dispatch(
             modality_func, input, input=input, target=input, modality="default"
         )
