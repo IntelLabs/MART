@@ -107,7 +107,6 @@ class Perturber(pl.LightningModule):
             modality_func, input, input=input, target=input, modality="default"
         )
 
-    @property
     def parameter_groups(self):
         """Extract parameter groups for optimization from perturbation tensor(s)."""
         param_groups = self._parameter_groups(self.perturbation)
@@ -152,7 +151,7 @@ class Perturber(pl.LightningModule):
             raise MisconfigurationException(
                 "You need to call the configure_perturbation before fit."
             )
-        return self.optimizer_fn(self.parameter_groups)
+        return self.optimizer_fn(self.parameter_groups())
 
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally
