@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from itertools import cycle
 from typing import Any, Callable
 
 import torch
@@ -19,7 +20,7 @@ def modality_dispatch(
     data: Tensor | tuple | list[Tensor] | dict[str, Tensor],
     *,
     input: Tensor | tuple | list[Tensor] | dict[str, Tensor],
-    target: torch.Tensor | dict[str, Any],
+    target: torch.Tensor | dict[str, Any] | list[dict[str, Any]] | None,
     modality: str = "default",
 ):
     """Recursively dispatch data and input/target to functions of the same modality.
@@ -28,6 +29,9 @@ def modality_dispatch(
     """
 
     assert type(data) == type(input)
+    if target is None:
+        # Make target zips well with input.
+        target = cycle([None])
 
     if isinstance(input, torch.Tensor):
         if isinstance(modality_func, dict):
