@@ -160,7 +160,8 @@ class Perturber(pl.LightningModule):
 
         # We need to evaluate the perturbation against the whole model, so call it normally to get a gain.
         model = batch.pop("model")
-        outputs = model(**batch)
+        # When an Adversary takes input from another module in the sequence, we would have to specify kwargs of Adversary, and model would be a required kwarg.
+        outputs = model(**batch, model=None)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
