@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import abc
-from functools import partial
 from typing import Any
 
 import torch
