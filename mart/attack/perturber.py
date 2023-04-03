@@ -33,12 +33,12 @@ class Perturber(pl.LightningModule):
     def __init__(
         self,
         *,
-        initializer: Initializer,
+        initializer: Initializer | dict[str, Initializer],
         optimizer: Callable,
-        composer: Composer,
+        composer: Composer | dict[str, Composer],
         gain: Gain,
-        gradient_modifier: GradientModifier | None = None,
-        projector: Projector | None = None,
+        gradient_modifier: GradientModifier | dict[str, GradientModifier] | None = None,
+        projector: Projector | dict[str, Projector] | None = None,
         objective: Objective | None = None,
         optim_params: dict | None = None,
     ):
