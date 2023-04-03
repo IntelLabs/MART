@@ -30,6 +30,8 @@ __all__ = ["Perturber"]
 class Perturber(pl.LightningModule):
     """Peturbation optimization module."""
 
+    MODALITY_DEFAULT = "default"
+
     def __init__(
         self,
         *,
@@ -68,13 +70,13 @@ class Perturber(pl.LightningModule):
         # Modality-specific objects.
         # Backward compatibility, in case modality is unknown, and not given in input.
         if not isinstance(initializer, dict):
-            initializer = {"default": initializer}
+            initializer = {self.MODALITY_DEFAULT: initializer}
         if not isinstance(gradient_modifier, dict):
-            gradient_modifier = {"default": gradient_modifier}
+            gradient_modifier = {self.MODALITY_DEFAULT: gradient_modifier}
         if not isinstance(projector, dict):
-            projector = {"default": projector}
+            projector = {self.MODALITY_DEFAULT: projector}
         if not isinstance(composer, dict):
-            composer = {"default": composer}
+            composer = {self.MODALITY_DEFAULT: composer}
 
         # Backward compatibility, in case optimization parameters are not given.
         if optim_params is None:
@@ -90,7 +92,7 @@ class Perturber(pl.LightningModule):
         self.perturbation = None
 
     def configure_perturbation(self, input: torch.Tensor | tuple | tuple[dict[str, torch.Tensor]]):
-        def create_and_initialize(data, *, input, target, modality="default"):
+        def create_and_initialize(data, *, input, target, modality):
             # Though data and target are not used, they are required placeholders for modality_dispatch().
             pert = torch.empty_like(input, dtype=torch.float, requires_grad=True)
             self.initializer[modality](pert)
@@ -99,15 +101,15 @@ class Perturber(pl.LightningModule):
         # Recursively configure perturbation in tensor.
         # Though only input=input is used, we have to fill the placeholders of data and target.
         self.perturbation = modality_dispatch(
-            create_and_initialize, input, input=input, target=input, modality="default"
+            create_and_initialize, input, input=input, target=input, modality=self.MODALITY_DEFAULT
         )
 
     def parameter_groups(self):
         """Extract parameter groups for optimization from perturbation tensor(s)."""
-        param_groups = self._parameter_groups(self.perturbation)
+        param_groups = self._parameter_groups(self.perturbation, modality=self.MODALITY_DEFAULT)
         return param_groups
 
-    def _parameter_groups(self, pert, modality="default"):
+    def _parameter_groups(self, pert, *, modality):
         """Recursively return parameter groups as a list of dictionaries."""
 
         if isinstance(pert, torch.Tensor):
@@ -132,12 +134,16 @@ class Perturber(pl.LightningModule):
     def project_(self, perturbation, *, input, target, **kwargs):
         """In-place projection."""
         modality_dispatch(
-            self.projector, perturbation, input=input, target=target, modality="default"
+            self.projector,
+            perturbation,
+            input=input,
+            target=target,
+            modality=self.MODALITY_DEFAULT,
         )
 
     def compose(self, perturbation, *, input, target, **kwargs):
         return modality_dispatch(
-            self.composer, perturbation, input=input, target=target, modality="default"
+            self.composer, perturbation, input=input, target=target, modality=self.MODALITY_DEFAULT
         )
 
     def configure_optimizers(self):
@@ -183,7 +189,7 @@ class Perturber(pl.LightningModule):
         )
 
         for group in optimizer.param_groups:
-            modality = "default" if "modality" not in group else group["modality"]
+            modality = self.MODALITY_DEFAULT if "modality" not in group else group["modality"]
             self.gradient_modifier[modality](group["params"])
 
     def forward(self, **batch):
