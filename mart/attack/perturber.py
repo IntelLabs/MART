@@ -96,16 +96,10 @@ class Perturber(pl.LightningModule):
             self.initializer[modality](pert)
             return pert
 
-        # Make a dictionary of modality-function.
-        modality_func = {
-            modality: partial(create_and_initialize, modality=modality)
-            for modality in self.initializer
-        }
-
         # Recursively configure perturbation in tensor.
         # Though only input=input is used, we have to fill the placeholders of data and target.
         self.perturbation = modality_dispatch(
-            modality_func, input, input=input, target=input, modality="default"
+            create_and_initialize, input, input=input, target=input, modality="default"
         )
 
     def parameter_groups(self):

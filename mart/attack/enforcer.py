@@ -101,11 +101,6 @@ class Mask(Constraint):
 class Enforcer:
     def __init__(self, **modality_constraints: dict[str, dict[str, Constraint]]) -> None:
         self.modality_constraints = modality_constraints
-        # Prepare for modality_dispatch().
-        self.modality_func = {
-            modality: partial(self._enforce, modality=modality)
-            for modality in self.modality_constraints
-        }
 
     @torch.no_grad()
     def _enforce(
@@ -128,5 +123,5 @@ class Enforcer:
         **kwargs,
     ):
         modality_dispatch(
-            self.modality_func, input_adv, input=input, target=target, modality="constraints"
+            self._enforce, input_adv, input=input, target=target, modality="constraints"
         )

@@ -15,7 +15,7 @@ __all__ = ["modality_dispatch"]
 
 
 def modality_dispatch(
-    modality_func: dict[str, Callable],
+    modality_func: Callable | dict[str, Callable],
     data: Tensor | tuple | list[Tensor] | dict[str, Tensor],
     *,
     input: Tensor | tuple | list[Tensor] | dict[str, Tensor],
@@ -30,7 +30,12 @@ def modality_dispatch(
     assert type(data) == type(input)
 
     if isinstance(input, torch.Tensor):
-        return modality_func[modality](data, input=input, target=target)
+        if isinstance(modality_func, dict):
+            # A dictionary of Callable indexed by modality.
+            return modality_func[modality](data, input=input, target=target)
+        else:
+            # A Callable with modality=? as a keyword argument.
+            return modality_func(data, input=input, target=target, modality=modality)
     elif isinstance(input, dict):
         # The dict input has modalities specified in keys, passing them recursively.
         output = {}
