@@ -135,7 +135,8 @@ class Perturber(pl.LightningModule):
         else:
             raise ValueError(f"Unsupported data type of input: {type(pert)}.")
 
-    def project(self, perturbation, *, input, target, **kwargs):
+    def project_(self, perturbation, *, input, target, **kwargs):
+        """In-place projection."""
         modality_dispatch(
             self.projector, perturbation, input=input, target=target, modality="default"
         )
@@ -197,7 +198,7 @@ class Perturber(pl.LightningModule):
                 "You need to call the configure_perturbation before forward."
             )
 
-        self.project(self.perturbation, **batch)
+        self.project_(self.perturbation, **batch)
         input_adv = self.compose(self.perturbation, **batch)
 
         return input_adv
