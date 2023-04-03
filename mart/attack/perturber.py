@@ -101,7 +101,7 @@ class Perturber(pl.LightningModule):
         # Recursively configure perturbation in tensor.
         # Though only input=input is used, we have to fill the placeholders of data and target.
         self.perturbation = modality_dispatch(
-            create_and_initialize, input, input=input, target=input, modality=self.MODALITY_DEFAULT
+            create_and_initialize, input, input=input, target=None, modality=self.MODALITY_DEFAULT
         )
 
     def parameter_groups(self):
