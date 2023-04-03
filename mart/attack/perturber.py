@@ -91,7 +91,7 @@ class Perturber(pl.LightningModule):
     def configure_perturbation(self, input: torch.Tensor | tuple | tuple[dict[str, torch.Tensor]]):
         def create_and_initialize(data, *, input, target, modality="default"):
             # Though data and target are not used, they are required placeholders for modality_dispatch().
-            pert = torch.empty_like(input, requires_grad=True)
+            pert = torch.empty_like(input, dtype=torch.float, requires_grad=True)
             self.initializer[modality](pert)
             return pert
 
