@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import pytorch_lightning as pl
 import torch
@@ -33,25 +33,26 @@ class Perturber(pl.LightningModule):
     def __init__(
         self,
         *,
-        initializer: Initializer | dict[str, Initializer],
         optimizer: Callable,
-        composer: Composer | dict[str, Composer],
         gain: Gain,
+        composer: Composer | dict[str, Composer],
+        initializer: Initializer | dict[str, Initializer],
         gradient_modifier: GradientModifier | dict[str, GradientModifier] | None = None,
         projector: Projector | dict[str, Projector] | None = None,
         objective: Objective | None = None,
-        optim_params: dict | None = None,
+        optim_params: dict[str, dict[str, Any]] | None = None,
     ):
         """_summary_
 
         Args:
-            initializer (Initializer): To initialize the perturbation.
-            optimizer (torch.optim.Optimizer): A PyTorch optimizer.
-            composer (Composer): A module which composes adversarial input from input and perturbation.
-            gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
-            gradient_modifier (GradientModifier): To modify the gradient of perturbation.
-            projector (Projector): To project the perturbation into some space.
-            objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
+            optimizer: A partial of PyTorch optimizer that awaits parameters to optimize.
+            gain: An adversarial gain function, which is a differentiable estimate of adversarial objective.
+            composer: A module which composes adversarial input from input and perturbation. Modality-aware.
+            initializer: To initialize the perturbation. Modality-aware.
+            gradient_modifier: To modify the gradient of perturbation. Modality-aware.
+            projector: To project the perturbation into some space. Modality-aware.
+            objective: A function for computing adversarial objective, which returns True or False. Optional.
+            optim_params: A dictionary of optimization hyper-parameters. E.g. {"rgb": {"lr": 0.1}}.
         """
         super().__init__()
 
