@@ -49,7 +49,7 @@ def test_adversary_with_model(input_data, target_data, perturbation):
         attacker=attacker,
     )
 
-    output_data = adversary(input=input_data, target=target_data, model=None, sequence=None)
+    output_data = adversary(input=input_data, target=target_data, model=Mock(), sequence=None)
 
     # The enforcer is only called when model is not None.
     enforcer.assert_called_once()
@@ -95,7 +95,7 @@ def test_adversary_perturbation(input_data, target_data, perturbation):
         attacker=attacker,
     )
 
-    _ = adversary(input=input_data, target=target_data, model=None, sequence=None)
+    _ = adversary(input=input_data, target=target_data, model=Mock(), sequence=None)
     output_data = adversary(input=input_data, target=target_data)
 
     # The enforcer is only called when model is not None.
