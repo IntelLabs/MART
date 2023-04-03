@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-from functools import partial
 from typing import TYPE_CHECKING, Any, Callable
 
 import pytorch_lightning as pl
@@ -94,6 +93,7 @@ class Perturber(pl.LightningModule):
     def configure_perturbation(self, input: torch.Tensor | tuple | tuple[dict[str, torch.Tensor]]):
         def create_and_initialize(data, *, input, target, modality):
             # Though data and target are not used, they are required placeholders for modality_dispatch().
+            # TODO: we don't want an integer tensor, but make sure it does not affect mixed precision training.
             pert = torch.empty_like(input, dtype=torch.float, requires_grad=True)
             self.initializer[modality](pert)
             return pert
