@@ -10,6 +10,7 @@ import abc
 from typing import Any
 
 import torch
+from torchvision.transforms import functional as F
 
 
 class Composer(abc.ABC):
@@ -71,3 +72,49 @@ class MaskAdditive(Composer):
         masked_perturbation = perturbation * mask
 
         return input + masked_perturbation
+
+
+class RectanglePatchPerspectiveAdditiveMask(Composer):
+    def compose(self, perturbation, *, input, target):
+        coords = coords = target["patch_coords"]
+
+        # 1. Pad perturbation to the same size of input.
+        height, width = input.shape[-2:]
+        height_pert, width_pert = perturbation.shape[-2:]
+        pad_left = min(coords[0, 0], coords[3, 0])
+        pad_top = min(coords[0, 1], coords[1, 1])
+        pad_right = width - width_pert - pad_left
+        pad_bottom = height - height_pert - pad_top
+
+        perturbation_padded = F.pad(
+            img=perturbation,
+            padding=[pad_left, pad_top, pad_right, pad_bottom],
+            fill=0,
+            padding_mode="constant",
+        )
+
+        # 2. Perspective transformation: rectangle -> coords.
+        top_left = [pad_left, pad_top]
+        top_right = [width - pad_right, pad_top]
+        bottom_right = [width - pad_right, height - pad_bottom]
+        bottom_left = [pad_left, height - pad_bottom]
+        startpoints = [top_left, top_right, bottom_right, bottom_left]
+        endpoints = coords
+        perturbation_transformed = F.perspective(
+            img=perturbation_padded,
+            startpoints=startpoints,
+            endpoints=endpoints,
+            interpolation=F.InterpolationMode.BILINEAR,
+            fill=0,
+        )
+
+        # 3. Mask.
+        mask = target["perturbable_mask"]
+        perturbation_masked = perturbation_transformed * mask
+
+        # 4. Addition.
+        input_adv = input + perturbation_masked
+
+        # 5. Clamping.
+        input_adv = input_adv.clamp(min=0, max=255)
+        return input_adv
