@@ -1,6 +1,7 @@
 defaults:
   - adversary
   - optimizer: sgd
+  - creator@creator.rgb: default
   - initializer@initializer.rgb: constant
   - gradient_modifier@gradient_modifier.rgb: sign
   - projector@projector.rgb: mask_range

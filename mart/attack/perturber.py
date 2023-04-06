@@ -19,6 +19,7 @@ from .projector import Projector
 
 if TYPE_CHECKING:
     from .composer import Composer
+    from .creator import Creator
     from .gain import Gain
     from .initializer import Initializer
     from .objective import Objective
@@ -37,6 +38,7 @@ class Perturber(pl.LightningModule):
         optimizer: Callable,
         gain: Gain,
         composer: Composer | dict[str, Composer],
+        creator: Creator | dict[str, Creator],
         initializer: Initializer | dict[str, Initializer],
         gradient_modifier: GradientModifier | dict[str, GradientModifier] | None = None,
         projector: Projector | dict[str, Projector] | None = None,
@@ -49,6 +51,7 @@ class Perturber(pl.LightningModule):
             optimizer: A partial of PyTorch optimizer that awaits parameters to optimize.
             gain: An adversarial gain function, which is a differentiable estimate of adversarial objective.
             composer: A module which composes adversarial input from input and perturbation. Modality-aware.
+            creator: A module which creates a requires_grad tensor to optimize.
             initializer: To initialize the perturbation. Modality-aware.
             gradient_modifier: To modify the gradient of perturbation. Modality-aware.
             projector: To project the perturbation into some space. Modality-aware.
@@ -68,6 +71,8 @@ class Perturber(pl.LightningModule):
 
         # Modality-specific objects.
         # Backward compatibility, in case modality is unknown, and not given in input.
+        if not isinstance(creator, dict):
+            creator = {self.MODALITY_DEFAULT: creator}
         if not isinstance(initializer, dict):
             initializer = {self.MODALITY_DEFAULT: initializer}
         if not isinstance(gradient_modifier, dict):
@@ -82,6 +87,7 @@ class Perturber(pl.LightningModule):
             optim_params = {modality: {} for modality in initializer.keys()}
 
         # Modality-specific objects.
+        self.creator = creator
         self.initializer = initializer
         self.gradient_modifier = gradient_modifier
         self.projector = projector
@@ -90,18 +96,25 @@ class Perturber(pl.LightningModule):
 
         self.perturbation = None
 
-    def configure_perturbation(self, input: torch.Tensor | tuple | tuple[dict[str, torch.Tensor]]):
+    def configure_perturbation(
+        self,
+        input: torch.Tensor | tuple[torch.Tensor] | tuple[dict[str, torch.Tensor]],
+        target: torch.Tensor | tuple[dict[str, Any]],
+    ):
         def create_and_initialize(data, *, input, target, modality):
-            # Though data and target are not used, they are required placeholders for modality_dispatch().
-            # TODO: we don't want an integer tensor, but make sure it does not affect mixed precision training.
-            pert = torch.empty_like(input, dtype=torch.float, requires_grad=True)
+            # Though data is not used, it is a required placeholder for modality_dispatch().
+            pert = self.creator[modality](input=input, target=target)
             self.initializer[modality](pert)
             return pert
 
         # Recursively configure perturbation in tensor.
-        # Though only input=input is used, we have to fill the placeholders of data and target.
+        # Though only input=input is used, we have to fill the placeholders of data.
         self.perturbation = modality_dispatch(
-            create_and_initialize, input, input=input, target=None, modality=self.MODALITY_DEFAULT
+            create_and_initialize,
+            input,
+            input=input,
+            target=target,
+            modality=self.MODALITY_DEFAULT,
         )
 
     def parameter_groups(self):

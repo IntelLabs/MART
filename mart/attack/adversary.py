@@ -87,11 +87,11 @@ class Adversary(torch.nn.Module):
 
         return input_adv
 
-    def _attack(self, input, **batch):
-        batch = {"input": input, **batch}
+    def _attack(self, input, target, **batch):
+        batch = {"input": input, "target": target, **batch}
 
         # Configure and reset perturber to use batch inputs
-        self.perturber.configure_perturbation(input)
+        self.perturber.configure_perturbation(input, target)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
