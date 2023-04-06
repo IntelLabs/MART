@@ -126,22 +126,25 @@ def test_adversary_gradient(input_data, target_data):
     def initializer(x):
         torch.nn.init.constant_(x, 0)
 
-    perturber = Perturber(initializer, Sign())
+    perturber = Perturber(
+        initializer=initializer,
+        optimizer=optimizer,
+        composer=composer,
+        gain=gain,
+        gradient_modifier=Sign(),
+    )
 
     adversary = Adversary(
-        composer=composer,
         enforcer=enforcer,
         perturber=perturber,
-        optimizer=optimizer,
         max_iters=1,
-        gain=gain,
     )
 
     def model(input, target, model=None, **kwargs):
-        return {"logits": adversary(input, target)}
+        return {"logits": adversary(input=input, target=target)}
 
-    adversary(input_data, target_data, model=model)
-    input_adv = adversary(input_data, target_data)
+    adversary(input=input_data, target=target_data, model=model, sequence=None)
+    input_adv = adversary(input=input_data, target=target_data)
 
     perturbation = input_data - input_adv
 
