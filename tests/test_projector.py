@@ -36,7 +36,7 @@ def test_range_projector_repr():
 @pytest.mark.parametrize("max", [10, 100, 110])
 def test_range_projector(quantize, min, max, input_data, target_data, perturbation):
     projector = Range(quantize, min, max)
-    projector(perturbation, input_data, target_data)
+    projector(perturbation, input=input_data, target=target_data)
 
     assert torch.max(perturbation) <= max
     assert torch.min(perturbation) >= min
@@ -61,7 +61,7 @@ def test_range_additive_projector(quantize, min, max, input_data, target_data, p
     expected_perturbation = torch.clone(perturbation)
 
     projector = RangeAdditive(quantize, min, max)
-    projector(perturbation, input_data, target_data)
+    projector(perturbation, input=input_data, target=target_data)
 
     # modify expected_perturbation
     if quantize:
@@ -78,7 +78,7 @@ def test_lp_projector(eps, p, input_data, target_data, perturbation):
     expected_perturbation = torch.clone(perturbation)
 
     projector = Lp(eps, p)
-    projector(perturbation, input_data, target_data)
+    projector(perturbation, input=input_data, target=target_data)
 
     # modify expected_perturbation
     pert_norm = expected_perturbation.norm(p=p)
@@ -95,7 +95,7 @@ def test_linf_additive_range_projector(min, max, eps, input_data, target_data, p
     expected_perturbation = torch.clone(perturbation)
 
     projector = LinfAdditiveRange(eps, min, max)
-    projector(perturbation, input_data, target_data)
+    projector(perturbation, input=input_data, target=target_data)
 
     # get expected result
     eps_min = (input_data - eps).clamp(min, max) - input_data
@@ -117,7 +117,7 @@ def test_mask_projector(input_data, target_data, perturbation):
     expected_perturbation = torch.clone(perturbation)
 
     projector = Mask()
-    projector(perturbation, input_data, target_data)
+    projector(perturbation, input=input_data, target=target_data)
 
     # get expected output
     expected_perturbation.mul_(target_data["perturbable_mask"])
@@ -156,7 +156,7 @@ def test_compose(input_data, target_data):
     compose = Compose(projectors)
     tensor = Mock()
     tensor.norm.return_value = 10
-    compose(tensor, input_data, target_data)
+    compose(tensor, input=input_data, target=target_data)
 
     # RangeProjector, RangeAdditiveProjector, and LinfAdditiveRangeProjector calls `clamp_`
     assert tensor.clamp_.call_count == 3
