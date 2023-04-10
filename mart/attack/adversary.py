@@ -30,7 +30,7 @@ class Adversary(torch.nn.Module):
         self,
         *,
         enforcer: Enforcer,
-        perturber: Perturber | None = None,
+        perturber: Perturber,
         attacker: pl.Trainer | None = None,
         **kwargs,
     ):
@@ -66,7 +66,7 @@ class Adversary(torch.nn.Module):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
-        self.perturber = perturber or Perturber(**kwargs)
+        self.perturber = perturber
         self.enforcer = enforcer
 
     @silent()

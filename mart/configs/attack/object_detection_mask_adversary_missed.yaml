@@ -1,12 +1,13 @@
 defaults:
   - object_detection_mask_adversary
-  - objective: object_detection_missed
-  - gain: rcnn_class_background
-
-optimizer:
-  lr: 3
+  - perturber/gain: rcnn_class_background
+  - perturber/objective: object_detection_missed
 
 max_iters: 100
 
-initializer:
-  constant: 127
+perturber:
+  initializer:
+    constant: 127
+
+  optimizer:
+    lr: 3
