@@ -10,6 +10,9 @@ import abc
 from typing import Any
 
 import torch
+from torch import Tensor
+
+from mart.utils import modality_dispatch
 
 __all__ = ["Enforcer"]
 
@@ -21,20 +24,20 @@ class ConstraintViolated(Exception):
 class Constraint(abc.ABC):
     def __call__(
         self,
-        input_adv: torch.Tensor,
+        input_adv: Tensor,
         *,
-        input: torch.Tensor,
-        target: torch.Tensor | dict[str, Any],
+        input: Tensor,
+        target: Tensor | dict[str, Any],
     ) -> None:
         self.verify(input_adv, input=input, target=target)
 
     @abc.abstractmethod
     def verify(
         self,
-        input_adv: torch.Tensor,
+        input_adv: Tensor,
         *,
-        input: torch.Tensor,
-        target: torch.Tensor | dict[str, Any],
+        input: Tensor,
+        target: Tensor | dict[str, Any],
     ) -> None:
         raise NotImplementedError
 
@@ -101,10 +104,10 @@ class Enforcer:
     @torch.no_grad()
     def _enforce(
         self,
-        input_adv: torch.Tensor,
+        input_adv: Tensor,
         *,
-        input: torch.Tensor,
-        target: torch.Tensor | dict[str, Any],
+        input: Tensor,
+        target: Tensor | dict[str, Any],
         modality: str,
     ):
         for constraint in self.modality_constraints[modality].values():
@@ -112,28 +115,12 @@ class Enforcer:
 
     def __call__(
         self,
-        input_adv: torch.Tensor | tuple | list[torch.Tensor] | dict[str, torch.Tensor],
+        input_adv: Tensor | list[Tensor] | list[dict[str, Tensor]],
         *,
-        input: torch.Tensor | tuple | list[torch.Tensor] | dict[str, torch.Tensor],
-        target: torch.Tensor | dict[str, Any],
-        modality: str = "constraints",
+        input: Tensor | list[Tensor] | list[dict[str, Tensor]],
+        target: Tensor | dict[str, Any],
         **kwargs,
     ):
-        assert type(input_adv) == type(input)
-
-        if isinstance(input_adv, torch.Tensor):
-            # Finally we can verify constraints on tensor, per its modality.
-            # Set modality="constraints" by default, so that it is backward compatible with existing configs without modalities.
-            self._enforce(input_adv, input=input, target=target, modality=modality)
-        elif isinstance(input_adv, dict):
-            # The dict input has modalities specified in keys, passing them recursively.
-            for modality in input_adv:
-                self(input_adv[modality], input=input[modality], target=target, modality=modality)
-        elif isinstance(input_adv, (list, tuple)):
-            # We assume a modality-dictionary only contains tensors, but not list/tuple.
-            assert modality == "constraints"
-            # The list or tuple input is a collection of sub-input and sub-target.
-            for input_adv_i, input_i, target_i in zip(input_adv, input, target):
-                self(input_adv_i, input=input_i, target=target_i, modality=modality)
-        else:
-            raise ValueError(f"Unsupported data type of input_adv: {type(input_adv)}.")
+        modality_dispatch(
+            self._enforce, input_adv, input=input, target=target, modality="constraints"
+        )

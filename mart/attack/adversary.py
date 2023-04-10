@@ -75,14 +75,14 @@ class Adversary(torch.nn.Module):
         # must pass a model to attack when calling the adversary. Since we do not know where the
         # Adversary lives inside the model, we also need the remaining sequence to be able to
         # get a loss.
-        if "model" in batch and "sequence" in batch:
+        if "model" in batch and batch["model"] is not None and "sequence" in batch:
             self._attack(**batch)
 
         # Always use perturb the current input.
         input_adv = self.perturber(**batch)
 
         # Enforce constraints after the attack optimization ends.
-        if "model" in batch and "sequence" in batch:
+        if "model" in batch and batch["model"] is not None and "sequence" in batch:
             self.enforcer(input_adv, **batch)
 
         return input_adv
