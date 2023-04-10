@@ -61,13 +61,3 @@ class Overlay(Composer):
         mask = mask.to(input)
 
         return input * (1 - mask) + perturbation * mask
-
-
-class MaskAdditive(Composer):
-    """We assume an adversary adds masked perturbation to the input."""
-
-    def compose(self, perturbation, *, input, target):
-        mask = target["perturbable_mask"]
-        masked_perturbation = perturbation * mask
-
-        return input + masked_perturbation
