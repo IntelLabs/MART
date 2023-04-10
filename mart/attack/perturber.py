@@ -69,10 +69,10 @@ class Perturber(pl.LightningModule):
 
         if isinstance(input, tuple):
             self.perturbation = tuple(create_and_initialize(inp) for inp in input)
-        elif isinstance(input, dict):
-            raise NotImplementedError
-        else:
+        elif isinstance(input, torch.Tensor):
             self.perturbation = create_and_initialize(input)
+        else:
+            raise NotImplementedError
 
     def configure_optimizers(self):
         if self.perturbation is None:
