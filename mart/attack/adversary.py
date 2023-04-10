@@ -43,11 +43,11 @@ class Adversary(torch.nn.Module):
         """
         super().__init__()
 
-        self.attacker = attacker
+        self._attacker = attacker
 
-        if self.attacker is None:
+        if self._attacker is None:
             # Enable attack to be late bound in forward
-            self.attacker = partial(
+            self._attacker = partial(
                 pl.Trainer,
                 num_sanity_val_steps=0,
                 logger=False,
@@ -63,8 +63,8 @@ class Adversary(torch.nn.Module):
             # We feed the same batch to the attack every time so we treat each step as an
             # attack iteration. As such, attackers must only run for 1 epoch and must limit
             # the number of attack steps via limit_train_batches.
-            assert self.attacker.max_epochs == 0
-            assert self.attacker.limit_train_batches > 0
+            assert self._attacker.max_epochs == 0
+            assert self._attacker.limit_train_batches > 0
 
         self.perturber = perturber or Perturber(**kwargs)
         self.enforcer = enforcer
@@ -95,13 +95,13 @@ class Adversary(torch.nn.Module):
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
-        attacker = self._get_attacker(input)
-        attacker.fit_loop.max_epochs += 1
-        attacker.fit(self.perturber, train_dataloaders=cycle([batch]))
+        self.attacker.fit_loop.max_epochs += 1
+        self.attacker.fit(self.perturber, train_dataloaders=cycle([batch]))
 
-    def _get_attacker(self, input):
-        if not isinstance(self.attacker, partial):
-            return self.attacker
+    @property
+    def attacker(self):
+        if not isinstance(self._attacker, partial):
+            return self._attacker
 
         # Convert torch.device to PL accelerator
         device = self.perturber.device
@@ -116,6 +116,6 @@ class Adversary(torch.nn.Module):
             accelerator = device.type
             devices = [device.index]
 
-        self.attacker = self.attacker(accelerator=accelerator, devices=devices)
+        self._attacker = self._attacker(accelerator=accelerator, devices=devices)
 
-        return self.attacker
+        return self._attacker
