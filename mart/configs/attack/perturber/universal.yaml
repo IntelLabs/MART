@@ -1,0 +1,9 @@
+_target_: mart.attack.UniversalPerturber
+size: ???
+initializer: ???
+optimizer: ???
+composer: ???
+gain: ???
+gradient_modifier: null
+projector: null
+objective: null

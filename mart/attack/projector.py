@@ -23,11 +23,19 @@ class Projector:
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ) -> None:
-        if isinstance(perturbation, tuple):
+        if isinstance(perturbation, tuple) and isinstance(input, tuple):
             for perturbation_i, input_i, target_i in zip(perturbation, input, target):
                 self.project(perturbation_i, input=input_i, target=target_i)
-        else:
+
+        elif isinstance(perturbation, torch.Tensor) and isinstance(input, tuple):
+            for input_i, target_i in zip(input, target):
+                self.project(perturbation, input=input_i, target=target_i)
+
+        elif isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
             self.project(perturbation, input=input, target=target)
+
+        else:
+            raise NotImplementedError
 
     def project(
         self,

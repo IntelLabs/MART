@@ -10,6 +10,8 @@ import abc
 from typing import Any
 
 import torch
+import torchvision.transforms as T
+from torchvision.transforms.functional import InterpolationMode
 
 
 class Composer(abc.ABC):
@@ -21,15 +23,23 @@ class Composer(abc.ABC):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ) -> torch.Tensor | tuple:
-        if isinstance(perturbation, tuple):
-            input_adv = tuple(
+        if isinstance(perturbation, tuple) and isinstance(input, tuple):
+            return tuple(
                 self.compose(perturbation_i, input=input_i, target=target_i)
                 for perturbation_i, input_i, target_i in zip(perturbation, input, target)
             )
-        else:
-            input_adv = self.compose(perturbation, input=input, target=target)
 
-        return input_adv
+        elif isinstance(perturbation, torch.Tensor) and isinstance(input, tuple):
+            return tuple(
+                self.compose(perturbation, input=input_i, target=target_i)
+                for input_i, target_i in zip(input, target)
+            )
+
+        elif isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
+            return self.compose(perturbation, input=input, target=target)
+
+        else:
+            raise NotImplementedError
 
     @abc.abstractmethod
     def compose(
@@ -71,3 +81,43 @@ class MaskAdditive(Composer):
         masked_perturbation = perturbation * mask
 
         return input + masked_perturbation
+
+
+class RandomAffineOverlay(Overlay):
+    def __init__(
+        self,
+        degrees,
+        translate=None,
+        scale=None,
+        shear=None,
+        clamp=(0, 255),
+    ):
+        self.transform = T.RandomAffine(
+            degrees,
+            translate,
+            scale,
+            shear=shear,
+            #interpolation=InterpolationMode.BILINEAR,
+        )
+        self.clamp = clamp
+
+    def compose(self, perturbation, *, input, target):
+        random_crop = T.RandomCrop(input.shape[-2:], pad_if_needed=True)
+
+        # Create mask of ones to keep track of filled in pixels
+        mask = torch.ones_like(perturbation[:1])
+        mask_perturbation = torch.cat((mask, perturbation))
+
+        # Apply random affine transform and crop/pad to input size
+        mask_perturbation = self.transform(mask_perturbation)
+        mask_perturbation = random_crop(mask_perturbation)
+
+        # Clamp perturbation to input min/max
+        perturbation = mask_perturbation[1:]
+        perturbation.clamp_(*self.clamp)
+
+        # Make mask binary
+        mask = mask_perturbation[:1] > 0 # fill=0
+        target["perturbable_mask"] = mask
+
+        return super().compose(perturbation, input=input, target=target)
