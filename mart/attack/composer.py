@@ -97,7 +97,7 @@ class RandomAffineOverlay(Overlay):
             translate,
             scale,
             shear=shear,
-            #interpolation=InterpolationMode.BILINEAR,
+            # interpolation=InterpolationMode.BILINEAR,
         )
         self.clamp = clamp
 
@@ -117,7 +117,7 @@ class RandomAffineOverlay(Overlay):
         perturbation.clamp_(*self.clamp)
 
         # Make mask binary
-        mask = mask_perturbation[:1] > 0 # fill=0
+        mask = mask_perturbation[:1] > 0  # fill=0
         target["perturbable_mask"] = mask
 
         return super().compose(perturbation, input=input, target=target)
