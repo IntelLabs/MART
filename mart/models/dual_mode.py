@@ -50,10 +50,13 @@ class DualModeGeneralizedRCNN(torch.nn.Module):
     """Efficient dual mode for GeneralizedRCNN from torchvision, by reusing feature maps from
     backbone."""
 
-    def __init__(self, model):
+    def __init__(self, model, freeze=False):
         super().__init__()
 
         self.model = model
+
+        for name, param in self.model.named_parameters():
+            param.requires_grad_(not freeze)
 
     def forward(self, *args, **kwargs):
         bound_method = self.forward_dual_mode.__get__(self.model, self.model.__class__)

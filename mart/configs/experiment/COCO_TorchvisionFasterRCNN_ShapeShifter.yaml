@@ -2,7 +2,7 @@
 
 defaults:
   - COCO_TorchvisionFasterRCNN
-  - /attack@model.modules.input_adv: object_detection_universal_missed
+  - /attack/perturber@model.modules.input_adv: object_detection_universal_missed
 
 task_name: "COCO_TorchvisionFasterRCNN_ShapeShifter"
 tags: ["adv"]
@@ -19,6 +19,7 @@ model:
       model:
         model:
           weights: "FasterRCNN_ResNet50_FPN_Weights.COCO_V1"
+      freeze: True
 
   training_sequence:
     seq005: input_adv

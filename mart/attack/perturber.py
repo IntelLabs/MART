@@ -139,18 +139,8 @@ class UniversalPerturber(Perturber):
     def __init__(self, *args, size: tuple, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.size = size
+        self.perturbation = torch.nn.Parameter(torch.empty(size, requires_grad=True))
+        self.initializer(self.perturbation)
 
     def configure_perturbation(self, input: torch.Tensor | tuple):
-        if self.perturbation is not None:
-            return
-
-        if isinstance(input, tuple):
-            device = input[0].device
-        elif isinstance(input, torch.Tensor):
-            device = input.device
-        else:
-            raise NotImplementedError
-
-        self.perturbation = torch.empty(self.size, device=device, requires_grad=True)
-        self.initializer(self.perturbation)
+        pass
