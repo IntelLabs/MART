@@ -2,12 +2,12 @@
 
 defaults:
   - COCO_TorchvisionFasterRCNN
-  - /attack/perturber@model.modules.input_adv: object_detection_universal_missed
+  - /attack@model.modules.input_adv: object_detection_universal_missed
 
 task_name: "COCO_TorchvisionFasterRCNN_ShapeShifter"
 tags: ["adv"]
 
-# Unclear how to freeze a model in training mode so we only generate a perturbation using test mode
+# A frozen can't be optimized since it has no parameters. So we run the attack in test mode for now.
 fit: False
 
 datamodule:

@@ -131,16 +131,29 @@ class Perturber(pl.LightningModule):
             )
 
         self.projector(self.perturbation, **batch)
+        output = self.composer(self.perturbation, **batch)
 
-        return self.composer(self.perturbation, **batch)
+        torch.save((self.perturbation.detach().cpu(), output), "/tmp/output.pt")  # nosec: B108
+
+        return output
 
 
 class UniversalPerturber(Perturber):
     def __init__(self, *args, size: tuple, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.perturbation = torch.nn.Parameter(torch.empty(size, requires_grad=True))
-        self.initializer(self.perturbation)
+        self.size = size
 
     def configure_perturbation(self, input: torch.Tensor | tuple):
-        pass
+        if self.perturbation is not None:
+            return
+
+        if isinstance(input, tuple):
+            device = input[0].device
+        elif isinstance(input, torch.Tensor):
+            device = input.device
+        else:
+            raise NotImplementedError
+
+        self.perturbation = torch.empty(self.size, device=device, requires_grad=True)
+        self.initializer(self.perturbation)

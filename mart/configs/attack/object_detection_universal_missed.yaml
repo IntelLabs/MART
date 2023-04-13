@@ -11,7 +11,7 @@ defaults:
   - enforcer: default
   - enforcer/constraints: [pixel_range]
 
-max_iters: 1
+max_iters: 8
 
 perturber:
   size: [3, 416, 416]
