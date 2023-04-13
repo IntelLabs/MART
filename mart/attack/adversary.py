@@ -224,9 +224,12 @@ class UniversalAdversary(Adversary):
 
         super().configure_perturbation(self.input)
 
-    def _attack(self, step, **batch):
+    def _attack(self, *, input, step, **batch):
+        # Configure and reset perturbation for inputs
+        self.configure_perturbation(input)
+
         # Only attack in training
         if step != "training":
             return
 
-        super()._attack(step=step, **batch)
+        super()._attack(step=step, input=input, **batch)
