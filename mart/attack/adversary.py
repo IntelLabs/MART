@@ -212,24 +212,32 @@ class Adversary(pl.LightningModule):
 
 
 class UniversalAdversary(Adversary):
+    """A universal adversary applies the same perturbation to every input.
+
+    As such, we need to know the size of the perturbation before the attack can proceed. Unlike the
+    standard adversary, we only allow updating the perturbation in training mode.
+    """
+
     def __init__(self, *args, size: tuple, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Create a dummy parameter so that optimizers work
-        self.input = torch.nn.Parameter(torch.empty(size))
+        # Configure perturbation using specified size and make it a Parameter so PL can manage its device.
+        super().configure_perturbation(torch.empty(size))
+        self.perturbation = torch.nn.Parameter(self.perturbation)
+
+    def cpu(self):
+        # PL places the LightningModule back on the CPU after fitting:
+        #   https://github.com/Lightning-AI/lightning/blob/ff5361604b2fd508aa2432babed6844fbe268849/pytorch_lightning/strategies/single_device.py#L96
+        #   https://github.com/Lightning-AI/lightning/blob/ff5361604b2fd508aa2432babed6844fbe268849/pytorch_lightning/strategies/ddp.py#L482
+        # We stop this from happening by ignoring the call to cpu().
+        pass
 
     def configure_perturbation(self, input: torch.Tensor | tuple):
-        # Universal perturbations can only be initialized once.
-        if self.perturbation is not None:
-            return
-
-        super().configure_perturbation(self.input)
+        # Universal perturbations are initialized once in __init__.
+        pass
 
     def _attack(self, *, input, step, **batch):
-        # Configure and reset perturbation for inputs
-        self.configure_perturbation(self.input)
-
-        # Only attack in training
+        # Only attack in training mode.
         if step != "training":
             return
 
