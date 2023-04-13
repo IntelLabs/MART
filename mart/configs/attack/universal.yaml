@@ -1,11 +1,5 @@
+defaults:
+  - adversary
+
 _target_: mart.attack.UniversalAdversary
 size: ???
-initializer: ???
-optimizer: ???
-composer: ???
-gain: ???
-gradient_modifier: null
-projector: null
-objective: null
-enforcer: ???
-attacker: null
