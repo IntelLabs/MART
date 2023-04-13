@@ -1,33 +1,31 @@
 defaults:
-  - adversary
-  - perturber: universal
-  - perturber/initializer: uniform
-  - perturber/optimizer: sgd
-  - perturber/composer: random_affine_overlay
-  - perturber/gain: rcnn_training_loss
-  - perturber/gradient_modifier: lp_normalizer
-  - perturber/projector: range
-  - perturber/objective: zero_ap
+  - universal
+  - initializer: uniform
+  - optimizer: sgd
+  - composer: random_affine_overlay
+  - gain: rcnn_training_loss
+  - gradient_modifier: lp_normalizer
+  - projector: range
+  - objective: zero_ap
   - enforcer: default
   - enforcer/constraints: [pixel_range]
 
 max_iters: 8
 
-perturber:
-  size: [3, 416, 416]
+size: [3, 416, 416]
 
-  initializer:
-    min: 127
-    max: 129
+initializer:
+  min: 127
+  max: 129
 
-  optimizer:
-    lr: 128
+optimizer:
+  lr: 128
 
-  composer:
-    degrees: [-15, 15]
-    translate: [0, 0]
-    scale: [0.25, 0.5]
-    shear: null
+composer:
+  degrees: [-15, 15]
+  translate: [0, 0]
+  scale: [0.25, 0.5]
+  shear: null
 
-  gradient_modifier:
-    p: 2
+gradient_modifier:
+  p: 2
