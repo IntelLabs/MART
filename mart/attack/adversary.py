@@ -220,12 +220,5 @@ class UniversalAdversary(Adversary):
         if self.perturbation is not None:
             return
 
-        if isinstance(input, tuple):
-            device = input[0].device
-        elif isinstance(input, torch.Tensor):
-            device = input.device
-        else:
-            raise NotImplementedError
-
-        self.perturbation = torch.empty(self.size, device=device, requires_grad=True)
+        self.perturbation = torch.empty(self.size, device=self.device, requires_grad=True)
         self.initializer(self.perturbation)
