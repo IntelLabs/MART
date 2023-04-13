@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+import re
 import logging
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ class LitModular(LightningModule):
         test_metrics=None,
         weights_fpath=None,
         strict=True,
+        freeze=None,
     ):
         super().__init__()
 
@@ -74,6 +76,11 @@ class LitModular(LightningModule):
 
         self.test_step_log = test_step_log or []
         self.test_metrics = test_metrics
+
+        if freeze:
+            for name, param in self.model.named_parameters():
+                if re.match(freeze, name):
+                    param.requires_grad_(False)
 
     def configure_optimizers(self):
         config = {}
