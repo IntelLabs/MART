@@ -16,7 +16,7 @@ model:
       model:
         model:
           weights: "FasterRCNN_ResNet50_FPN_Weights.COCO_V1"
-      freeze: True
+      freeze: True # FIXME: We need a more generic freeze mechanism since we often don't own model code.
 
   optimizer:
     lr: 0 # Turn off learning!
