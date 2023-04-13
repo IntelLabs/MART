@@ -218,6 +218,7 @@ class UniversalAdversary(Adversary):
         self.input = torch.nn.Parameter(torch.empty(size))
 
     def configure_perturbation(self, input: torch.Tensor | tuple):
+        # Universal perturbations can only be initialized once.
         if self.perturbation is not None:
             return
 
