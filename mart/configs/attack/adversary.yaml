@@ -1,4 +1,10 @@
 _target_: mart.attack.Adversary
+initializer: ???
+optimizer: ???
+composer: ???
+gain: ???
+gradient_modifier: null
+projector: null
+objective: null
 enforcer: ???
-perturber: ???
 attacker: null

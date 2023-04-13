@@ -7,5 +7,4 @@ from .gain import *
 from .gradient_modifier import *
 from .initializer import *
 from .objective import *
-from .perturber import *
 from .projector import *

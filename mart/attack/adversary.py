@@ -8,40 +8,67 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import cycle
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import pytorch_lightning as pl
 import torch
+from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from mart.utils import silent
 
-from .perturber import Perturber
+from .gradient_modifier import GradientModifier
+from .projector import Projector
 
 if TYPE_CHECKING:
+    from .composer import Composer
     from .enforcer import Enforcer
+    from .gain import Gain
+    from .initializer import Initializer
+    from .objective import Objective
 
-__all__ = ["Adversary"]
+__all__ = ["Adversary", "UniversalAdversary"]
 
 
-class Adversary(torch.nn.Module):
+class Adversary(pl.LightningModule):
     """An adversary module which generates and applies perturbation to input."""
 
     def __init__(
         self,
         *,
-        enforcer: Enforcer,
-        perturber: Perturber,
+        initializer: Initializer,
+        optimizer: Callable,
+        composer: Composer,
+        gain: Gain,
+        gradient_modifier: GradientModifier | None = None,
+        projector: Projector | None = None,
+        objective: Objective | None = None,
+        enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
         **kwargs,
     ):
         """_summary_
 
         Args:
+            initializer (Initializer): To initialize the perturbation.
+            optimizer (torch.optim.Optimizer): A PyTorch optimizer.
+            composer (Composer): A module which composes adversarial input from input and perturbation.
+            gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
+            gradient_modifier (GradientModifier): To modify the gradient of perturbation.
+            projector (Projector): To project the perturbation into some space.
+            objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
-            perturber (Perturber): A Perturber that manages perturbations.
-            attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturber.
+            attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
         """
         super().__init__()
+
+        self.initializer = initializer
+        self.optimizer_fn = optimizer
+        self.composer = composer
+        self.gradient_modifier = gradient_modifier or GradientModifier()
+        self.projector = projector or Projector()
+        self.gain_fn = gain
+        self.objective_fn = objective
+        self.enforcer = enforcer
 
         self._attacker = attacker
 
@@ -66,8 +93,68 @@ class Adversary(torch.nn.Module):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
-        self.perturber = perturber
-        self.enforcer = enforcer
+        self.perturbation = None
+
+    def configure_perturbation(self, input: torch.Tensor | tuple):
+        def create_and_initialize(inp):
+            pert = torch.empty_like(inp, dtype=torch.float, requires_grad=True)
+            self.initializer(pert)
+            return pert
+
+        if isinstance(input, tuple):
+            self.perturbation = tuple(create_and_initialize(inp) for inp in input)
+        elif isinstance(input, torch.Tensor):
+            self.perturbation = create_and_initialize(input)
+        else:
+            raise NotImplementedError
+
+    def configure_optimizers(self):
+        if self.perturbation is None:
+            raise MisconfigurationException("You need to call configure_perturbation before fit.")
+
+        params = self.perturbation
+        if not isinstance(params, tuple):
+            # FIXME: Should we treat the batch dimension as independent parameters?
+            params = (params,)
+
+        return self.optimizer_fn(params)
+
+    def training_step(self, batch, batch_idx):
+        # copy batch since we modify it and it is used internally
+        batch = batch.copy()
+
+        # We need to evaluate the perturbation against the whole model, so call it normally to get a gain.
+        model = batch.pop("model")
+        outputs = model(**batch)
+
+        # FIXME: This should really be just `return outputs`. But this might require a new sequence?
+        # FIXME: Everything below here should live in the model as modules.
+        # Use CallWith to dispatch **outputs.
+        gain = self.gain_fn(**outputs)
+
+        # objective_fn is optional, because adversaries may never reach their objective.
+        if self.objective_fn is not None:
+            found = self.objective_fn(**outputs)
+
+            # No need to calculate new gradients if adversarial examples are already found.
+            if len(gain.shape) > 0:
+                gain = gain[~found]
+
+        if len(gain.shape) > 0:
+            gain = gain.sum()
+
+        return gain
+
+    def configure_gradient_clipping(
+        self, optimizer, optimizer_idx, gradient_clip_val=None, gradient_clip_algorithm=None
+    ):
+        # Configuring gradient clipping in pl.Trainer is still useful, so use it.
+        super().configure_gradient_clipping(
+            optimizer, optimizer_idx, gradient_clip_val, gradient_clip_algorithm
+        )
+
+        for group in optimizer.param_groups:
+            self.gradient_modifier(group["params"])
 
     @silent()
     def forward(self, **batch):
@@ -79,7 +166,13 @@ class Adversary(torch.nn.Module):
             self._attack(**batch)
 
         # Always use perturb the current input.
-        input_adv = self.perturber(**batch)
+        if self.perturbation is None:
+            raise MisconfigurationException(
+                "You need to call the configure_perturbation before forward."
+            )
+
+        self.projector(self.perturbation, **batch)
+        input_adv = self.composer(self.perturbation, **batch)
 
         # Enforce constraints after the attack optimization ends.
         if "model" in batch and "sequence" in batch:
@@ -88,15 +181,14 @@ class Adversary(torch.nn.Module):
         return input_adv
 
     def _attack(self, input, **batch):
-        batch = {"input": input, **batch}
-
-        # Configure and reset perturber to use batch inputs
-        self.perturber.configure_perturbation(input)
+        # Configure and reset perturbation for inputs
+        self.configure_perturbation(input)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
+        batch = {"input": input, **batch}
         self.attacker.fit_loop.max_epochs += 1
-        self.attacker.fit(self.perturber, train_dataloaders=cycle([batch]))
+        self.attacker.fit(self, train_dataloaders=cycle([batch]))
 
     @property
     def attacker(self):
@@ -104,18 +196,36 @@ class Adversary(torch.nn.Module):
             return self._attacker
 
         # Convert torch.device to PL accelerator
-        device = self.perturber.device
-
-        if device.type == "cuda":
+        if self.device.type == "cuda":
             accelerator = "gpu"
-            devices = [device.index]
-        elif device.type == "cpu":
+            devices = [self.device.index]
+        elif self.device.type == "cpu":
             accelerator = "cpu"
             devices = None
         else:
-            accelerator = device.type
-            devices = [device.index]
+            raise NotImplementedError
 
         self._attacker = self._attacker(accelerator=accelerator, devices=devices)
 
         return self._attacker
+
+
+class UniversalAdversary(Adversary):
+    def __init__(self, *args, size: tuple, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.size = size
+
+    def configure_perturbation(self, input: torch.Tensor | tuple):
+        if self.perturbation is not None:
+            return
+
+        if isinstance(input, tuple):
+            device = input[0].device
+        elif isinstance(input, torch.Tensor):
+            device = input.device
+        else:
+            raise NotImplementedError
+
+        self.perturbation = torch.empty(self.size, device=device, requires_grad=True)
+        self.initializer(self.perturbation)
