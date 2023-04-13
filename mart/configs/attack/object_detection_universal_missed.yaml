@@ -10,7 +10,7 @@ defaults:
   - enforcer: default
   - enforcer/constraints: [pixel_range]
 
-max_iters: 8
+max_iters: 1
 
 size: [3, 416, 416]
 

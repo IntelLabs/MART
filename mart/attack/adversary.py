@@ -214,11 +214,11 @@ class UniversalAdversary(Adversary):
     def __init__(self, *args, size: tuple, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.size = size
+        # Create a dummy parameter so that optimizers work
+        self.input = torch.nn.Parameter(torch.empty(size))
 
     def configure_perturbation(self, input: torch.Tensor | tuple):
         if self.perturbation is not None:
             return
 
-        self.perturbation = torch.empty(self.size, device=self.device, requires_grad=True)
-        self.initializer(self.perturbation)
+        super().configure_perturbation(self.input)

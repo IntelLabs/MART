@@ -7,9 +7,6 @@ defaults:
 task_name: "COCO_TorchvisionFasterRCNN_ShapeShifter"
 tags: ["adv"]
 
-# A frozen can't be optimized since it has no parameters. So we run the attack in test mode for now.
-fit: False
-
 datamodule:
   ims_per_batch: 1
 
@@ -20,6 +17,9 @@ model:
         model:
           weights: "FasterRCNN_ResNet50_FPN_Weights.COCO_V1"
       freeze: True
+
+  optimizer:
+    lr: 0 # Turn off learning!
 
   training_sequence:
     seq005: input_adv
