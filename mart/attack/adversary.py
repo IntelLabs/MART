@@ -222,3 +222,10 @@ class UniversalAdversary(Adversary):
             return
 
         super().configure_perturbation(self.input)
+
+    def _attack(self, step, **batch):
+        # Only attack in training
+        if step != "training":
+            return
+
+        super()._attack(step=step, **batch)
