@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-import re
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
