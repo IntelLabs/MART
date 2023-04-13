@@ -83,6 +83,7 @@ class MaskAdditive(Composer):
         return input + masked_perturbation
 
 
+# FIXME: It would be really nice if we could compose composers just like we can compose everything else...
 class RandomAffineOverlay(Overlay):
     def __init__(
         self,
@@ -92,7 +93,7 @@ class RandomAffineOverlay(Overlay):
         shear=None,
         clamp=(0, 255),
     ):
-        self.transform = T.RandomAffine(
+        self.random_affine = T.RandomAffine(
             degrees,
             translate,
             scale,
@@ -109,7 +110,7 @@ class RandomAffineOverlay(Overlay):
         mask_perturbation = torch.cat((mask, perturbation))
 
         # Apply random affine transform and crop/pad to input size
-        mask_perturbation = self.transform(mask_perturbation)
+        mask_perturbation = self.random_affine(mask_perturbation)
         mask_perturbation = random_crop(mask_perturbation)
 
         # Clamp perturbation to input min/max
@@ -119,5 +120,27 @@ class RandomAffineOverlay(Overlay):
         # Make mask binary
         mask = mask_perturbation[:1] > 0  # fill=0
         target["perturbable_mask"] = mask
+
+        return super().compose(perturbation, input=input, target=target)
+
+
+# FIXME: It would be really nice if we could compose composers just like we can compose everything else...
+class ColorJitterRandomAffineOverlay(RandomAffineOverlay):
+    def __init__(
+        self,
+        *args,
+        brightness=0,
+        contrast=0,
+        saturation=0,
+        hue=0,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+
+        self.color_jitter = T.ColorJitter(brightness, contrast, saturation, hue)
+
+    def compose(self, perturbation, *, input, target):
+        # ColorJitter and friends assume floating point tensors are between [0, 1]...
+        perturbation = self.color_jitter(perturbation / 255) * 255
 
         return super().compose(perturbation, input=input, target=target)
