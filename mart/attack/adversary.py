@@ -166,12 +166,12 @@ class Adversary(pl.LightningModule):
         if "model" in batch and "sequence" in batch:
             self._attack(**batch)
 
-        # Always use perturb the current input.
         if self.perturbation is None:
             raise MisconfigurationException(
                 "You need to call the configure_perturbation before forward."
             )
 
+        # Always perturb the current input.
         self.projector(self.perturbation, **batch)
         input_adv = self.composer(self.perturbation, **batch)
 
@@ -200,9 +200,11 @@ class Adversary(pl.LightningModule):
         if self.device.type == "cuda":
             accelerator = "gpu"
             devices = [self.device.index]
+
         elif self.device.type == "cpu":
             accelerator = "cpu"
             devices = None
+
         else:
             raise NotImplementedError
 
