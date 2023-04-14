@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from .gain import Gain
     from .objective import Objective
     from .perturber import Perturber
+    from .optim import OptimizerFactory
 
 __all__ = ["Adversary", "UniversalAdversary"]
 
@@ -33,7 +34,7 @@ class Adversary(pl.LightningModule):
         self,
         *,
         perturber: Perturber,
-        optimizer: Callable,
+        optimizer: OptimizerFactory,
         gain: Gain,
         gradient_modifier: GradientModifier | None = None,
         objective: Objective | None = None,
@@ -55,7 +56,7 @@ class Adversary(pl.LightningModule):
         super().__init__()
 
         self.perturber = perturber
-        self.optimizer_fn = optimizer
+        self.optimizer = optimizer
         self.gain_fn = gain
         self.gradient_modifier = gradient_modifier or GradientModifier()
         self.objective_fn = objective
@@ -86,7 +87,7 @@ class Adversary(pl.LightningModule):
             assert self._attacker.limit_train_batches > 0
 
     def configure_optimizers(self):
-        return self.optimizer_fn(self.perturber.parameters())
+        return self.optimizer(self.perturber)
 
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally
