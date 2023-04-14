@@ -21,8 +21,8 @@ if TYPE_CHECKING:
     from .enforcer import Enforcer
     from .gain import Gain
     from .objective import Objective
-    from .perturber import Perturber
     from .optim import OptimizerFactory
+    from .perturber import Perturber
 
 __all__ = ["Adversary", "UniversalAdversary"]
 

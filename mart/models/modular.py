@@ -35,7 +35,7 @@ class LitModular(LightningModule):
         weights_fpath=None,
         strict=True,
         freeze=None,
-        gradient_modifier=None
+        gradient_modifier=None,
     ):
         super().__init__()
 
@@ -112,7 +112,6 @@ class LitModular(LightningModule):
         if self.gradient_modifier is not None:
             for group in optimizer.param_groups:
                 self.gradient_modifier(group["params"])
-
 
     def forward(self, **kwargs):
         return self.model(**kwargs)
