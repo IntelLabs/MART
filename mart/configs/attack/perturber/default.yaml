@@ -1,6 +1,5 @@
 _target_: mart.attack.Perturber
 initializer: ???
 composer: ???
-gradient_modifier: null
 projector: null
 size: null
