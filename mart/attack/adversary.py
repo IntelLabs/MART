@@ -177,6 +177,14 @@ class Adversary(pl.LightningModule):
 
         return self._attacker
 
+    def cpu(self):
+        # PL places the LightningModule back on the CPU after fitting:
+        #   https://github.com/Lightning-AI/lightning/blob/ff5361604b2fd508aa2432babed6844fbe268849/pytorch_lightning/strategies/single_device.py#L96
+        #   https://github.com/Lightning-AI/lightning/blob/ff5361604b2fd508aa2432babed6844fbe268849/pytorch_lightning/strategies/ddp.py#L482
+        # This is a problem when this LightningModule has parameters, so we stop this from
+        # happening by ignoring the call to cpu().
+        pass
+
 
 class UniversalAdversary(Adversary):
     """A universal adversary applies the same perturbation to every input.
@@ -185,27 +193,14 @@ class UniversalAdversary(Adversary):
     standard adversary, we only allow updating the perturbation in training mode.
     """
 
-    def __init__(self, *args, size: tuple, **kwargs):
-        super().__init__(*args, **kwargs)
+    def _attack(self, *, step, **batch):
+        batch["step"] = step
 
-        # Configure perturbation using specified size and make it a Parameter so PL can manage its device.
-        super().configure_perturbation(torch.empty(size))
-        self.perturbation = torch.nn.Parameter(self.perturbation)
-
-    def cpu(self):
-        # PL places the LightningModule back on the CPU after fitting:
-        #   https://github.com/Lightning-AI/lightning/blob/ff5361604b2fd508aa2432babed6844fbe268849/pytorch_lightning/strategies/single_device.py#L96
-        #   https://github.com/Lightning-AI/lightning/blob/ff5361604b2fd508aa2432babed6844fbe268849/pytorch_lightning/strategies/ddp.py#L482
-        # We stop this from happening by ignoring the call to cpu().
-        pass
-
-    def configure_perturbation(self, input: torch.Tensor | tuple):
-        # Universal perturbations are initialized once in __init__.
-        pass
-
-    def _attack(self, *, input, step, **batch):
         # Only attack in training mode.
         if step != "training":
             return
 
-        super()._attack(step=step, input=input, **batch)
+        # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
+        # We use Trainer.limit_train_batches to control the number of attack iterations.
+        self.attacker.fit_loop.max_epochs += 1
+        self.attacker.fit(self, train_dataloaders=cycle([batch]))

@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 import torch
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
@@ -29,7 +29,6 @@ class Perturber(torch.nn.Module):
         composer: Composer,
         gradient_modifier: GradientModifier | None = None,
         projector: Projector | None = None,
-        size: tuple | None = None
     ):
         """_summary_
 
@@ -38,43 +37,58 @@ class Perturber(torch.nn.Module):
             composer (Composer): A module which composes adversarial input from input and perturbation.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
             projector (Projector): To project the perturbation into some space.
-            size (tuple): Size of perturbation
         """
         super().__init__()
 
-        self.initializer = initializer
+        self.initializer_ = initializer
         self.composer = composer
         self.gradient_modifier = gradient_modifier or GradientModifier()
         self.projector = projector or Projector()
 
-        # Initialize perturbation
         self.perturbation = None
-        if size is not None:
-            self.configure_perturbation(torch.empty(size))
 
-    def configure_perturbation(self, input: torch.Tensor | tuple):
-        def create_and_initialize(inp):
-            pert = torch.empty_like(inp, dtype=torch.float, requires_grad=True)
-            self.initializer(pert)
-            return pert
+    def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
+        def create_from_tensor(tensor):
+            if isinstance(tensor, torch.Tensor):
+                return torch.nn.Parameter(
+                    torch.empty_like(tensor, dtype=torch.float, requires_grad=True)
+                )
+            elif isinstance(tensor, Iterable):
+                return torch.nn.ParameterList([create_from_tensor(t) for t in tensor])
+            else:
+                raise NotImplementedError
 
-        if isinstance(input, tuple):
-            self.perturbation = tuple(create_and_initialize(inp) for inp in input)
-        elif isinstance(input, torch.Tensor):
-            self.perturbation = create_and_initialize(input)
-        else:
-            raise NotImplementedError
+            # FIXME: Attach gradient modifier
+
+        def matches(input, perturbation):
+            if perturbation is None:
+                return False
+
+            if isinstance(input, torch.Tensor) and isinstance(perturbation, torch.Tensor):
+                return input.shape == perturbation.shape
+
+            if isinstance(input, Iterable) and isinstance(perturbation, Iterable):
+                if len(input) != len(perturbation):
+                    return False
+
+                return all([matches(input_i, perturbation_i) for input_i, perturbation_i in zip(input, perturbation)])
+
+            return False
+
+        # If we have never created a perturbation before or perturbation does not match input, then create a new perturbation.
+        if not matches(input, self.perturbation):
+            self.perturbation = create_from_tensor(input)
+
+        # FIXME: Check if perturbation is same shape as input
+
+        # (re)Use existing perturbations but initialize them.
+        self.initializer_(self.perturbation)
 
     def parameters(self):
         if self.perturbation is None:
             raise MisconfigurationException("You need to call configure_perturbation before fit.")
 
-        params = self.perturbation
-        if not isinstance(params, tuple):
-            # FIXME: Should we treat the batch dimension as independent parameters?
-            params = (params,)
-
-        return params
+        return super().parameters()
 
     def forward(self, **batch):
         if self.perturbation is None:
@@ -82,7 +96,6 @@ class Perturber(torch.nn.Module):
                 "You need to call the configure_perturbation before forward."
             )
 
-        # Always perturb the current input.
         self.projector(self.perturbation, **batch)
         input_adv = self.composer(self.perturbation, **batch)
 

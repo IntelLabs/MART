@@ -4,52 +4,57 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-import abc
-from typing import Optional, Union
+from __future__ import annotations
+
+from typing import Iterable
 
 import torch
 
-__all__ = ["Initializer"]
 
-
-class Initializer(abc.ABC):
+class Initializer:
     """Initializer base class."""
 
     @torch.no_grad()
-    @abc.abstractmethod
-    def __call__(self, perturbation: torch.Tensor) -> None:
+    def __call__(self, parameters: torch.Tensor | Iterable[torch.Tensor]) -> None:
+        if isinstance(parameters, torch.Tensor):
+            parameters = [parameters]
+
+        [self.initialize_(parameter) for parameter in parameters]
+
+    @torch.no_grad()
+    def initialize_(self, parameter: torch.Tensor) -> None:
         pass
 
 
 class Constant(Initializer):
-    def __init__(self, constant: Optional[Union[int, float]] = 0):
+    def __init__(self, constant: int | float = 0):
         self.constant = constant
 
     @torch.no_grad()
-    def __call__(self, perturbation: torch.Tensor) -> None:
-        torch.nn.init.constant_(perturbation, self.constant)
+    def initialize_(self, parameter: torch.Tensor) -> None:
+        torch.nn.init.constant_(parameter, self.constant)
 
 
 class Uniform(Initializer):
-    def __init__(self, min: Union[int, float], max: Union[int, float]):
+    def __init__(self, min: int | float, max: int | float):
         self.min = min
         self.max = max
 
     @torch.no_grad()
-    def __call__(self, perturbation: torch.Tensor) -> None:
-        torch.nn.init.uniform_(perturbation, self.min, self.max)
+    def initialize_(self, parameter: torch.Tensor) -> None:
+        torch.nn.init.uniform_(parameter, self.min, self.max)
 
 
 class UniformLp(Initializer):
-    def __init__(self, eps: Union[int, float], p: Optional[Union[int, float]] = torch.inf):
+    def __init__(self, eps: int | float, p: int | float = torch.inf):
         self.eps = eps
         self.p = p
 
     @torch.no_grad()
-    def __call__(self, perturbation: torch.Tensor) -> None:
-        torch.nn.init.uniform_(perturbation, -self.eps, self.eps)
+    def initialize_(self, parameter: torch.Tensor) -> None:
+        torch.nn.init.uniform_(parameter, -self.eps, self.eps)
         # TODO: make sure the first dim is the batch dim.
         if self.p is not torch.inf:
             # We don't do tensor.renorm_() because the first dim is not the batch dim.
-            pert_norm = perturbation.norm(p=self.p)
-            perturbation.mul_(self.eps / pert_norm)
+            pert_norm = torch.Tensor.norm(p=self.p)
+            torch.Tensor.mul_(self.eps / pert_norm)
