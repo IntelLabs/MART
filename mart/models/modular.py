@@ -35,6 +35,7 @@ class LitModular(LightningModule):
         weights_fpath=None,
         strict=True,
         freeze=None,
+        gradient_modifier=None
     ):
         super().__init__()
 
@@ -82,6 +83,8 @@ class LitModular(LightningModule):
                 if re.match(freeze, name):
                     param.requires_grad_(False)
 
+        self.gradient_modifier = gradient_modifier
+
     def configure_optimizers(self):
         config = {}
         config["optimizer"] = self.optimizer(self.model)
@@ -97,6 +100,19 @@ class LitModular(LightningModule):
                 config["lr_scheduler"] = self.lr_scheduler(config["optimizer"])
 
         return config
+
+    def configure_gradient_clipping(
+        self, optimizer, optimizer_idx, gradient_clip_val=None, gradient_clip_algorithm=None
+    ):
+        # Configuring gradient clipping in pl.Trainer is still useful, so use it.
+        super().configure_gradient_clipping(
+            optimizer, optimizer_idx, gradient_clip_val, gradient_clip_algorithm
+        )
+
+        if self.gradient_modifier is not None:
+            for group in optimizer.param_groups:
+                self.gradient_modifier(group["params"])
+
 
     def forward(self, **kwargs):
         return self.model(**kwargs)

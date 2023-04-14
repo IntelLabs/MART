@@ -2,7 +2,12 @@
 
 defaults:
   - COCO_TorchvisionFasterRCNN
-  - /attack@model.modules.input_adv: object_detection_universal_missed
+  - /attack/perturber@model.modules.perturber: default
+  - /attack/perturber/initializer@model.modules.perturber.initializer: uniform
+  - /attack/perturber/composer@model.modules.perturber.composer: color_jitter_random_affine_overlay
+  - /attack/perturber/projector@model.modules.perturber.projector: range
+  - /attack/optimizer@model.optimizer: sgd
+  - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
 
 task_name: "COCO_TorchvisionFasterRCNN_ShapeShifter"
 tags: ["adv"]
@@ -12,6 +17,23 @@ datamodule:
 
 model:
   modules:
+    perturber:
+      size: [3, 416, 416]
+
+      initializer:
+        min: 127
+        max: 129
+
+      composer:
+        degrees: [-15, 15]
+        translate: [0, 0]
+        scale: [0.25, 0.5]
+        shear: null
+        brightness: 0.3
+        contrast: 0.3
+        saturation: 1.0
+        hue: 0.1
+
     losses_and_detections:
       model:
         model:
@@ -21,13 +43,17 @@ model:
   freeze: "losses_and_detections"
 
   optimizer:
-    lr: 0 # Turn off learning!
+    lr: 25.5
+    momentum: 0.9
+
+  gradient_modifier:
+    p: inf
 
   training_sequence:
-    seq005: input_adv
+    seq005: perturber
 
     seq010:
-      preprocessor: ["input_adv"]
+      preprocessor: ["perturber"]
 
   validation_sequence: ${.training_sequence}
 
