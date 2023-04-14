@@ -115,10 +115,8 @@ class Enforcer:
             and isinstance(input, Iterable)  # noqa: W503
             and isinstance(target, Iterable)  # noqa: W503
         ):
-            [
+            for input_adv_i, input_i, target_i in zip(input_adv, input, target):
                 self.enforce(input_adv_i, input=input_i, target=target_i)
-                for input_adv_i, input_i, target_i in zip(input_adv, input, target)
-            ]
 
     @torch.no_grad()
     def enforce(
