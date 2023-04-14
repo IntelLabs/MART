@@ -31,10 +31,8 @@ class Projector:
             and isinstance(input, Iterable)  # noqa: W503
             and isinstance(target, Iterable)  # noqa: W503
         ):
-            [
+            for perturbation_i, input_i, target_i in zip(perturbation, input, target):
                 self.project_(perturbation_i, input=input_i, target=target_i)
-                for perturbation_i, input_i, target_i in zip(perturbation, input, target)
-            ]
 
         else:
             raise NotImplementedError
