@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from .enforcer import Enforcer
     from .gain import Gain
     from .objective import Objective
+    from .optim import OptimizerFactory
     from .perturber import Perturber
 
 __all__ = ["Adversary"]
@@ -33,7 +34,7 @@ class Adversary(pl.LightningModule):
         self,
         *,
         perturber: Perturber,
-        optimizer: Callable,
+        optimizer: OptimizerFactory,
         gain: Gain,
         gradient_modifier: GradientModifier | None = None,
         objective: Objective | None = None,
@@ -55,7 +56,7 @@ class Adversary(pl.LightningModule):
         super().__init__()
 
         self.perturber = perturber
-        self.optimizer_fn = optimizer
+        self.optimizer = optimizer
         self.gain_fn = gain
         self.gradient_modifier = gradient_modifier or GradientModifier()
         self.objective_fn = objective
@@ -75,6 +76,7 @@ class Adversary(pl.LightningModule):
                 enable_model_summary=False,
                 enable_checkpointing=False,
                 enable_progress_bar=False,
+                # detect_anamoly=True,
             )
 
         else:
@@ -85,7 +87,7 @@ class Adversary(pl.LightningModule):
             assert self._attacker.limit_train_batches > 0
 
     def configure_optimizers(self):
-        return self.optimizer_fn(self.perturber.parameters())
+        return self.optimizer(self.perturber)
 
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally
@@ -164,9 +166,11 @@ class Adversary(pl.LightningModule):
         if self.device.type == "cuda":
             accelerator = "gpu"
             devices = [self.device.index]
+
         elif self.device.type == "cpu":
             accelerator = "cpu"
             devices = None
+
         else:
             raise NotImplementedError
 
