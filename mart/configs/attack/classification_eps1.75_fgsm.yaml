@@ -1,11 +1,12 @@
 defaults:
   - adversary
-  - initializer: constant
+  - perturber: default
+  - perturber/initializer: constant
+  - perturber/composer: additive
+  - perturber/projector: linf_additive_range
   - optimizer: sgd
-  - composer: additive
   - gain: cross_entropy
   - gradient_modifier: sign
-  - projector: linf_additive_range
   - objective: misclassification
   - enforcer: default
   - enforcer/constraints: [lp, pixel_range]
@@ -17,11 +18,12 @@ enforcer:
 
 max_iters: 1
 
-initializer:
-  constant: 0
-
 optimizer:
   lr: 1.75
 
-projector:
-  eps: 1.75
+perturber:
+  initializer:
+    constant: 0
+
+  projector:
+    eps: 1.75

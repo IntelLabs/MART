@@ -8,23 +8,20 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import cycle
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Callable
 
 import pytorch_lightning as pl
 import torch
-from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from mart.utils import silent
 
 from .gradient_modifier import GradientModifier
-from .projector import Projector
 
 if TYPE_CHECKING:
-    from .composer import Composer
     from .enforcer import Enforcer
     from .gain import Gain
-    from .initializer import Initializer
     from .objective import Objective
+    from .perturber import Perturber
 
 __all__ = ["Adversary"]
 
@@ -35,12 +32,10 @@ class Adversary(pl.LightningModule):
     def __init__(
         self,
         *,
-        initializer: Initializer,
+        perturber: Perturber,
         optimizer: Callable,
-        composer: Composer,
         gain: Gain,
         gradient_modifier: GradientModifier | None = None,
-        projector: Projector | None = None,
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
@@ -49,24 +44,20 @@ class Adversary(pl.LightningModule):
         """_summary_
 
         Args:
-            initializer (Initializer): To initialize the perturbation.
+            perturber (Perturber): A perturbation
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
-            composer (Composer): A module which composes adversarial input from input and perturbation.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
-            projector (Projector): To project the perturbation into some space.
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
         """
         super().__init__()
 
-        self.initializer = initializer
+        self.perturber = perturber
         self.optimizer_fn = optimizer
-        self.composer = composer
-        self.gradient_modifier = gradient_modifier or GradientModifier()
-        self.projector = projector or Projector()
         self.gain_fn = gain
+        self.gradient_modifier = gradient_modifier or GradientModifier()
         self.objective_fn = objective
         self.enforcer = enforcer
 
@@ -93,31 +84,8 @@ class Adversary(pl.LightningModule):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
-        self.perturbation = None
-
-    def configure_perturbation(self, input: torch.Tensor | tuple):
-        def create_and_initialize(inp):
-            pert = torch.empty_like(inp, dtype=torch.float, requires_grad=True)
-            self.initializer(pert)
-            return pert
-
-        if isinstance(input, tuple):
-            self.perturbation = tuple(create_and_initialize(inp) for inp in input)
-        elif isinstance(input, torch.Tensor):
-            self.perturbation = create_and_initialize(input)
-        else:
-            raise NotImplementedError
-
     def configure_optimizers(self):
-        if self.perturbation is None:
-            raise MisconfigurationException("You need to call configure_perturbation before fit.")
-
-        params = self.perturbation
-        if not isinstance(params, tuple):
-            # FIXME: Should we treat the batch dimension as independent parameters?
-            params = (params,)
-
-        return self.optimizer_fn(params)
+        return self.optimizer_fn(self.perturber.parameters())
 
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally
@@ -157,36 +125,33 @@ class Adversary(pl.LightningModule):
             self.gradient_modifier(group["params"])
 
     @silent()
-    def forward(self, **batch):
+    def forward(self, *, model=None, sequence=None, **batch):
+        batch["model"] = model
+        batch["sequence"] = sequence
+
         # Adversary lives within a sequence of model. To signal the adversary should attack, one
         # must pass a model to attack when calling the adversary. Since we do not know where the
         # Adversary lives inside the model, we also need the remaining sequence to be able to
         # get a loss.
-        if "model" in batch and "sequence" in batch:
+        if model and sequence:
             self._attack(**batch)
 
-        # Always use perturb the current input.
-        if self.perturbation is None:
-            raise MisconfigurationException(
-                "You need to call the configure_perturbation before forward."
-            )
-
-        self.projector(self.perturbation, **batch)
-        input_adv = self.composer(self.perturbation, **batch)
+        input_adv = self.perturber(**batch)
 
         # Enforce constraints after the attack optimization ends.
-        if "model" in batch and "sequence" in batch:
+        if model and sequence:
             self.enforcer(input_adv, **batch)
 
         return input_adv
 
-    def _attack(self, input, **batch):
-        # Configure and reset perturbation for inputs
-        self.configure_perturbation(input)
+    def _attack(self, *, input, **batch):
+        batch["input"] = input
+
+        # Configure and reset perturbation for current inputs
+        self.perturber.configure_perturbation(input)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
-        batch = {"input": input, **batch}
         self.attacker.fit_loop.max_epochs += 1
         self.attacker.fit(self, train_dataloaders=cycle([batch]))
 

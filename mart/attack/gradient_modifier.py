@@ -36,7 +36,7 @@ class LpNormalizer(GradientModifier):
     """Scale gradients by a certain L-p norm."""
 
     def __init__(self, p: int | float):
-        self.p = p
+        self.p = float(p)
 
     def __call__(self, parameters: torch.Tensor | Iterable[torch.Tensor]) -> None:
         if isinstance(parameters, torch.Tensor):
