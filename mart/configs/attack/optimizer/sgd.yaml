@@ -1,10 +1,6 @@
-_target_: mart.optim.OptimizerFactory
-optimizer:
-  _target_: hydra.utils.get_method
-  path: torch.optim.SGD
+_target_: torch.optim.SGD
+_partial_: true
+# Start with a large learning, then decay.
 lr: ???
 momentum: 0
-weight_decay: 0
-bias_decay: 0
-norm_decay: 0
 maximize: True
