@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Iterable
 
 import torch
 
@@ -17,24 +17,35 @@ class Projector:
     @torch.no_grad()
     def __call__(
         self,
-        perturbation: torch.Tensor | tuple,
+        perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.tensor | dict[str, Any]],
         **kwargs,
     ) -> None:
-        if isinstance(perturbation, tuple):
-            for perturbation_i, input_i, target_i in zip(perturbation, input, target):
-                self.project(perturbation_i, input=input_i, target=target_i)
-        else:
-            self.project(perturbation, input=input, target=target)
+        if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
+            self.project_(perturbation, input=input, target=target)
 
-    def project(
+        elif (
+            isinstance(perturbation, Iterable)
+            and isinstance(input, Iterable)  # noqa: W503
+            and isinstance(target, Iterable)  # noqa: W503
+        ):
+            [
+                self.project_(perturbation_i, input=input_i, target=target_i)
+                for perturbation_i, input_i, target_i in zip(perturbation, input, target)
+            ]
+
+        else:
+            raise NotImplementedError
+
+    @torch.no_grad()
+    def project_(
         self,
-        perturbation: torch.Tensor | tuple,
+        perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
     ) -> None:
         pass
 
@@ -48,10 +59,10 @@ class Compose(Projector):
     @torch.no_grad()
     def __call__(
         self,
-        perturbation: torch.Tensor | tuple,
+        perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
         **kwargs,
     ) -> None:
         for projector in self.projectors:
@@ -70,7 +81,8 @@ class Range(Projector):
         self.min = min
         self.max = max
 
-    def project(self, perturbation, *, input, target):
+    @torch.no_grad()
+    def project_(self, perturbation, *, input, target):
         if self.quantize:
             perturbation.round_()
         perturbation.clamp_(self.min, self.max)
@@ -92,7 +104,8 @@ class RangeAdditive(Projector):
         self.min = min
         self.max = max
 
-    def project(self, perturbation, *, input, target):
+    @torch.no_grad()
+    def project_(self, perturbation, *, input, target):
         if self.quantize:
             perturbation.round_()
         perturbation.clamp_(self.min - input, self.max - input)
@@ -117,7 +130,8 @@ class Lp(Projector):
         self.p = p
         self.eps = eps
 
-    def project(self, perturbation, *, input, target):
+    @torch.no_grad()
+    def project_(self, perturbation, *, input, target):
         pert_norm = perturbation.norm(p=self.p)
         if pert_norm > self.eps:
             # We only upper-bound the norm.
@@ -133,7 +147,8 @@ class LinfAdditiveRange(Projector):
         self.min = min
         self.max = max
 
-    def project(self, perturbation, *, input, target):
+    @torch.no_grad()
+    def project_(self, perturbation, *, input, target):
         eps_min = (input - self.eps).clamp(self.min, self.max) - input
         eps_max = (input + self.eps).clamp(self.min, self.max) - input
 
@@ -141,7 +156,8 @@ class LinfAdditiveRange(Projector):
 
 
 class Mask(Projector):
-    def project(self, perturbation, *, input, target):
+    @torch.no_grad()
+    def project_(self, perturbation, *, input, target):
         perturbation.mul_(target["perturbable_mask"])
 
     def __repr__(self):
