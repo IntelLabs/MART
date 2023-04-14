@@ -26,7 +26,6 @@ class Projector:
         if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
             self.project_(perturbation, input=input, target=target)
 
-
         elif (
             isinstance(perturbation, Iterable)
             and isinstance(input, Iterable)  # noqa: W503
