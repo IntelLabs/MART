@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from .optim import OptimizerFactory
     from .perturber import Perturber
 
-__all__ = ["Adversary", "UniversalAdversary"]
+__all__ = ["Adversary"]
 
 
 class Adversary(pl.LightningModule):
@@ -185,23 +185,3 @@ class Adversary(pl.LightningModule):
         # This is a problem when this LightningModule has parameters, so we stop this from
         # happening by ignoring the call to cpu().
         pass
-
-
-class UniversalAdversary(Adversary):
-    """A universal adversary applies the same perturbation to every input.
-
-    As such, we need to know the size of the perturbation before the attack can proceed. Unlike the
-    standard adversary, we only allow updating the perturbation in training mode.
-    """
-
-    def _attack(self, *, step, **batch):
-        batch["step"] = step
-
-        # Only attack in training mode.
-        if step != "training":
-            return
-
-        # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
-        # We use Trainer.limit_train_batches to control the number of attack iterations.
-        self.attacker.fit_loop.max_epochs += 1
-        self.attacker.fit(self, train_dataloaders=cycle([batch]))
