@@ -21,14 +21,18 @@ class Composer(abc.ABC):
         target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
         **kwargs,
     ) -> torch.Tensor | Iterable[torch.Tensor]:
-        if isinstance(perturbation, torch.Tensor):
+        if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
             return self.compose(perturbation, input=input, target=target)
-        else:
+
+        elif isinstance(perturbation, Iterable) and isinstance(input, Iterable):
             # FIXME: replace tuple with whatever input's type is
             return tuple(
                 self.compose(perturbation_i, input=input_i, target=target_i)
                 for perturbation_i, input_i, target_i in zip(perturbation, input, target)
             )
+
+        else:
+            raise NotImplementedError
 
     @abc.abstractmethod
     def compose(

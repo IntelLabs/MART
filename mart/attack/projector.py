@@ -23,13 +23,17 @@ class Projector:
         target: torch.Tensor | Iterable[torch.tensor | dict[str, Any]],
         **kwargs,
     ) -> None:
-        if isinstance(perturbation, torch.Tensor):
+        if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
             self.project_(perturbation, input=input, target=target)
-        else:
+
+        elif isinstance(perturbation, Iterable) and isinstance(input, Iterable):
             [
                 self.project_(perturbation_i, input=input_i, target=target_i)
                 for perturbation_i, input_i, target_i in zip(perturbation, input, target)
             ]
+
+        else:
+            raise NotImplementedError
 
     @torch.no_grad()
     def project_(
