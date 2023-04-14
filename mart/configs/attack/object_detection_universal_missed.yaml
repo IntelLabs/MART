@@ -1,35 +1,38 @@
 defaults:
   - universal
-  - initializer: uniform
+  - perturber: default
+  - perturber/initializer: uniform
+  - perturber/composer: color_jitter_random_affine_overlay
+  - perturber/projector: range
   - optimizer: sgd
-  - composer: color_jitter_random_affine_overlay
   - gain: rcnn_training_loss
   - gradient_modifier: lp_normalizer
-  - projector: range
   - objective: zero_ap
   - enforcer: default
   - enforcer/constraints: [pixel_range]
 
 max_iters: 1
 
-size: [3, 416, 416]
-
-initializer:
-  min: 127
-  max: 129
-
 optimizer:
-  lr: 128
+  lr: 25.5
+  momentum: 0.9
 
-composer:
-  degrees: [-15, 15]
-  translate: [0, 0]
-  scale: [0.25, 0.5]
-  shear: null
-  brightness: 0.3
-  contrast: 0.3
-  saturation: 1.0
-  hue: 0.1
+perturber:
+  size: [3, 416, 416]
+
+  initializer:
+    min: 127
+    max: 129
+
+  composer:
+    degrees: [-15, 15]
+    translate: [0, 0]
+    scale: [0.25, 0.5]
+    shear: null
+    brightness: 0.3
+    contrast: 0.3
+    saturation: 1.0
+    hue: 0.1
 
 gradient_modifier:
-  p: 2
+  p: inf

@@ -10,6 +10,8 @@ import abc
 from typing import Any, Iterable
 
 import torch
+import torchvision.transforms as T
+from torchvision.transforms.functional import InterpolationMode
 
 
 class Composer(abc.ABC):
@@ -28,7 +30,7 @@ class Composer(abc.ABC):
             # FIXME: replace tuple with whatever input's type is
             return tuple(
                 self.compose(perturbation, input=input_i, target=target_i)
-                for perturbation, input_i, target_i in zip(input, target)
+                for input_i, target_i in zip(input, target)
             )
 
         elif isinstance(perturbation, Iterable) and isinstance(input, Iterable):
@@ -81,3 +83,66 @@ class MaskAdditive(Composer):
         masked_perturbation = perturbation * mask
 
         return input + masked_perturbation
+
+
+# FIXME: It would be really nice if we could compose composers just like we can compose everything else...
+class RandomAffineOverlay(Overlay):
+    def __init__(
+        self,
+        degrees,
+        translate=None,
+        scale=None,
+        shear=None,
+        clamp=(0, 255),
+    ):
+        self.random_affine = T.RandomAffine(
+            degrees,
+            translate,
+            scale,
+            shear=shear,
+            # interpolation=InterpolationMode.BILINEAR,
+        )
+        self.clamp = clamp
+
+    def compose(self, perturbation, *, input, target):
+        random_crop = T.RandomCrop(input.shape[-2:], pad_if_needed=True)
+
+        # Create mask of ones to keep track of filled in pixels
+        mask = torch.ones_like(perturbation[:1])
+        mask_perturbation = torch.cat((mask, perturbation))
+
+        # Apply random affine transform and crop/pad to input size
+        mask_perturbation = self.random_affine(mask_perturbation)
+        mask_perturbation = random_crop(mask_perturbation)
+
+        # Clamp perturbation to input min/max
+        perturbation = mask_perturbation[1:]
+        perturbation.clamp_(*self.clamp)
+
+        # Make mask binary
+        mask = mask_perturbation[:1] > 0  # fill=0
+        target["perturbable_mask"] = mask
+
+        return super().compose(perturbation, input=input, target=target)
+
+
+# FIXME: It would be really nice if we could compose composers just like we can compose everything else...
+class ColorJitterRandomAffineOverlay(RandomAffineOverlay):
+    def __init__(
+        self,
+        *args,
+        brightness=0,
+        contrast=0,
+        saturation=0,
+        hue=0,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+
+        self.color_jitter = T.ColorJitter(brightness, contrast, saturation, hue)
+
+    def compose(self, perturbation, *, input, target):
+        # ColorJitter and friends assume floating point tensors are between [0, 1]...
+        perturbation = self.color_jitter(perturbation / 255) * 255
+
+        return super().compose(perturbation, input=input, target=target)

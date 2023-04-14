@@ -29,6 +29,7 @@ class Perturber(torch.nn.Module):
         composer: Composer,
         gradient_modifier: GradientModifier | None = None,
         projector: Projector | None = None,
+        size: tuple | None = None,
     ):
         """_summary_
 
@@ -46,6 +47,10 @@ class Perturber(torch.nn.Module):
         self.projector = projector or Projector()
 
         self.perturbation = None
+
+        # FIXME: Should this be in UniversalAdversary?
+        if size is not None:
+            self.configure_perturbation(torch.empty(size))
 
     def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
         def create_from_tensor(tensor):

@@ -2,4 +2,3 @@ defaults:
   - adversary
 
 _target_: mart.attack.UniversalAdversary
-size: ???
