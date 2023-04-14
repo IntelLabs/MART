@@ -48,17 +48,28 @@ class Perturber(torch.nn.Module):
         self.perturbation = None
 
     def configure_perturbation(self, input: torch.Tensor | tuple):
-        def create_and_initialize(inp):
-            pert = torch.empty_like(inp, dtype=torch.float, requires_grad=True)
-            self.initializer(pert)
-            return pert
+        # If we have never created a perturbation before, then create it.
+        def create_from_tensor(tensor):
+            if isinstance(tensor, torch.Tensor):
+                return torch.empty_like(tensor, dtype=torch.float, requires_grad=True)
+            elif isinstance(tensor, tuple):
+                return tuple(create_from_tensor(t) for t in tensor)
+            else:
+                raise NotImplementedError
 
-        if isinstance(input, tuple):
-            self.perturbation = tuple(create_and_initialize(inp) for inp in input)
-        elif isinstance(input, torch.Tensor):
-            self.perturbation = create_and_initialize(input)
-        else:
-            raise NotImplementedError
+        if self.perturbation is None:
+            self.perturbation = create_from_tensor(input)
+
+        # Otherwise, reuse existing perturbations but initialize them.
+        def initialize_perturbation(perturbation):
+            if isinstance(perturbation, torch.Tensor):
+                self.initializer(perturbation)
+            elif isinstance(perturbation, tuple):
+                [initialize_perturbation(pert) for pert in perturbation]
+            else:
+                raise NotImplementedError
+
+        initialize_perturbation(self.perturbation)
 
     def parameters(self):
         if self.perturbation is None:
