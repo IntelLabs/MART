@@ -60,8 +60,23 @@ class Perturber(torch.nn.Module):
 
             # FIXME: Attach gradient modifier
 
-        # If we have never created a perturbation before, then create it.
-        if self.perturbation is None:
+        def matches(input, perturbation):
+            if perturbation is None:
+                return False
+
+            if isinstance(input, torch.Tensor) and isinstance(perturbation, torch.Tensor):
+                return input.shape == perturbation.shape
+
+            if isinstance(input, Iterable) and isinstance(perturbation, Iterable):
+                if len(input) != len(perturbation):
+                    return False
+
+                return all([matches(input_i, perturbation_i) for input_i, perturbation_i in zip(input, perturbation)])
+
+            return False
+
+        # If we have never created a perturbation before or perturbation does not match input, then create a new perturbation.
+        if not matches(input, self.perturbation):
             self.perturbation = create_from_tensor(input)
 
         # FIXME: Check if perturbation is same shape as input
