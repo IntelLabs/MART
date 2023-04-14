@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 import torch
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
@@ -47,16 +47,18 @@ class Perturber(torch.nn.Module):
 
         self.perturbation = None
 
-    def configure_perturbation(self, input: torch.Tensor | tuple):
+    def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
         def create_from_tensor(tensor):
             if isinstance(tensor, torch.Tensor):
                 return torch.nn.Parameter(
                     torch.empty_like(tensor, dtype=torch.float, requires_grad=True)
                 )
-            elif isinstance(tensor, tuple):
+            elif isinstance(tensor, Iterable):
                 return torch.nn.ParameterList([create_from_tensor(t) for t in tensor])
             else:
                 raise NotImplementedError
+
+            # FIXME: Attach gradient modifier
 
         # If we have never created a perturbation before, then create it.
         if self.perturbation is None:
