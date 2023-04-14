@@ -29,7 +29,6 @@ class Perturber(torch.nn.Module):
         composer: Composer,
         gradient_modifier: GradientModifier | None = None,
         projector: Projector | None = None,
-        size: tuple | None = None
     ):
         """_summary_
 
@@ -38,7 +37,6 @@ class Perturber(torch.nn.Module):
             composer (Composer): A module which composes adversarial input from input and perturbation.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
             projector (Projector): To project the perturbation into some space.
-            size (tuple): Size of perturbation
         """
         super().__init__()
 
@@ -47,10 +45,7 @@ class Perturber(torch.nn.Module):
         self.gradient_modifier = gradient_modifier or GradientModifier()
         self.projector = projector or Projector()
 
-        # Initialize perturbation
         self.perturbation = None
-        if size is not None:
-            self.configure_perturbation(torch.empty(size))
 
     def configure_perturbation(self, input: torch.Tensor | tuple):
         def create_and_initialize(inp):
