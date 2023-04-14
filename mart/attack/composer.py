@@ -76,7 +76,7 @@ class MaskAdditive(Composer):
 
 class RectanglePatchPerspectiveAdditiveMask(Composer):
     def compose(self, perturbation, *, input, target):
-        coords = coords = target["patch_coords"]
+        coords = target["patch_coords"]
 
         # 1. Pad perturbation to the same size of input.
         height, width = input.shape[-2:]
@@ -109,11 +109,12 @@ class RectanglePatchPerspectiveAdditiveMask(Composer):
         )
 
         # 3. Mask.
-        mask = target["perturbable_mask"]
-        perturbation_masked = perturbation_transformed * mask
+        if "perturbable_mask" in target:
+            mask = target["perturbable_mask"]
+            perturbation_transformed = perturbation_transformed * mask
 
         # 4. Addition.
-        input_adv = input + perturbation_masked
+        input_adv = input + perturbation_transformed
 
         # 5. Clamping.
         input_adv = input_adv.clamp(min=0, max=255)
