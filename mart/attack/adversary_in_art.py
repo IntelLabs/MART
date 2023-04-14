@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-from typing import Any, List, Optional, Iterable
+from typing import Any, Iterable, List, Optional
 
 import hydra
 import numpy
