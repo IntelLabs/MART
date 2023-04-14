@@ -40,7 +40,7 @@ class Perturber(torch.nn.Module):
         """
         super().__init__()
 
-        self.initializer = initializer
+        self.initializer_ = initializer
         self.composer = composer
         self.gradient_modifier = gradient_modifier or GradientModifier()
         self.projector = projector or Projector()
@@ -48,39 +48,30 @@ class Perturber(torch.nn.Module):
         self.perturbation = None
 
     def configure_perturbation(self, input: torch.Tensor | tuple):
-        # If we have never created a perturbation before, then create it.
         def create_from_tensor(tensor):
             if isinstance(tensor, torch.Tensor):
-                return torch.empty_like(tensor, dtype=torch.float, requires_grad=True)
+                return torch.nn.Parameter(
+                    torch.empty_like(tensor, dtype=torch.float, requires_grad=True)
+                )
             elif isinstance(tensor, tuple):
-                return tuple(create_from_tensor(t) for t in tensor)
+                return torch.nn.ParameterList([create_from_tensor(t) for t in tensor])
             else:
                 raise NotImplementedError
 
+        # If we have never created a perturbation before, then create it.
         if self.perturbation is None:
             self.perturbation = create_from_tensor(input)
 
-        # Otherwise, reuse existing perturbations but initialize them.
-        def initialize_perturbation(perturbation):
-            if isinstance(perturbation, torch.Tensor):
-                self.initializer(perturbation)
-            elif isinstance(perturbation, tuple):
-                [initialize_perturbation(pert) for pert in perturbation]
-            else:
-                raise NotImplementedError
+        # FIXME: Check if perturbation is same shape as input
 
-        initialize_perturbation(self.perturbation)
+        # (re)Use existing perturbations but initialize them.
+        self.initializer_(self.perturbation)
 
     def parameters(self):
         if self.perturbation is None:
             raise MisconfigurationException("You need to call configure_perturbation before fit.")
 
-        params = self.perturbation
-        if not isinstance(params, tuple):
-            # FIXME: Should we treat the batch dimension as independent parameters?
-            params = (params,)
-
-        return params
+        return super().parameters()
 
     def forward(self, **batch):
         if self.perturbation is None:

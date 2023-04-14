@@ -173,3 +173,11 @@ class Adversary(pl.LightningModule):
         self._attacker = self._attacker(accelerator=accelerator, devices=devices)
 
         return self._attacker
+
+    def cpu(self):
+        # PL places the LightningModule back on the CPU after fitting:
+        #   https://github.com/Lightning-AI/lightning/blob/ff5361604b2fd508aa2432babed6844fbe268849/pytorch_lightning/strategies/single_device.py#L96
+        #   https://github.com/Lightning-AI/lightning/blob/ff5361604b2fd508aa2432babed6844fbe268849/pytorch_lightning/strategies/ddp.py#L482
+        # This is a problem when this LightningModule has parameters, so we stop this from
+        # happening by ignoring the call to cpu().
+        pass
