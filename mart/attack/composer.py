@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any
+from typing import Any, Iterable
 
 import torch
 
@@ -15,21 +15,20 @@ import torch
 class Composer(abc.ABC):
     def __call__(
         self,
-        perturbation: torch.Tensor | tuple,
+        perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
         **kwargs,
-    ) -> torch.Tensor | tuple:
-        if isinstance(perturbation, tuple):
-            input_adv = tuple(
+    ) -> torch.Tensor | Iterable[torch.Tensor]:
+        if isinstance(perturbation, torch.Tensor):
+            return self.compose(perturbation, input=input, target=target)
+        else:
+            # FIXME: replace tuple with whatever input's type is
+            return tuple(
                 self.compose(perturbation_i, input=input_i, target=target_i)
                 for perturbation_i, input_i, target_i in zip(perturbation, input, target)
             )
-        else:
-            input_adv = self.compose(perturbation, input=input, target=target)
-
-        return input_adv
 
     @abc.abstractmethod
     def compose(
