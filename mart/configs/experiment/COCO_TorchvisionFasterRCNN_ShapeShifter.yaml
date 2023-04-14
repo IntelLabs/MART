@@ -13,7 +13,8 @@ task_name: "COCO_TorchvisionFasterRCNN_ShapeShifter"
 tags: ["adv"]
 
 datamodule:
-  ims_per_batch: 1
+  num_workers: 8
+  ims_per_batch: 2
 
 model:
   modules:
