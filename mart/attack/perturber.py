@@ -71,7 +71,12 @@ class Perturber(torch.nn.Module):
                 if len(input) != len(perturbation):
                     return False
 
-                return all([matches(input_i, perturbation_i) for input_i, perturbation_i in zip(input, perturbation)])
+                return all(
+                    [
+                        matches(input_i, perturbation_i)
+                        for input_i, perturbation_i in zip(input, perturbation)
+                    ]
+                )
 
             return False
 
