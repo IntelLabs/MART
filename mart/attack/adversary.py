@@ -76,7 +76,7 @@ class Adversary(pl.LightningModule):
                 enable_model_summary=False,
                 enable_checkpointing=False,
                 enable_progress_bar=False,
-                # detect_anamoly=True,
+                # detect_anomaly=True,
             )
 
         else:
