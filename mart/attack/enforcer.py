@@ -107,9 +107,14 @@ class Enforcer:
         target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
         **kwargs,
     ):
-        if isinstance(input_adv, torch.Tensor):
+        if isinstance(input_adv, torch.Tensor) and isinstance(input, torch.Tensor):
             self.enforce(input_adv, input=input, target=target)
-        else:
+
+        elif (
+            isinstance(input_adv, Iterable)
+            and isinstance(input, Iterable)  # noqa: W503
+            and isinstance(target, Iterable)  # noqa: W503
+        ):
             [
                 self.enforce(input_adv_i, input=input_i, target=target_i)
                 for input_adv_i, input_i, target_i in zip(input_adv, input, target)

@@ -26,7 +26,12 @@ class Projector:
         if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
             self.project_(perturbation, input=input, target=target)
 
-        elif isinstance(perturbation, Iterable) and isinstance(input, Iterable):
+
+        elif (
+            isinstance(perturbation, Iterable)
+            and isinstance(input, Iterable)  # noqa: W503
+            and isinstance(target, Iterable)  # noqa: W503
+        ):
             [
                 self.project_(perturbation_i, input=input_i, target=target_i)
                 for perturbation_i, input_i, target_i in zip(perturbation, input, target)
