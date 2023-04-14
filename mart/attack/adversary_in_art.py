@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Iterable
 
 import hydra
 import numpy
@@ -82,17 +82,18 @@ class MartToArtAttackAdapter:
             x (np.ndarray): NHWC, [0, 1]
 
         Returns:
-            tuple: a tuple of tensors in CHW, [0, 255].
+            Iterable[torch.Tensor]: an Iterable of tensors in CHW, [0, 255].
         """
         input = torch.tensor(x).permute((0, 3, 1, 2)).to(self._device) * 255
+        # FIXME: replace tuple with whatever input's type is
         input = tuple(inp_ for inp_ in input)
         return input
 
-    def convert_input_mart_to_art(self, input: tuple):
+    def convert_input_mart_to_art(self, input: Iterable[torch.Tensor]):
         """Convert MART input to the ART's format.
 
         Args:
-            input (tuple): a tuple of tensors in CHW, [0, 255].
+            input (Iterable[torch.Tensor]): an Iterable of tensors in CHW, [0, 255].
 
         Returns:
             np.ndarray: NHWC, [0, 1]
@@ -112,7 +113,7 @@ class MartToArtAttackAdapter:
             y_patch_metadata (_type_): _description_
 
         Returns:
-            tuple: a tuple of target dictionaies.
+            Iterable[dict[str, Any]]: an Iterable of target dictionaies.
         """
         # Copy y to target, and convert ndarray to pytorch tensors accordingly.
         target = []
@@ -132,6 +133,7 @@ class MartToArtAttackAdapter:
             target_i["file_name"] = f"{yi['image_id'][0]}.jpg"
             target.append(target_i)
 
+        # FIXME: replace tuple with input type?
         target = tuple(target)
 
         return target
