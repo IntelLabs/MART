@@ -96,7 +96,6 @@ class Perturber(torch.nn.Module):
                 "You need to call the configure_perturbation before forward."
             )
 
-        # Always perturb the current input.
         self.projector(self.perturbation, **batch)
         input_adv = self.composer(self.perturbation, **batch)
 
