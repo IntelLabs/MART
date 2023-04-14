@@ -5,8 +5,9 @@ defaults:
 
 max_iters: 100
 
-initializer:
-  constant: 127
-
 optimizer:
   lr: 3
+
+perturber:
+  initializer:
+    constant: 127
