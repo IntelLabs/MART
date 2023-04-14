@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Iterable
 import torch
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
-from .gradient_modifier import GradientModifier
 from .projector import Projector
 
 if TYPE_CHECKING:
@@ -27,7 +26,6 @@ class Perturber(torch.nn.Module):
         *,
         initializer: Initializer,
         composer: Composer,
-        gradient_modifier: GradientModifier | None = None,
         projector: Projector | None = None,
         size: tuple | None = None,
     ):
@@ -36,14 +34,12 @@ class Perturber(torch.nn.Module):
         Args:
             initializer (Initializer): To initialize the perturbation.
             composer (Composer): A module which composes adversarial input from input and perturbation.
-            gradient_modifier (GradientModifier): To modify the gradient of perturbation.
             projector (Projector): To project the perturbation into some space.
         """
         super().__init__()
 
         self.initializer_ = initializer
         self.composer = composer
-        self.gradient_modifier = gradient_modifier or GradientModifier()
         self.projector = projector or Projector()
 
         self.perturbation = None
@@ -53,18 +49,6 @@ class Perturber(torch.nn.Module):
             self.configure_perturbation(torch.empty(size))
 
     def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
-        def create_from_tensor(tensor):
-            if isinstance(tensor, torch.Tensor):
-                return torch.nn.Parameter(
-                    torch.empty_like(tensor, dtype=torch.float, requires_grad=True)
-                )
-            elif isinstance(tensor, Iterable):
-                return torch.nn.ParameterList([create_from_tensor(t) for t in tensor])
-            else:
-                raise NotImplementedError
-
-            # FIXME: Attach gradient modifier
-
         def matches(input, perturbation):
             if perturbation is None:
                 return False
@@ -85,13 +69,22 @@ class Perturber(torch.nn.Module):
 
             return False
 
-        # If we have never created a perturbation before or perturbation does not match input, then create a new perturbation.
+        def create_from_tensor(tensor):
+            if isinstance(tensor, torch.Tensor):
+                return torch.nn.Parameter(
+                    torch.empty_like(tensor, dtype=torch.float, requires_grad=True)
+                )
+            elif isinstance(tensor, Iterable):
+                return torch.nn.ParameterList([create_from_tensor(t) for t in tensor])
+            else:
+                raise NotImplementedError
+
+        # If we have never created a perturbation before or perturbation does not match input, then
+        # create a new perturbation.
         if not matches(input, self.perturbation):
             self.perturbation = create_from_tensor(input)
 
-        # FIXME: Check if perturbation is same shape as input
-
-        # (re)Use existing perturbations but initialize them.
+        # Always (re)initialize perturbation.
         self.initializer_(self.perturbation)
 
     def parameters(self):
