@@ -26,14 +26,22 @@ class Composer(abc.ABC):
         if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
             return self.compose(perturbation, input=input, target=target)
 
-        elif isinstance(perturbation, torch.Tensor) and isinstance(input, Iterable):
+        elif (
+            isinstance(perturbation, torch.Tensor)
+            and isinstance(input, Iterable)  # noqa: W503
+            and isinstance(target, Iterable)  # noqa: W503
+        ):
             # FIXME: replace tuple with whatever input's type is
             return tuple(
                 self.compose(perturbation, input=input_i, target=target_i)
                 for input_i, target_i in zip(input, target)
             )
 
-        elif isinstance(perturbation, Iterable) and isinstance(input, Iterable):
+        elif (
+            isinstance(perturbation, Iterable)
+            and isinstance(input, Iterable)  # noqa: W503
+            and isinstance(target, Iterable)  # noqa: W503
+        ):
             # FIXME: replace tuple with whatever input's type is
             return tuple(
                 self.compose(perturbation_i, input=input_i, target=target_i)

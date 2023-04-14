@@ -56,5 +56,5 @@ class UniformLp(Initializer):
         # TODO: make sure the first dim is the batch dim.
         if self.p is not torch.inf:
             # We don't do tensor.renorm_() because the first dim is not the batch dim.
-            pert_norm = torch.Tensor.norm(p=self.p)
-            torch.Tensor.mul_(self.eps / pert_norm)
+            pert_norm = parameter.norm(p=self.p)
+            parameter.mul_(self.eps / pert_norm)
