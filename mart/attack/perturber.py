@@ -27,7 +27,7 @@ class Perturber(torch.nn.Module):
         initializer: Initializer,
         composer: Composer,
         projector: Projector | None = None,
-        size: tuple | None = None,
+        size: Iterable[int] | None = None,
     ):
         """_summary_
 
