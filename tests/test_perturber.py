@@ -21,11 +21,7 @@ def test_forward(input_data, target_data):
     composer = Mock()
     projector = Mock()
 
-    perturber = Perturber(
-        initializer=initializer,
-        composer=composer,
-        projector=projector
-    )
+    perturber = Perturber(initializer=initializer, composer=composer, projector=projector)
 
     perturber.configure_perturbation(input_data)
 
@@ -35,16 +31,13 @@ def test_forward(input_data, target_data):
     composer.assert_called_once()
     projector.assert_called_once()
 
+
 def test_misconfiguration(input_data, target_data):
     initializer = Mock()
     composer = Mock()
     projector = Mock()
 
-    perturber = Perturber(
-        initializer=initializer,
-        composer=composer,
-        projector=projector
-    )
+    perturber = Perturber(initializer=initializer, composer=composer, projector=projector)
 
     with pytest.raises(MisconfigurationException):
         perturber(input=input_data, target=target_data)
@@ -52,16 +45,13 @@ def test_misconfiguration(input_data, target_data):
     with pytest.raises(MisconfigurationException):
         perturber.parameters()
 
+
 def test_configure_perturbation(input_data, target_data):
     initializer = Mock()
     composer = Mock()
     projector = Mock()
 
-    perturber = Perturber(
-        initializer=initializer,
-        composer=composer,
-        projector=projector
-    )
+    perturber = Perturber(initializer=initializer, composer=composer, projector=projector)
 
     perturber.configure_perturbation(input_data)
     perturber.configure_perturbation(input_data)
@@ -76,11 +66,7 @@ def test_parameters(input_data, target_data):
     composer = Mock()
     projector = Mock()
 
-    perturber = Perturber(
-        initializer=initializer,
-        composer=composer,
-        projector=projector
-    )
+    perturber = Perturber(initializer=initializer, composer=composer, projector=projector)
 
     perturber.configure_perturbation(input_data)
 

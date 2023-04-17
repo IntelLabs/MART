@@ -11,11 +11,11 @@ import pytest
 import torch
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from torch.optim import SGD
-from mart.optim import OptimizerFactory
 
 import mart
 from mart.attack import Adversary, Perturber
 from mart.attack.gradient_modifier import Sign
+from mart.optim import OptimizerFactory
 
 
 def test_adversary(input_data, target_data, perturbation):
