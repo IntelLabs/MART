@@ -82,11 +82,11 @@ class Perturber(torch.nn.Module):
         # Always (re)initialize perturbation.
         self.initializer_(self.perturbation)
 
-    def parameters(self):
+    def named_parameters(self, *args, **kwargs):
         if self.perturbation is None:
             raise MisconfigurationException("You need to call configure_perturbation before fit.")
 
-        return super().parameters()
+        return super().named_parameters(*args, **kwargs)
 
     def forward(self, **batch):
         if self.perturbation is None:

@@ -15,7 +15,6 @@ from torch.optim import SGD
 import mart
 from mart.attack import Adversary, Perturber
 from mart.attack.gradient_modifier import Sign
-from mart.optim import OptimizerFactory
 
 
 def test_adversary(input_data, target_data, perturbation):
@@ -168,10 +167,10 @@ def test_perturbation(input_data, target_data, perturbation):
     torch.testing.assert_close(output_data, input_data + perturbation)
 
 
-def test_gradient(input_data, target_data):
+def test_forward_with_model(input_data, target_data):
     composer = mart.attack.composer.Additive()
     enforcer = Mock()
-    optimizer = OptimizerFactory(SGD, lr=1.0, maximize=True)
+    optimizer = partial(SGD, lr=1.0, maximize=True)
 
     # Force zeros, positive and negative gradients
     def gain(logits):
