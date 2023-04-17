@@ -10,6 +10,7 @@ from typing import Any, Callable, List, Optional
 import numpy as np
 from torchvision.datasets.coco import CocoDetection as CocoDetection_
 from torchvision.datasets.folder import default_loader
+from yolov3.datasets.utils import collate_img_label_fn as collate_img_label_fn_
 
 __all__ = ["CocoDetection"]
 
@@ -89,3 +90,10 @@ class CocoDetection(CocoDetection_):
 # Source: https://github.com/pytorch/vision/blob/dc07ac2add8285e16a716564867d0b4b953f6735/references/detection/utils.py#L203
 def collate_fn(batch):
     return tuple(zip(*batch))
+
+
+def collate_img_label_fn(batch):
+    image, target, lengths = collate_img_label_fn_(batch)
+
+    # Collate into tuple of (input, target) where target is a dict.
+    return image, {"target": target, "lengths": lengths}

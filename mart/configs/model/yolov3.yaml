@@ -1,0 +1,63 @@
+defaults:
+  - modular
+
+modules:
+  logits:
+    _target_: yolov3.main.load_yolov3_model
+    device: cpu
+    ckpt: false
+    mode: eval
+    weight_path: ${paths.data_dir}/yolov3_original.pt
+
+  loss:
+    _target_: mart.models.yolov3.Loss
+    image_size: 416 # FIXME: use ${training_data.transform.image_size}?
+    average: True
+
+  detections:
+    _target_: mart.models.yolov3.Detections
+    nms: true
+    conf_thres: 0.1
+    nms_thres: 0.4
+
+  output:
+    _target_: mart.nn.ReturnKwargs
+
+training_sequence:
+  seq010:
+    logits: ["input"]
+
+  seq020:
+    loss:
+      logits: logits
+      targets: target.target
+      target_lengths: target.lengths
+
+  seq030:
+    detections:
+      logits: logits
+      targets: target.target
+      target_lengths: target.lengths
+
+  seq040:
+    output:
+      preds: detections.preds
+      target: detections.target
+      loss: loss.total_loss
+      coord_loss: loss.coord_loss
+      obj_loss: loss.obj_loss
+      noobj_loss: loss.noobj_loss
+      class_loss: loss.class_loss
+
+validation_sequence: ${.training_sequence}
+test_sequence: ${.validation_sequence}
+
+training_step_log:
+  - loss
+  - coord_loss
+  - obj_loss
+  - noobj_loss
+  - class_loss
+
+validation_step_log: ${.training_step_log}
+test_step_log: ${.validation_step_log}

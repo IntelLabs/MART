@@ -1,0 +1,24 @@
+defaults:
+  - default.yaml
+
+num_workers: 2
+
+train_dataset:
+  _target_: yolov3.datasets.coco.CocoDetectionBoundingBox
+  img_root: ${paths.data_dir}/coco/train2017
+  ann_file_name: ${paths.data_dir}/coco/annotations/instances_train2017.json
+  img_size: ???
+  transform: random
+
+val_dataset:
+  _target_: yolov3.datasets.coco.CocoDetectionBoundingBox
+  img_root: ${paths.data_dir}/coco/val2017
+  ann_file_name: ${paths.data_dir}/coco/annotations/instances_val2017.json
+  img_size: ${..train_dataset.img_size}
+  transform: default
+
+test_dataset: ${.val_dataset}
+
+collate_fn:
+  _target_: hydra.utils.get_method
+  path: mart.datamodules.coco.collate_img_label_fn
