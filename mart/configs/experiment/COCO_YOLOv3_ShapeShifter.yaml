@@ -76,5 +76,3 @@ model:
     seq005: perturber
     seq010:
       logits: ["perturber"]
-
-
