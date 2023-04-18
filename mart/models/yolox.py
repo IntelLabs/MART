@@ -29,9 +29,9 @@ class Detections(torch.nn.Module):
     def tensor_to_dict(detection):
         if detection is None:
             # Handle images with no detections
-            boxes = torch.empty((0, 4), device="cuda") # HACK
-            labels = torch.empty((0,), device="cuda") # HACK
-            scores = torch.empty((0,), device="cuda") # HACK
+            boxes = torch.empty((0, 4), device="cuda")  # HACK
+            labels = torch.empty((0,), device="cuda")  # HACK
+            scores = torch.empty((0,), device="cuda")  # HACK
 
         elif detection.shape[1] > 5:
             # (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
