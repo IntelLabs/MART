@@ -8,6 +8,7 @@ import os
 from typing import Any, Callable, List, Optional
 
 import numpy as np
+from torch.utils.data import default_collate
 from torchvision.datasets.coco import CocoDetection as CocoDetection_
 from torchvision.datasets.folder import default_loader
 
@@ -89,3 +90,9 @@ class CocoDetection(CocoDetection_):
 # Source: https://github.com/pytorch/vision/blob/dc07ac2add8285e16a716564867d0b4b953f6735/references/detection/utils.py#L203
 def collate_fn(batch):
     return tuple(zip(*batch))
+
+
+def collate_yolox_fn(batch):
+    batch = default_collate(batch)
+    image, target, *_ = batch
+    return image, target

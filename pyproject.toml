@@ -34,6 +34,7 @@ dependencies = [
 
   # ----- object detection----- #
   "pycocotools ~= 2.0.5",
+  "yolox @ git+https://github.com/Megvii-BaseDetection/YOLOX.git@0.3.0",
 
   # -------- Adversary ---------#
   "robustbench @ git+https://github.com/RobustBench/robustbench.git@9a590683b7daecf963244dea402529f0d728c727",

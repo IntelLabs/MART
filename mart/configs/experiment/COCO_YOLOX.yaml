@@ -1,0 +1,34 @@
+# @package _global_
+
+defaults:
+  - override /datamodule: coco_yolox
+  - override /model: yolox
+  - override /metric: average_precision
+  - override /optimization: super_convergence
+
+task_name: "COCO_YOLOX"
+tags: ["evaluation"]
+
+optimized_metric: "test_metrics/map"
+
+trainer:
+  # 117,266 training images, 6 epochs, batch_size=16, 43,974.75
+  max_steps: 43975
+  # FIXME: "nms_kernel" not implemented for 'BFloat16', torch.ops.torchvision.nms().
+  precision: 32
+
+datamodule:
+  num_workers: 32
+  ims_per_batch: 16
+
+  train_dataset:
+    img_size: [416, 416]
+
+model:
+  # YOLOX model does not produce preds/targets in training sequence
+  training_metrics: null
+
+  optimizer:
+    lr: 0.001
+    momentum: 0.9
+    weight_decay: 0.0005

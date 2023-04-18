@@ -1,0 +1,36 @@
+defaults:
+  - default.yaml
+
+num_workers: 2
+
+train_dataset:
+  _target_: yolox.data.datasets.coco.COCODataset
+  data_dir: ${paths.data_dir}/coco
+  name: train2017
+  json_file: instances_train2017.json
+  img_size: ???
+  preproc:
+    _target_: yolox.data.TrainTransform
+    max_labels: 50
+    flip_prob: 0.5
+    hsv_prob: 1.0
+
+val_dataset:
+  _target_: yolox.data.datasets.coco.COCODataset
+  data_dir: ${paths.data_dir}/coco
+  name: val2017
+  json_file: instances_val2017.json
+  img_size: ${..train_dataset.img_size}
+  preproc:
+    # Use TrainTransform instead of ValTransform since it supplies targets
+    # we can use to measure.
+    _target_: yolox.data.TrainTransform
+    max_labels: 100
+    flip_prob: 0.
+    hsv_prob: 0.
+
+test_dataset: ${.val_dataset}
+
+collate_fn:
+  _target_: hydra.utils.get_method
+  path: mart.datamodules.coco.collate_yolox_fn

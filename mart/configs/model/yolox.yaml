@@ -1,0 +1,61 @@
+defaults:
+  - modular
+
+modules:
+  losses_or_predictions:
+    _target_: yolox.models.build.create_yolox_model
+    name: "yolov3"
+    pretrained: True
+    num_classes: 80
+    device: "cpu" # PL handles this
+
+  loss:
+    _target_: mart.nn.Sum
+
+  detections:
+    _target_: mart.models.yolox.Detections
+    conf_thre: 0.1
+    nms_thre: 0.4
+
+  output:
+    _target_: mart.nn.ReturnKwargs
+
+training_metrics: null
+
+training_sequence:
+  seq010:
+    losses_or_predictions:
+      x: input
+      targets: target
+
+  seq020:
+    loss:
+      - losses_or_predictions.total_loss
+
+  seq030:
+    output:
+      loss: loss
+      total_loss: losses_or_predictions.total_loss
+      iou_loss: losses_or_predictions.iou_loss
+      l1_loss: losses_or_predictions.l1_loss
+      conf_loss: losses_or_predictions.conf_loss
+      cls_loss: losses_or_predictions.cls_loss
+      num_fg: losses_or_predictions.num_fg
+
+validation_sequence:
+  seq010:
+    losses_or_predictions:
+      x: "input"
+      targets: target
+
+  seq020:
+    detections:
+      predictions: losses_or_predictions
+      targets: target
+
+  seq030:
+    output:
+      preds: detections.preds
+      target: detections.target
+
+test_sequence: ${.validation_sequence}
