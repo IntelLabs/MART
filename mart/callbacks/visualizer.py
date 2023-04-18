@@ -43,7 +43,7 @@ class PerturbedImageVisualizer(Callback):
 
 class PerturbationVisualizer(Callback):
     def __init__(self, frequency: int = 100):
-        self.frequency = 100
+        self.frequency = frequency
 
     def log_perturbation(self, trainer, pl_module):
         # FIXME: Generalize this by using DotDict?
