@@ -9,7 +9,7 @@ import os
 from pytorch_lightning.callbacks import Callback
 from torchvision.transforms import ToPILImage
 
-__all__ = ["PerturbedImageVisualizer"]
+__all__ = ["PerturbedImageVisualizer", "PerturbationVisualizer"]
 
 
 class PerturbedImageVisualizer(Callback):
@@ -39,3 +39,23 @@ class PerturbedImageVisualizer(Callback):
             fpath = os.path.join(self.folder, fname)
             im = self.convert(img / 255)
             im.save(fpath)
+
+
+class PerturbationVisualizer(Callback):
+    def __init__(self, frequency: int = 100):
+        self.frequency = 100
+
+    def on_train_batch_end(self, trainer, module, outputs, batch, batch_idx):
+        if batch_idx % self.frequency != 0:
+            return
+
+        # FIXME: Generalize this by using DotDict?
+        perturbation = module.model.perturber.perturbation
+
+        # Add image to each logger
+        for logger in trainer.loggers:
+            # FIXME: Should we just use isinstance(logger.experiment, SummaryWriter)?
+            if not hasattr(logger.experiment, "add_image"):
+                continue
+
+            logger.experiment.add_image("perturbation", perturbation, global_step=trainer.global_step)

@@ -1,3 +1,0 @@
-progress_bar:
-  _target_: mart.attack.callbacks.ProgressBar
-  process_position: 1
