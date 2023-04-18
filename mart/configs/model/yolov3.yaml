@@ -9,10 +9,13 @@ modules:
     mode: eval
     weight_path: ${paths.data_dir}/yolov3_original.pt
 
-  loss:
+  losses:
     _target_: mart.models.yolov3.Loss
     image_size: 416 # FIXME: use ${training_data.transform.image_size}?
     average: True
+
+  loss:
+    _target_: mart.nn.Sum
 
   detections:
     _target_: mart.models.yolov3.Detections
@@ -28,26 +31,30 @@ training_sequence:
     logits: ["input"]
 
   seq020:
-    loss:
+    losses:
       logits: logits
       targets: target.target
       target_lengths: target.lengths
 
   seq030:
+    loss:
+      - losses.total_loss
+
+  seq040:
     detections:
       logits: logits
       targets: target.target
       target_lengths: target.lengths
 
-  seq040:
+  seq050:
     output:
       preds: detections.preds
       target: detections.target
-      loss: loss.total_loss
-      coord_loss: loss.coord_loss
-      obj_loss: loss.obj_loss
-      noobj_loss: loss.noobj_loss
-      class_loss: loss.class_loss
+      loss: loss
+      coord_loss: losses.coord_loss
+      obj_loss: losses.obj_loss
+      noobj_loss: losses.noobj_loss
+      class_loss: losses.class_loss
 
 validation_sequence: ${.training_sequence}
 test_sequence: ${.validation_sequence}
