@@ -95,4 +95,4 @@ def collate_fn(batch):
 def collate_yolox_fn(batch):
     batch = default_collate(batch)
     image, target, *_ = batch
-    return image, target
+    return image, {"target": target}

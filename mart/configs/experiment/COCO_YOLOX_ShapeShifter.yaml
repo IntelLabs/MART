@@ -65,14 +65,14 @@ model:
   training_sequence:
     seq005: perturber
     seq010:
-      logits: ["perturber"]
+      losses_or_predictions:
+        x: perturber
+        targets: target.target
+
 
   validation_sequence:
     seq005: perturber
     seq010:
-      logits: ["perturber"]
-
-  test_sequence:
-    seq005: perturber
-    seq010:
-      logits: ["perturber"]
+      losses_or_predictions:
+        x: perturber
+        targets: target.target

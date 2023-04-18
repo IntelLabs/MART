@@ -45,13 +45,13 @@ training_sequence:
 validation_sequence:
   seq010:
     losses_or_predictions:
-      x: "input"
-      targets: target
+      x: input
+      targets: target.target
 
   seq020:
     detections:
       predictions: losses_or_predictions
-      targets: target
+      targets: target.target
 
   seq030:
     output:
