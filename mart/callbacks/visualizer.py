@@ -43,14 +43,11 @@ class PerturbedImageVisualizer(Callback):
 
 class PerturbationVisualizer(Callback):
     def __init__(self, frequency: int = 100):
-        self.frequency = 100
+        self.frequency = frequency
 
-    def on_train_batch_end(self, trainer, module, outputs, batch, batch_idx):
-        if batch_idx % self.frequency != 0:
-            return
-
+    def log_perturbation(self, trainer, pl_module):
         # FIXME: Generalize this by using DotDict?
-        perturbation = module.model.perturber.perturbation
+        perturbation = pl_module.model.perturber.perturbation
 
         # Add image to each logger
         for logger in trainer.loggers:
@@ -58,4 +55,15 @@ class PerturbationVisualizer(Callback):
             if not hasattr(logger.experiment, "add_image"):
                 continue
 
-            logger.experiment.add_image("perturbation", perturbation, global_step=trainer.global_step)
+            logger.experiment.add_image(
+                "perturbation", perturbation, global_step=trainer.global_step
+            )
+
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+        if batch_idx % self.frequency != 0:
+            return
+
+        self.log_perturbation(trainer, pl_module)
+
+    def on_train_end(self, trainer, pl_module):
+        self.log_perturbation(trainer, pl_module)

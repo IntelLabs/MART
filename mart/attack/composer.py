@@ -143,14 +143,16 @@ class ColorJitterRandomAffineOverlay(RandomAffineOverlay):
         contrast=0,
         saturation=0,
         hue=0,
+        pixel_scale=255,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
         self.color_jitter = T.ColorJitter(brightness, contrast, saturation, hue)
+        self.pixel_scale = pixel_scale
 
     def compose(self, perturbation, *, input, target):
         # ColorJitter and friends assume floating point tensors are between [0, 1]...
-        perturbation = self.color_jitter(perturbation / 255) * 255
+        perturbation = self.color_jitter(perturbation / self.pixel_scale) * self.pixel_scale
 
         return super().compose(perturbation, input=input, target=target)
