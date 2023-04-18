@@ -14,8 +14,8 @@ task_name: "COCO_YOLOv3_ShapeShifter"
 tags: ["adv"]
 
 trainer:
-  # 117,266 training images, 1 epochs, batch_size=16, 7,329.125
-  max_steps: 7330
+  # 118287 training images, 1 epoch, batch_size=16: FLOOR(118287/16) = 7392
+  max_steps: 7392
 
 callbacks:
   perturbation_visualizer:
