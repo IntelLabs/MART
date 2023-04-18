@@ -14,6 +14,8 @@ from torch import Tensor
 
 __all__ = ["modality_dispatch"]
 
+DEFAULT_MODALITY = "default"
+
 
 def modality_dispatch(
     modality_func: Callable | dict[str, Callable],
@@ -21,7 +23,7 @@ def modality_dispatch(
     *,
     input: Tensor | tuple | list[Tensor] | dict[str, Tensor],
     target: torch.Tensor | dict[str, Any] | list[dict[str, Any]] | None,
-    modality: str = "default",
+    modality: str = DEFAULT_MODALITY,
 ):
     """Recursively dispatch data and input/target to functions of the same modality.
 
