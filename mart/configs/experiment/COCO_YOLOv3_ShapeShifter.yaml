@@ -63,10 +63,17 @@ model:
 
   training_sequence:
     seq005: perturber
-
     seq010:
       logits: ["perturber"]
 
-  validation_sequence: ${.training_sequence}
+  validation_sequence:
+    seq005: perturber
+    seq010:
+      logits: ["perturber"]
 
-  test_sequence: ${.validation_sequence}
+  test_sequence:
+    seq005: perturber
+    seq010:
+      logits: ["perturber"]
+
+

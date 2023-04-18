@@ -56,8 +56,65 @@ training_sequence:
       noobj_loss: losses.noobj_loss
       class_loss: losses.class_loss
 
-validation_sequence: ${.training_sequence}
-test_sequence: ${.validation_sequence}
+validation_sequence:
+  seq010:
+    logits: ["input"]
+
+  seq020:
+    losses:
+      logits: logits
+      targets: target.target
+      target_lengths: target.lengths
+
+  seq030:
+    loss:
+      - losses.total_loss
+
+  seq040:
+    detections:
+      logits: logits
+      targets: target.target
+      target_lengths: target.lengths
+
+  seq050:
+    output:
+      preds: detections.preds
+      target: detections.target
+      loss: loss
+      coord_loss: losses.coord_loss
+      obj_loss: losses.obj_loss
+      noobj_loss: losses.noobj_loss
+      class_loss: losses.class_loss
+
+test_sequence:
+  seq010:
+    logits: ["input"]
+
+  seq020:
+    losses:
+      logits: logits
+      targets: target.target
+      target_lengths: target.lengths
+
+  seq030:
+    loss:
+      - losses.total_loss
+
+  seq040:
+    detections:
+      logits: logits
+      targets: target.target
+      target_lengths: target.lengths
+
+  seq050:
+    output:
+      preds: detections.preds
+      target: detections.target
+      loss: loss
+      coord_loss: losses.coord_loss
+      obj_loss: losses.obj_loss
+      noobj_loss: losses.noobj_loss
+      class_loss: losses.class_loss
 
 training_step_log:
   - loss
