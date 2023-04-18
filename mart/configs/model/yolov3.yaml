@@ -26,6 +26,9 @@ modules:
   output:
     _target_: mart.nn.ReturnKwargs
 
+# training sequence does not produce preds/targets
+training_metrics: null
+
 training_sequence:
   seq010:
     logits: ["input"]
@@ -41,15 +44,7 @@ training_sequence:
       - losses.total_loss
 
   seq040:
-    detections:
-      logits: logits
-      targets: target.target
-      target_lengths: target.lengths
-
-  seq050:
     output:
-      preds: detections.preds
-      target: detections.target
       loss: loss
       coord_loss: losses.coord_loss
       obj_loss: losses.obj_loss

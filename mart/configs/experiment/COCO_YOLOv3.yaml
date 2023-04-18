@@ -25,6 +25,9 @@ datamodule:
     img_size: 416
 
 model:
+  # yolov3 model does not produce preds/targets in training sequence
+  training_metrics: null
+
   optimizer:
     lr: 0.001
     momentum: 0.9
