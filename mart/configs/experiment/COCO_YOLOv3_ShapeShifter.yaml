@@ -8,7 +8,7 @@ defaults:
   - /attack/perturber/projector@model.modules.perturber.projector: range
   - /attack/optimizer@model.optimizer: sgd
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
-  - override /callbacks: [perturbation_visualizer]
+  - override /callbacks: [perturbation_visualizer, lr_monitor]
 
 task_name: "COCO_YOLOv3_ShapeShifter"
 tags: ["adv"]
