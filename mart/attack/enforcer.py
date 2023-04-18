@@ -11,6 +11,8 @@ from typing import Any, Iterable
 
 import torch
 
+from ..utils.modality_dispatch import modality_dispatch
+
 __all__ = ["Enforcer"]
 
 
@@ -95,36 +97,32 @@ class Mask(Constraint):
 
 
 class Enforcer:
-    def __init__(self, constraints: dict[str, Constraint]) -> None:
-        self.constraints = list(constraints.values())  # intentionally ignore keys
+    def __init__(self, **modality_constraints: dict[str, dict[str, Constraint]]) -> None:
+        self.modality_constraints = modality_constraints
 
     @torch.no_grad()
     def __call__(
         self,
-        input_adv: torch.Tensor | Iterable[torch.Tensor],
+        input_adv: torch.Tensor | Iterable[torch.Tensor | dict[str, torch.Tensor]],
         *,
-        input: torch.Tensor | Iterable[torch.Tensor],
+        input: torch.Tensor | Iterable[torch.Tensor | dict[str, torch.Tensor]],
         target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
         **kwargs,
     ):
-        if isinstance(input_adv, torch.Tensor) and isinstance(input, torch.Tensor):
-            self.enforce(input_adv, input=input, target=target)
-
-        elif (
-            isinstance(input_adv, Iterable)
-            and isinstance(input, Iterable)  # noqa: W503
-            and isinstance(target, Iterable)  # noqa: W503
-        ):
-            for input_adv_i, input_i, target_i in zip(input_adv, input, target):
-                self.enforce(input_adv_i, input=input_i, target=target_i)
+        # The default modality is set to "constraints", so that it is backward compatible with existing configs.
+        modality_dispatch(
+            self._enforce, input_adv, input=input, target=target, modality="constraints"
+        )
 
     @torch.no_grad()
-    def enforce(
+    def _enforce(
         self,
         input_adv: torch.Tensor,
         *,
         input: torch.Tensor,
         target: torch.Tensor | dict[str, Any],
+        modality: str,
     ):
-        for constraint in self.constraints:
+        # intentionally ignore keys after modality.
+        for constraint in self.modality_constraints[modality].values():
             constraint(input_adv, input=input, target=target)
