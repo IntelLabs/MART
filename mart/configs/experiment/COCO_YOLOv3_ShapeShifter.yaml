@@ -16,6 +16,9 @@ tags: ["adv"]
 trainer:
   # 118287 training images, 1 epoch, batch_size=16: FLOOR(118287/16) = 7392
   max_steps: 7392
+  # mAP can be slow to compute so limit number of images
+  limit_val_batches: 100
+  limit_test_batches: 100
 
 callbacks:
   perturbation_visualizer:
