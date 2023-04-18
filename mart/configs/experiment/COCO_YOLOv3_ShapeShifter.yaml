@@ -17,6 +17,10 @@ trainer:
   # 117,266 training images, 1 epochs, batch_size=16, 7,329.125
   max_steps: 7330
 
+callbacks:
+  perturbation_visualizer:
+    frequency: 500
+
 datamodule:
   num_workers: 32
   ims_per_batch: 16
