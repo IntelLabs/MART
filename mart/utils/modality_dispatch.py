@@ -7,10 +7,9 @@
 from __future__ import annotations
 
 from itertools import cycle
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 import torch
-from torch import Tensor
 
 __all__ = ["modality_dispatch"]
 
@@ -19,10 +18,10 @@ DEFAULT_MODALITY = "default"
 
 def modality_dispatch(
     modality_func: Callable | dict[str, Callable],
-    data: Tensor | tuple | list[Tensor] | dict[str, Tensor],
+    data: torch.Tensor | dict[str, torch.Tensor] | Iterable[Any],
     *,
-    input: Tensor | tuple | list[Tensor] | dict[str, Tensor],
-    target: torch.Tensor | dict[str, Any] | list[dict[str, Any]] | None,
+    input: torch.Tensor | dict[str, torch.Tensor] | Iterable[Any],
+    target: torch.Tensor | Iterable[Any] | None,
     modality: str = DEFAULT_MODALITY,
 ):
     """Recursively dispatch data and input/target to functions of the same modality.
