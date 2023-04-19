@@ -74,6 +74,10 @@ class Additive(Composer):
 
 class Overlay(Composer):
     """We assume an adversary overlays a patch to the input."""
+    def __init__(self, premultiplied_alpha=False):
+        super().__init__()
+
+        self.premultiplied_alpha = premultiplied_alpha
 
     def compose(self, perturbation, *, input, target):
         # True is mutable, False is immutable.
@@ -83,8 +87,10 @@ class Overlay(Composer):
         #   because some data modules (e.g. Armory) gives binary mask.
         mask = mask.to(input)
 
-        return input * (1 - mask) + perturbation * mask
-
+        if self.premultiplied_alpha:
+            return input * (1 - mask) + perturbation
+        else:
+            return input * (1 - mask) + perturbation * mask
 
 class MaskAdditive(Composer):
     """We assume an adversary adds masked perturbation to the input."""
@@ -105,6 +111,8 @@ class WarpOverlay(Overlay):
         drop_p=0.5,
         drop_range=(0.1, 0.9),
     ):
+        super().__init__(premultiplied_alpha=True)
+
         self.warp = warp
         self.clamp = clamp
         self.p = drop_p
@@ -141,8 +149,9 @@ class WarpOverlay(Overlay):
             block = F.pad(block, (padding_left, padding_top, padding_right, padding_bottom), fill=1.)
             mask = mask * block
 
-        # Add mask to perturbation so we can keep track of warping
-        mask_perturbation = torch.cat((mask, perturbation))
+        # Add mask to perturbation so we can keep track of warping. Note the use of
+        # premultiplied alpha here.
+        mask_perturbation = torch.cat((mask, mask*perturbation))
 
         # Apply warp transform and crop/pad to input size
         mask_perturbation = self.warp(mask_perturbation)
@@ -152,9 +161,8 @@ class WarpOverlay(Overlay):
         perturbation = mask_perturbation[1:]
         perturbation.clamp_(*self.clamp)
 
-        # Make mask binary
-        mask = mask_perturbation[:1] > 0  # fill=0
-        target["perturbable_mask"] = mask
+        # Set mask for super().compose
+        target["perturbable_mask"] = mask_perturbation[:1]
 
         return super().compose(perturbation, input=input, target=target)
 
