@@ -65,14 +65,30 @@ model:
   training_sequence:
     seq005: perturber
     seq010:
-      logits: ["perturber"]
+      logits: ["perturber.input_adv"]
+    seq030:
+      loss:
+        - losses.total_loss
+        - perturber.total_variation
+    seq040:
+      output:
+        total_variation: perturber.total_variation
+
+  training_step_log:
+    - loss
+    - total_loss
+    - coord_loss
+    - obj_loss
+    - noobj_loss
+    - class_loss
+    - total_variation
 
   validation_sequence:
     seq005: perturber
     seq010:
-      logits: ["perturber"]
+      logits: ["perturber.input_adv"]
 
   test_sequence:
     seq005: perturber
     seq010:
-      logits: ["perturber"]
+      logits: ["perturber.input_adv"]

@@ -46,6 +46,7 @@ training_sequence:
   seq040:
     output:
       loss: loss
+      total_loss: losses.total_loss
       coord_loss: losses.coord_loss
       obj_loss: losses.obj_loss
       noobj_loss: losses.noobj_loss
@@ -76,6 +77,7 @@ validation_sequence:
       preds: detections.preds
       target: detections.target
       loss: loss
+      total_loss: losses.total_loss
       coord_loss: losses.coord_loss
       obj_loss: losses.obj_loss
       noobj_loss: losses.noobj_loss
@@ -106,6 +108,7 @@ test_sequence:
       preds: detections.preds
       target: detections.target
       loss: loss
+      total_loss: losses.total_loss
       coord_loss: losses.coord_loss
       obj_loss: losses.obj_loss
       noobj_loss: losses.noobj_loss
@@ -113,10 +116,24 @@ test_sequence:
 
 training_step_log:
   - loss
+  - total_loss
   - coord_loss
   - obj_loss
   - noobj_loss
   - class_loss
 
-validation_step_log: ${.training_step_log}
-test_step_log: ${.validation_step_log}
+validation_step_log:
+  - loss
+  - total_loss
+  - coord_loss
+  - obj_loss
+  - noobj_loss
+  - class_loss
+
+test_step_log:
+  - loss
+  - total_loss
+  - coord_loss
+  - obj_loss
+  - noobj_loss
+  - class_loss
