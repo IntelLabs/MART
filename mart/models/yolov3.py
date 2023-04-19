@@ -21,6 +21,11 @@ class Loss(torch.nn.Module):
         losses = yolo_loss_fn(logits, targets, target_lengths, self.image_size, self.average)
         total_loss, coord_loss, obj_loss, noobj_loss, class_loss = losses
 
+        # keep no objects no objects
+        # FIXME: Parameterize this
+        noobj_loss = -noobj_loss
+        total_loss = 0.2*noobj_loss + obj_loss + class_loss + 5*coord_loss
+
         return {
             "total_loss": total_loss,
             "coord_loss": coord_loss,
