@@ -45,6 +45,10 @@ model:
         warp:
           _target_: torchvision.transforms.Compose
           transforms:
+            - _target_: torchvision.transforms.RandomErasing
+              p: 0.75
+              scale: [0.2, 0.7]
+              ratio: [0.3, 3.3]
             - _target_: torchvision.transforms.RandomAffine
               degrees: 0
               scale: [0.3, 0.5]
@@ -58,7 +62,7 @@ model:
         hue: [-0.05, 0.05]
         pixel_scale: 1.0
 
-  freeze: "logits"
+  freeze: "losses_or_predictions"
 
   optimizer:
     lr: 0.01
