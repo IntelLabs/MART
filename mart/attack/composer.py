@@ -108,46 +108,17 @@ class WarpOverlay(Overlay):
         self,
         warp,
         clamp=(0, 255),
-        drop_p=0.5,
-        drop_range=(0.1, 0.9),
     ):
         super().__init__(premultiplied_alpha=True)
 
         self.warp = warp
         self.clamp = clamp
-        self.p = drop_p
-        self.drop_range = drop_range
 
     def compose(self, perturbation, *, input, target):
         crop = T.RandomCrop(input.shape[-2:], pad_if_needed=True)
 
         # Create mask of ones to keep track of filled in pixels
         mask = torch.ones_like(perturbation[:1])
-
-        # Apply drop block to mask
-        if self.p > torch.rand(1):
-            # Select random block size
-            block_size = [random.uniform(*self.drop_range),
-                          random.uniform(*self.drop_range)]
-
-            # Convert to pixel using mask shape
-            if block_size[0] < 1:  # height
-                block_size[0] = mask.shape[1]*block_size[0]
-            if block_size[1] < 1:  # width
-                block_size[1] = mask.shape[2]*block_size[1]
-
-            block_size[0] = int(block_size[0])
-            block_size[1] = int(block_size[1])
-
-            # Randomly pad block to perturbation shape
-            padding_top = random.randint(0, mask.shape[1] - block_size[0])
-            padding_bottom = mask.shape[1] - padding_top - block_size[0]
-            padding_left = random.randint(0, mask.shape[2] - block_size[1])
-            padding_right = mask.shape[2] - padding_left - block_size[1]
-
-            block = torch.zeros(block_size, device=mask.device)
-            block = F.pad(block, (padding_left, padding_top, padding_right, padding_bottom), fill=1.)
-            mask = mask * block
 
         # Add mask to perturbation so we can keep track of warping. Note the use of
         # premultiplied alpha here.
