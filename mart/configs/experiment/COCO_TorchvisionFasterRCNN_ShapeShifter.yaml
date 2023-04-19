@@ -4,7 +4,7 @@ defaults:
   - COCO_TorchvisionFasterRCNN
   - /attack/perturber@model.modules.perturber: default
   - /attack/perturber/initializer@model.modules.perturber.initializer: uniform
-  - /attack/perturber/composer@model.modules.perturber.composer: color_jitter_random_affine_overlay
+  - /attack/perturber/composer@model.modules.perturber.composer: color_jitter_warp_overlay
   - /attack/perturber/projector@model.modules.perturber.projector: range
   - /attack/optimizer@model.optimizer: sgd
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
@@ -26,14 +26,21 @@ model:
         max: 129
 
       composer:
-        degrees: [-15, 15]
-        translate: [0, 0]
-        scale: [0.25, 0.5]
-        shear: null
-        brightness: 0.3
-        contrast: 0.3
-        saturation: 1.0
-        hue: 0.1
+        warp:
+          _target_: torchvision.transforms.Compose
+          transforms:
+            - _target_: torchvision.transforms.RandomAffine
+              degrees: 0
+              scale: [0.3, 0.5]
+            - _target_: torchvision.transforms.RandomPerspective
+              distortion_scale: 0.2
+              p: 0.5
+        clamp: [0, 255]
+        brightness: [0.5, 1.5]
+        contrast: [0.5, 1.5]
+        saturation: [0.5, 1.0]
+        hue: [-0.05, 0.05]
+        pixel_scale: 255
 
     losses_and_detections:
       model:

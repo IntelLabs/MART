@@ -94,34 +94,25 @@ class MaskAdditive(Composer):
 
 
 # FIXME: It would be really nice if we could compose composers just like we can compose everything else...
-class RandomAffineOverlay(Overlay):
+class WarpOverlay(Overlay):
     def __init__(
         self,
-        degrees,
-        translate=None,
-        scale=None,
-        shear=None,
+        warp,
         clamp=(0, 255),
     ):
-        self.random_affine = T.RandomAffine(
-            degrees,
-            translate,
-            scale,
-            shear=shear,
-            # interpolation=InterpolationMode.BILINEAR,
-        )
+        self.warp = warp
         self.clamp = clamp
 
     def compose(self, perturbation, *, input, target):
-        random_crop = T.RandomCrop(input.shape[-2:], pad_if_needed=True)
+        crop = T.RandomCrop(input.shape[-2:], pad_if_needed=True)
 
         # Create mask of ones to keep track of filled in pixels
         mask = torch.ones_like(perturbation[:1])
         mask_perturbation = torch.cat((mask, perturbation))
 
-        # Apply random affine transform and crop/pad to input size
-        mask_perturbation = self.random_affine(mask_perturbation)
-        mask_perturbation = random_crop(mask_perturbation)
+        # Apply warp transform and crop/pad to input size
+        mask_perturbation = self.warp(mask_perturbation)
+        mask_perturbation = crop(mask_perturbation)
 
         # Clamp perturbation to input min/max
         perturbation = mask_perturbation[1:]
@@ -135,7 +126,7 @@ class RandomAffineOverlay(Overlay):
 
 
 # FIXME: It would be really nice if we could compose composers just like we can compose everything else...
-class ColorJitterRandomAffineOverlay(RandomAffineOverlay):
+class ColorJitterWarpOverlay(WarpOverlay):
     def __init__(
         self,
         *args,
