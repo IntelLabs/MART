@@ -41,6 +41,8 @@ model:
         saturation: [0.5, 1.0]
         hue: [-0.05, 0.05]
         pixel_scale: 255
+        drop_p: 0.75
+        drop_range: [0.2, 0.7]
 
     losses_and_detections:
       model:
