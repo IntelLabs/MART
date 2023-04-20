@@ -24,7 +24,7 @@ class Loss(torch.nn.Module):
         # keep no objects no objects
         # FIXME: Parameterize this
         noobj_loss = -noobj_loss
-        total_loss = 0.2*noobj_loss + obj_loss + class_loss + 5*coord_loss
+        total_loss = 0.2 * noobj_loss + obj_loss + class_loss + 5 * coord_loss
 
         return {
             "total_loss": total_loss,
