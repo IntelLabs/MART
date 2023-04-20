@@ -1,16 +1,34 @@
 # @package _global_
 
 defaults:
-  - COCO_TorchvisionFasterRCNN
   - /attack/perturber@model.modules.perturber: default
   - /attack/perturber/initializer@model.modules.perturber.initializer: uniform
   - /attack/perturber/composer@model.modules.perturber.composer: color_jitter_warp_overlay
   - /attack/perturber/projector@model.modules.perturber.projector: range
   - /attack/optimizer@model.optimizer: sgd
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
+  - override /datamodule: coco
+  - override /model: torchvision_faster_rcnn
+  - override /metric: average_precision
+  - override /optimization: super_convergence
+  - override /callbacks:
+      [model_checkpoint, lr_monitor, perturbation_visualizer, gradient_monitor]
 
 task_name: "COCO_TorchvisionFasterRCNN_ShapeShifter"
 tags: ["adv"]
+
+optimized_metric: "test_metrics/map"
+
+callbacks:
+  model_checkpoint:
+    monitor: "validation_metrics/map"
+    mode: "min"
+
+trainer:
+  # 117,266 training images, 6 epochs, batch_size=2, 351798
+  max_steps: 351798
+  # FIXME: "nms_kernel" not implemented for 'BFloat16', torch.ops.torchvision.nms().
+  precision: 32
 
 datamodule:
   num_workers: 8
@@ -34,15 +52,14 @@ model:
               scale: [0.2, 0.7]
               ratio: [0.3, 3.3]
             - _target_: torchvision.transforms.RandomAffine
-              degrees: 0
+              degrees: [-5, 5]
               scale: [0.3, 0.5]
-            - _target_: torchvision.transforms.RandomPerspective
-              distortion_scale: 0.2
-              p: 0.5
+              shear: [-3, 3, -3, 3]
+              interpolation: 2 # BILINEAR
         clamp: [0, 255]
         brightness: [0.5, 1.5]
         contrast: [0.5, 1.5]
-        saturation: [0.5, 1.0]
+        saturation: [0.5, 1.5]
         hue: [-0.05, 0.05]
         pixel_scale: 255
 
