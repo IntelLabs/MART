@@ -10,7 +10,7 @@ defaults:
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
   - override /callbacks: [perturbation_visualizer, lr_monitor]
 
-task_name: "COCO_YOLOv3_ShapeShifter"
+task_name: "COCO_YOLOX_ShapeShifter"
 tags: ["adv"]
 
 trainer:
