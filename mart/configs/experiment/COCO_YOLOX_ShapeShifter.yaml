@@ -73,6 +73,7 @@ model:
 
   optimizer:
     lr: 5e-3
+    maximize: True
 
   gradient_modifier: null
   #  p: inf
