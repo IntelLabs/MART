@@ -1,24 +1,29 @@
 # @package _global_
 
 defaults:
-  - COCO_YOLOv3
   - /attack/perturber@model.modules.perturber: default
   - /attack/perturber/initializer@model.modules.perturber.initializer: uniform
   - /attack/perturber/composer@model.modules.perturber.composer: color_jitter_warp_overlay
   - /attack/perturber/projector@model.modules.perturber.projector: range
-  - /attack/optimizer@model.optimizer: sgd
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
+  - override /optimization: super_convergence
+  - override /datamodule: coco_yolov3
+  - override /model: yolov3
+  - override /metric: average_precision
   - override /callbacks: [perturbation_visualizer, lr_monitor]
 
 task_name: "COCO_YOLOv3_ShapeShifter"
 tags: ["adv"]
 
+optimized_metric: "test_metrics/map"
+
 trainer:
-  # 118287 training images, 1 epoch, batch_size=16: FLOOR(118287/16) = 7392
-  max_steps: 73920
+  # 118287 training images, batch_size=16, FLOOR(118287/16) = 7392
+  max_steps: 73920  # 10 epochs
   # mAP can be slow to compute so limit number of images
   limit_val_batches: 100
   limit_test_batches: 100
+  precision: 32
 
 callbacks:
   perturbation_visualizer:
@@ -27,6 +32,9 @@ callbacks:
 datamodule:
   num_workers: 32
   ims_per_batch: 16
+
+  train_dataset:
+    img_size: 416
 
 model:
   modules:
@@ -50,11 +58,10 @@ model:
               scale: [0.2, 0.7]
               ratio: [0.3, 3.3]
             - _target_: torchvision.transforms.RandomAffine
-              degrees: 0
+              degrees: [-5, 5]
               scale: [0.3, 0.5]
-            - _target_: torchvision.transforms.RandomPerspective
-              distortion_scale: 0.2
-              p: 0.5
+              shear: [-3, 3, -3, 3]
+              interpolation: 2 # BILINEAR
         clamp: [0, 1]
         brightness: [0.5, 1.5]
         contrast: [0.5, 1.5]
@@ -67,6 +74,7 @@ model:
   optimizer:
     lr: 0.01
     momentum: 0.9
+    maximize: True
 
   gradient_modifier:
     p: inf
@@ -91,6 +99,8 @@ model:
     - noobj_loss
     - class_loss
     - total_variation
+
+  training_metrics: null
 
   validation_sequence:
     seq005: perturber
