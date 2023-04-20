@@ -1,21 +1,25 @@
 # @package _global_
 
 defaults:
-  - COCO_YOLOX
   - /attack/perturber@model.modules.perturber: default
   - /attack/perturber/initializer@model.modules.perturber.initializer: uniform
   - /attack/perturber/composer@model.modules.perturber.composer: color_jitter_warp_overlay
   - /attack/perturber/projector@model.modules.perturber.projector: range
-  - /attack/optimizer@model.optimizer: sgd
+  - /attack/optimizer@model.optimizer: adam
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
+  - override /datamodule: coco_yolox
+  - override /model: yolox
+  - override /metric: average_precision
   - override /callbacks: [perturbation_visualizer, lr_monitor]
 
 task_name: "COCO_YOLOX_ShapeShifter"
 tags: ["adv"]
 
+optimized_metric: "test_metrics/map"
+
 trainer:
-  # 118287 training images, 1 epoch, batch_size=16: FLOOR(118287/16) = 7392
-  max_steps: 73920
+  # 118287 training images, 16 epoch, batch_size=16, 16*FLOOR(118287/16) = 7392
+  max_steps: 118272
   # mAP can be slow to compute so limit number of images
   limit_val_batches: 100
   limit_test_batches: 100
@@ -27,6 +31,9 @@ callbacks:
 datamodule:
   num_workers: 32
   ims_per_batch: 16
+
+  train_dataset:
+    img_size: [416, 416]
 
 model:
   modules:
@@ -65,11 +72,12 @@ model:
   freeze: "losses_or_predictions"
 
   optimizer:
-    lr: 0.01
-    momentum: 0.9
+    lr: 5e-3
 
-  gradient_modifier:
-    p: inf
+  gradient_modifier: null
+  #  p: inf
+
+  training_metrics: null
 
   training_sequence:
     seq005: perturber

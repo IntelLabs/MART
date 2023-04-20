@@ -1,0 +1,10 @@
+_target_: mart.optim.OptimizerFactory
+optimizer:
+  _target_: hydra.utils.get_method
+  path: torch.optim.Adam
+lr: ???
+betas: [0.9, 0.999]
+weight_decay: 0
+bias_decay: 0
+norm_decay: 0
+maximize: True

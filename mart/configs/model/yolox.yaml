@@ -58,4 +58,28 @@ validation_sequence:
       preds: detections.preds
       target: detections.target
 
-test_sequence: ${.validation_sequence}
+test_sequence:
+  seq010:
+    losses_or_predictions:
+      x: input
+      targets: target.target
+
+  seq020:
+    detections:
+      predictions: losses_or_predictions
+      targets: target.target
+
+  seq030:
+    output:
+      preds: detections.preds
+      target: detections.target
+
+
+training_step_log:
+  - loss
+  - total_loss
+  - iou_loss
+  - l1_loss
+  - conf_loss
+  - cls_loss
+  - num_fg
