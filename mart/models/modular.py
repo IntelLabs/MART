@@ -79,9 +79,15 @@ class LitModular(LightningModule):
         self.test_metrics = test_metrics
 
         if freeze:
+            # Turn of gradients for parameters
             for name, param in self.model.named_parameters():
                 if re.match(freeze, name):
                     param.requires_grad_(False)
+
+            # Turn off BatchNorm updating
+            for name, module in self.model.named_modules():
+                if re.match(freeze, name) and "Norm" in module.__class__.__name__:
+                    module.track_running_stats = False
 
         self.gradient_modifier = gradient_modifier
 
