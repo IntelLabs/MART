@@ -11,7 +11,8 @@ defaults:
   - override /model: torchvision_faster_rcnn
   - override /metric: average_precision
   - override /optimization: super_convergence
-  - override /callbacks: [model_checkpoint, lr_monitor, perturbation_visualizer]
+  - override /callbacks:
+      [model_checkpoint, lr_monitor, perturbation_visualizer, gradient_monitor]
 
 task_name: "COCO_TorchvisionFasterRCNN_ShapeShifter"
 tags: ["adv"]
@@ -28,7 +29,6 @@ trainer:
   max_steps: 351798
   # FIXME: "nms_kernel" not implemented for 'BFloat16', torch.ops.torchvision.nms().
   precision: 32
-  track_grad_norm: 2
 
 datamodule:
   num_workers: 8
