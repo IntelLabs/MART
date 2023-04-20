@@ -5,6 +5,7 @@
 #
 
 import torch
+import torch.nn.functional as F
 from yolov3.inference import post_process
 from yolov3.training import yolo_loss_fn
 from yolov3.utils import cxcywh_to_xywh
@@ -21,10 +22,20 @@ class Loss(torch.nn.Module):
         losses = yolo_loss_fn(logits, targets, target_lengths, self.image_size, self.average)
         total_loss, coord_loss, obj_loss, noobj_loss, class_loss = losses
 
-        # keep no objects no objects
-        # FIXME: Parameterize this
-        noobj_loss = -noobj_loss
-        total_loss = 0.2 * noobj_loss + obj_loss + class_loss + 5 * coord_loss
+        pred_conf_logit = logits[..., 4]
+        class_logits = logits[..., 5:]
+
+        # make objectness go to zero
+        tgt_zero = torch.zeros(pred_conf_logit.size(), device=pred_conf_logit.device)
+        hide_objects_loss = F.binary_cross_entropy_with_logits(
+            pred_conf_logit, tgt_zero, reduction="sum"
+        )
+
+        # make target logit go to zero
+        target_class_logit = class_logits[..., 0]  # 0 == person
+        target_class_loss = (
+            F.binary_cross_entropy_with_logits(target_class_logit, tgt_zero, reduction="sum") / 80
+        )
 
         return {
             "total_loss": total_loss,
@@ -32,6 +43,8 @@ class Loss(torch.nn.Module):
             "obj_loss": obj_loss,
             "noobj_loss": noobj_loss,
             "class_loss": class_loss,
+            "hide_objects_loss": hide_objects_loss,
+            "target_class_loss": target_class_loss,
         }
 
 

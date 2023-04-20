@@ -19,7 +19,7 @@ optimized_metric: "test_metrics/map"
 
 trainer:
   # 118287 training images, batch_size=16, FLOOR(118287/16) = 7392
-  max_steps: 73920  # 10 epochs
+  max_steps: 73920 # 10 epochs
   # mAP can be slow to compute so limit number of images
   limit_val_batches: 100
   limit_test_batches: 100
@@ -74,7 +74,6 @@ model:
   optimizer:
     lr: 0.01
     momentum: 0.9
-    maximize: True
 
   gradient_modifier:
     p: inf
@@ -85,7 +84,8 @@ model:
       logits: ["perturber.input_adv"]
     seq030:
       loss:
-        - losses.total_loss
+        - losses.hide_objects_loss
+        - losses.target_class_loss
         - perturber.total_variation
     seq040:
       output:
@@ -98,6 +98,8 @@ model:
     - obj_loss
     - noobj_loss
     - class_loss
+    - hide_objects_loss
+    - target_class_loss
     - total_variation
 
   training_metrics: null

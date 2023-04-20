@@ -51,6 +51,8 @@ training_sequence:
       obj_loss: losses.obj_loss
       noobj_loss: losses.noobj_loss
       class_loss: losses.class_loss
+      hide_objects_loss: losses.hide_objects_loss
+      target_class_loss: losses.target_class_loss
 
 validation_sequence:
   seq010:
@@ -82,6 +84,8 @@ validation_sequence:
       obj_loss: losses.obj_loss
       noobj_loss: losses.noobj_loss
       class_loss: losses.class_loss
+      hide_objects_loss: losses.hide_objects_loss
+      target_class_loss: losses.target_class_loss
 
 test_sequence:
   seq010:
@@ -113,6 +117,8 @@ test_sequence:
       obj_loss: losses.obj_loss
       noobj_loss: losses.noobj_loss
       class_loss: losses.class_loss
+      hide_objects_loss: losses.hide_objects_loss
+      target_class_loss: losses.target_class_loss
 
 training_step_log:
   - loss
@@ -121,6 +127,8 @@ training_step_log:
   - obj_loss
   - noobj_loss
   - class_loss
+  - hide_objects_loss
+  - target_class_loss
 
 validation_step_log:
   - loss
@@ -129,6 +137,8 @@ validation_step_log:
   - obj_loss
   - noobj_loss
   - class_loss
+  - hide_objects_loss
+  - target_class_loss
 
 test_step_log:
   - loss
@@ -137,3 +147,5 @@ test_step_log:
   - obj_loss
   - noobj_loss
   - class_loss
+  - hide_objects_loss
+  - target_class_loss
