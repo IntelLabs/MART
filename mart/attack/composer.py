@@ -7,9 +7,9 @@
 from __future__ import annotations
 
 import abc
+import random
 from typing import Any, Iterable
 
-import random
 import torch
 import torchvision
 import torchvision.transforms as T
@@ -74,6 +74,7 @@ class Additive(Composer):
 
 class Overlay(Composer):
     """We assume an adversary overlays a patch to the input."""
+
     def __init__(self, premultiplied_alpha=False):
         super().__init__()
 
@@ -91,6 +92,7 @@ class Overlay(Composer):
             return input * (1 - mask) + perturbation
         else:
             return input * (1 - mask) + perturbation * mask
+
 
 class MaskAdditive(Composer):
     """We assume an adversary adds masked perturbation to the input."""
@@ -122,7 +124,7 @@ class WarpOverlay(Overlay):
 
         # Add mask to perturbation so we can keep track of warping. Note the use of
         # premultiplied alpha here.
-        mask_perturbation = torch.cat((mask, mask*perturbation))
+        mask_perturbation = torch.cat((mask, mask * perturbation))
 
         # Apply warp transform and crop/pad to input size
         mask_perturbation = self.warp(mask_perturbation)
