@@ -92,6 +92,20 @@ model:
         - losses_or_predictions.total_loss
         - perturber.total_variation
 
+    seq030:
+      output:
+        total_variation: perturber.total_variation
+
+  training_step_log:
+    - loss
+    - total_loss
+    - iou_loss
+    - l1_loss
+    - conf_loss
+    - cls_loss
+    - num_fg
+    - total_variation
+
   validation_sequence:
     seq005: perturber
     seq010:
