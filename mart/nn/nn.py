@@ -237,11 +237,19 @@ class GroupNorm32(torch.nn.GroupNorm):
 
 # FIXME: This must exist already?!
 class Sum(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, weights=None):
         super().__init__()
 
-    def forward(self, *args):
-        return sum(args)
+        self.weights = weights
+
+    def forward(self, *values):
+        weights = self.weights
+
+        if weights is None:
+            weights = [1 for _ in values]
+
+        assert len(weights) == len(values)
+        return sum(value * weight for value, weight in zip(values, weights))
 
 
 def load_state_dict(model, weights_fpath=None):

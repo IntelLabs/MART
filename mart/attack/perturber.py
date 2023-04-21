@@ -116,4 +116,4 @@ class Perturber(torch.nn.Module):
             )
         )
 
-        return {"input_adv": input_adv, "total_variation": 1e-5 * total_variation}
+        return {"input_adv": input_adv, "total_variation": total_variation}
