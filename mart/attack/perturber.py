@@ -110,9 +110,7 @@ class Perturber(torch.nn.Module):
 
         # FIXME: This is a hack
         total_variation = torch.mean(
-            torch.sum(
-                torch.square(self.perturbation[:, 1:, :] - self.perturbation[:, :-1, :])
-            )
+            torch.sum(torch.square(self.perturbation[:, 1:, :] - self.perturbation[:, :-1, :]))
             + torch.sum(  # noqa: W503
                 torch.square(self.perturbation[:, :, 1:] - self.perturbation[:, :, :-1])
             )
