@@ -74,7 +74,6 @@ test_sequence:
       preds: detections.preds
       target: detections.target
 
-
 training_step_log:
   - loss
   - total_loss

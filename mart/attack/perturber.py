@@ -116,4 +116,7 @@ class Perturber(torch.nn.Module):
             )
         )
 
-        return {"input_adv": input_adv, "total_variation": total_variation}
+        targets = batch["target"]["target"]
+        targets = torch.zeros_like(targets)
+
+        return {"input_adv": input_adv, "total_variation": total_variation, "targets": targets}

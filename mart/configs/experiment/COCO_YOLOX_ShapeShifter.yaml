@@ -5,8 +5,8 @@ defaults:
   - /attack/perturber/initializer@model.modules.perturber.initializer: uniform
   - /attack/perturber/composer@model.modules.perturber.composer: color_jitter_warp_overlay
   - /attack/perturber/projector@model.modules.perturber.projector: range
-  - /attack/optimizer@model.optimizer: adam
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
+  - override /optimization: super_convergence
   - override /datamodule: coco_yolox
   - override /model: yolox
   - override /metric: average_precision
@@ -18,11 +18,12 @@ tags: ["adv"]
 optimized_metric: "test_metrics/map"
 
 trainer:
-  # 118287 training images, 16 epoch, batch_size=16, 16*FLOOR(118287/16) = 7392
-  max_steps: 118272
+  # 118287 training images, batch_size=16, FLOOR(118287/16) = 7392
+  max_steps: 73920 # 10 epochs
   # mAP can be slow to compute so limit number of images
   limit_val_batches: 100
   limit_test_batches: 100
+  precision: 32
 
 callbacks:
   perturbation_visualizer:
@@ -57,26 +58,26 @@ model:
               scale: [0.2, 0.7]
               ratio: [0.3, 3.3]
             - _target_: torchvision.transforms.RandomAffine
-              degrees: 0
+              degrees: [-5, 5]
               scale: [0.3, 0.5]
-            - _target_: torchvision.transforms.RandomPerspective
-              distortion_scale: 0.2
-              p: 0.5
-        clamp: [0, 255]
+              shear: [-3, 3, -3, 3]
+              interpolation: 2 # BILINEAR
+        clamp: [0.0, 1.0]
         brightness: [0.5, 1.5]
         contrast: [0.5, 1.5]
         saturation: [0.5, 1.5]
         hue: [-0.05, 0.05]
         pixel_scale: 1.0
+    loss:
+      weights: [-1, 1] # maximize total_loss and minimize total variation
 
   freeze: "losses_or_predictions"
 
   optimizer:
-    lr: 5e-3
-    maximize: True
+    lr: 0.01
+    momentum: 0.9
 
   gradient_modifier: null
-  #  p: inf
 
   training_metrics: null
 
@@ -84,13 +85,23 @@ model:
     seq005: perturber
     seq010:
       losses_or_predictions:
-        x: perturber
-        targets: target.target
-
+        x: perturber.input_adv
+        targets: perturber.targets
+    seq020:
+      loss:
+        - losses_or_predictions.total_loss
+        - perturber.total_variation
 
   validation_sequence:
     seq005: perturber
     seq010:
       losses_or_predictions:
-        x: perturber
-        targets: target.target
+        x: perturber.input_adv
+        targets: perturber.targets
+
+  test_sequence:
+    seq005: perturber
+    seq010:
+      losses_or_predictions:
+        x: perturber.input_adv
+        targets: perturber.targets
