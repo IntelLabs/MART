@@ -1,0 +1,5 @@
+override_mode:
+  _target_: mart.callbacks.OverrideMode
+  training_mode: ???
+  validation_mode: ???
+  test_mode: ???
