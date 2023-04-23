@@ -53,6 +53,9 @@ training_sequence:
       class_loss: losses.class_loss
       hide_objects_loss: losses.hide_objects_loss
       target_class_loss: losses.target_class_loss
+      hide_target_objects_loss: losses.hide_target_objects_loss
+      correct_target_class_loss: losses.correct_target_class_loss
+      target_count: losses.target_count
 
 validation_sequence:
   seq010:
@@ -86,6 +89,9 @@ validation_sequence:
       class_loss: losses.class_loss
       hide_objects_loss: losses.hide_objects_loss
       target_class_loss: losses.target_class_loss
+      hide_target_objects_loss: losses.hide_target_objects_loss
+      correct_target_class_loss: losses.correct_target_class_loss
+      target_count: losses.target_count
 
 test_sequence:
   seq010:
@@ -119,6 +125,9 @@ test_sequence:
       class_loss: losses.class_loss
       hide_objects_loss: losses.hide_objects_loss
       target_class_loss: losses.target_class_loss
+      hide_target_objects_loss: losses.hide_target_objects_loss
+      correct_target_class_loss: losses.correct_target_class_loss
+      target_count: losses.target_count
 
 training_step_log:
   - loss
@@ -129,6 +138,9 @@ training_step_log:
   - class_loss
   - hide_objects_loss
   - target_class_loss
+  - hide_target_objects_loss
+  - correct_target_class_loss
+  - target_count
 
 validation_step_log:
   - loss
@@ -139,6 +151,9 @@ validation_step_log:
   - class_loss
   - hide_objects_loss
   - target_class_loss
+  - hide_target_objects_loss
+  - correct_target_class_loss
+  - target_count
 
 test_step_log:
   - loss
@@ -149,3 +164,6 @@ test_step_log:
   - class_loss
   - hide_objects_loss
   - target_class_loss
+  - hide_target_objects_loss
+  - correct_target_class_loss
+  - target_count

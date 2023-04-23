@@ -93,8 +93,8 @@ model:
       logits: ["perturber.input_adv"]
     seq030:
       loss:
-        - losses.hide_objects_loss
-        - losses.target_class_loss
+        - losses.hide_target_objects_loss
+        - losses.correct_target_class_loss
         - perturber.total_variation
     seq040:
       output:
@@ -109,6 +109,9 @@ model:
     - class_loss
     - hide_objects_loss
     - target_class_loss
+    - hide_target_objects_loss
+    - correct_target_class_loss
+    - target_count
     - total_variation
 
   training_metrics: null
@@ -119,8 +122,8 @@ model:
       logits: ["perturber.input_adv"]
     seq030:
       loss:
-        - losses.hide_objects_loss
-        - losses.target_class_loss
+        - losses.hide_target_objects_loss
+        - losses.correct_target_class_loss
         - perturber.total_variation
 
   test_sequence:
@@ -129,6 +132,6 @@ model:
       logits: ["perturber.input_adv"]
     seq030:
       loss:
-        - losses.hide_objects_loss
-        - losses.target_class_loss
+        - losses.hide_target_objects_loss
+        - losses.correct_target_class_loss
         - perturber.total_variation

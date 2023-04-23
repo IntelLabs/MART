@@ -23,19 +23,29 @@ class Loss(torch.nn.Module):
         total_loss, coord_loss, obj_loss, noobj_loss, class_loss = losses
 
         pred_conf_logit = logits[..., 4]
+        pred_conf_score = torch.sigmoid(pred_conf_logit)
         class_logits = logits[..., 5:]
+        target_mask = (torch.argmax(class_logits, dim=-1) == 0) & (pred_conf_score > 0.1)
 
         # make objectness go to zero
         tgt_zero = torch.zeros(pred_conf_logit.size(), device=pred_conf_logit.device)
-        hide_objects_loss = F.binary_cross_entropy_with_logits(
-            pred_conf_logit, tgt_zero, reduction="sum"
+        hide_objects_losses = F.binary_cross_entropy_with_logits(
+            pred_conf_logit, tgt_zero, reduction="none"
         )
+        hide_objects_loss = hide_objects_losses.sum()
+
+        # make target objectness go to zero
+        hide_target_objects_loss = hide_objects_losses[target_mask].sum()
 
         # make target logit go to zero
         target_class_logit = class_logits[..., 0]  # 0 == person
-        target_class_loss = (
-            F.binary_cross_entropy_with_logits(target_class_logit, tgt_zero, reduction="sum") / 80
+        target_class_losses = F.binary_cross_entropy_with_logits(
+            target_class_logit, tgt_zero, reduction="none"
         )
+        target_class_loss = target_class_losses.sum()
+
+        # make correctly predicted target class logit go to zero
+        correct_target_class_loss = target_class_losses[target_mask].sum()
 
         return {
             "total_loss": total_loss,
@@ -44,7 +54,10 @@ class Loss(torch.nn.Module):
             "noobj_loss": noobj_loss,
             "class_loss": class_loss,
             "hide_objects_loss": hide_objects_loss,
+            "hide_target_objects_loss": hide_target_objects_loss,
             "target_class_loss": target_class_loss,
+            "correct_target_class_loss": correct_target_class_loss,
+            "target_count": target_mask.sum(),
         }
 
 
