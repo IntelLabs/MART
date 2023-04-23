@@ -84,8 +84,7 @@ model:
     lr: 0.01
     momentum: 0.9
 
-  gradient_modifier:
-    p: inf
+  gradient_modifier: null
 
   training_sequence:
     seq005: perturber
