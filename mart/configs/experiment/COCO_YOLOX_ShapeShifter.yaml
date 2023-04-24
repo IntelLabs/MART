@@ -10,7 +10,7 @@ defaults:
   - override /datamodule: coco_yolox
   - override /model: yolox
   - override /metric: average_precision
-  - override /callbacks: [perturbation_visualizer, lr_monitor]
+  - override /callbacks: [perturbation_visualizer, lr_monitor, gradient_monitor]
 
 task_name: "COCO_YOLOX_ShapeShifter"
 tags: ["adv"]
@@ -28,6 +28,7 @@ trainer:
 callbacks:
   perturbation_visualizer:
     frequency: 500
+    pixel_scale: 255
 
 datamodule:
   num_workers: 32
@@ -42,12 +43,8 @@ model:
       size: [3, 416, 234]
 
       initializer:
-        min: 0.49
-        max: 0.51
-
-      projector:
-        min: 0.0
-        max: 1.0
+        min: 127
+        max: 129
 
       composer:
         warp:
@@ -62,19 +59,19 @@ model:
               scale: [0.3, 0.5]
               shear: [-3, 3, -3, 3]
               interpolation: 2 # BILINEAR
-        clamp: [0.0, 1.0]
+        clamp: [0, 255]
         brightness: [0.5, 1.5]
         contrast: [0.5, 1.5]
         saturation: [0.5, 1.5]
         hue: [-0.05, 0.05]
-        pixel_scale: 1.0
+        pixel_scale: 255
     loss:
-      weights: [-1, 1] # maximize total_loss and minimize total variation
+      weights: [1, 0.00001] # minimize total_loss and total variation
 
   freeze: "losses_or_predictions"
 
   optimizer:
-    lr: 0.01
+    lr: 25.5
     momentum: 0.9
 
   gradient_modifier: null
