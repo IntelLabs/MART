@@ -59,4 +59,4 @@ test_dataset:
 
 collate_fn:
   _target_: hydra.utils.get_method
-  path: mart.datamodules.coco.collate_fn
+  path: mart.datamodules.coco.yolo_collate_fn

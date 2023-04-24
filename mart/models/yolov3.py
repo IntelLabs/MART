@@ -4,36 +4,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 from yolov3.inference import post_process
-from yolov3.model import YoloNetV3 as YoloNetV3_
 from yolov3.training import yolo_loss_fn
 from yolov3.utils import cxcywh_to_xywh
-
-
-class YoloNetV3(YoloNetV3_):
-    def forward(self, x, *args, **kwargs):
-        x = torch.stack(x).contiguous()
-
-        return super().forward(x, *args, **kwargs)
-
-
-def to_padded_tensor(tensors, dim=0, fill=0.0):
-    sizes = np.array([list(t.shape) for t in tensors])
-    max_dim_size = sizes[:, dim].max()
-    sizes[:, dim] = max_dim_size - sizes[:, dim]
-
-    zeros = [
-        torch.full(s.tolist(), fill, device=t.device, dtype=t.dtype)
-        for t, s in zip(tensors, sizes)
-    ]
-    tensors = [torch.cat((t, z), dim=dim) for t, z in zip(tensors, zeros)]
-
-    tensor = torch.stack(tensors).contiguous()
-
-    return tensor
 
 
 class Loss(torch.nn.Module):
@@ -44,9 +19,8 @@ class Loss(torch.nn.Module):
         self.average = average
 
     def forward(self, logits, target, **kwargs):
-        # Convert target to acceptable format for yolo_loss_fn
-        targets = to_padded_tensor([t["packed"] for t in target])
-        lengths = [t["packed_length"] for t in target]
+        targets = target["target"]
+        lengths = target["lengths"]
 
         losses = yolo_loss_fn(logits, targets, lengths, self.image_size, self.average)
         total_loss, coord_loss, obj_loss, noobj_loss, class_loss = losses
@@ -125,6 +99,14 @@ class Detections(torch.nn.Module):
     def forward(self, logits, target, **kwargs):
         detections = post_process(logits, self.nms, self.conf_thres, self.nms_thres)
 
+        # FIXME: This should be another module
         # Convert detections and targets to List[dict[str, torch.Tensor]]. This is the format
         # torchmetrics wants.
-        return [Detections.tensor_to_dict(det) for det in detections]
+        preds = [Detections.tensor_to_dict(det) for det in detections]
+
+        targets = target["target"]
+        lengths = target["lengths"]
+        targets = [target[:length] for target, length in zip(targets, lengths)]
+        targets = [Detections.tensor_to_dict(target) for target in targets]
+
+        return {"preds": preds, "targets": targets}
