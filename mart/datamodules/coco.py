@@ -47,6 +47,9 @@ class CocoDetection(CocoDetection_):
 
         self.modalities = modalities
 
+        # We load a lot of stuff from COCO so use file system to communicate
+        torch.multiprocessing.set_sharing_strategy("file_system")
+
     def _load_image(self, id: int) -> Any:
         if self.modalities is None:
             return super()._load_image(id)
@@ -92,37 +95,3 @@ class CocoDetection(CocoDetection_):
 # Source: https://github.com/pytorch/vision/blob/dc07ac2add8285e16a716564867d0b4b953f6735/references/detection/utils.py#L203
 def collate_fn(batch):
     return tuple(zip(*batch))
-
-
-def to_padded_tensor(tensors, dim=0, fill=0.0):
-    sizes = np.array([list(t.shape) for t in tensors])
-    max_dim_size = sizes[:, dim].max()
-    sizes[:, dim] = max_dim_size - sizes[:, dim]
-
-    zeros = [
-        torch.full(s.tolist(), fill, device=t.device, dtype=t.dtype)
-        for t, s in zip(tensors, sizes)
-    ]
-    tensors = [torch.cat((t, z), dim=dim) for t, z in zip(tensors, zeros)]
-
-    return tensors
-
-
-def yolo_collate_fn(batch):
-    images, targets = tuple(zip(*batch))
-
-    images = default_collate(images)
-
-    # Turn tuple of dicts into dict of tuples
-    keys = targets[0].keys()
-    target = {k: tuple(t[k] for t in targets) for k in keys}
-
-    # Pad packed using torch.nested
-    packed = target["packed"]
-    packed = to_padded_tensor(packed)
-    packed = default_collate(packed)
-
-    lengths = target["packed_length"]
-    lengths = default_collate(lengths)
-
-    return images, {"target": packed, "lengths": lengths}

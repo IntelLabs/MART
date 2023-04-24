@@ -3,7 +3,7 @@ defaults:
 
 modules:
   logits:
-    _target_: yolov3.model.YoloNetV3
+    _target_: mart.models.yolov3.YoloNetV3
 
   losses:
     _target_: mart.models.yolov3.Loss
@@ -13,7 +13,7 @@ modules:
   loss:
     _target_: mart.nn.Sum
 
-  detections:
+  preds:
     _target_: mart.models.yolov3.Detections
     nms: true
     conf_thres: 0.1
@@ -59,12 +59,12 @@ validation_sequence:
     loss:
       - losses.total_loss
 
-  seq040: detections
+  seq040: preds
 
   seq050:
     output:
-      preds: detections.preds
-      target: detections.targets
+      preds: preds
+      target: target
       loss: loss
       total_loss: losses.total_loss
       coord_loss: losses.coord_loss
@@ -87,12 +87,12 @@ test_sequence:
     loss:
       - losses.total_loss
 
-  seq040: detections
+  seq040: preds
 
   seq050:
     output:
-      preds: detections.preds
-      target: detections.targets
+      preds: preds
+      target: target
       loss: loss
       total_loss: losses.total_loss
       coord_loss: losses.coord_loss
