@@ -3,7 +3,7 @@
 defaults:
   - /attack/perturber@model.modules.perturber: default
   - /attack/perturber/initializer@model.modules.perturber.initializer: uniform
-  - /attack/perturber/composer@model.modules.perturber.composer: color_jitter_warp_underlay
+  - /attack/perturber/composer@model.modules.perturber.composer: color_jitter_warp_composite
   - /attack/perturber/projector@model.modules.perturber.projector: range
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
   - override /optimization: super_convergence

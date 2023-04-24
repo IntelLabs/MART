@@ -1,0 +1,4 @@
+defaults:
+  - warp_composite
+
+_target_: mart.attack.composer.ColorJitterWarpComposite

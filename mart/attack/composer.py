@@ -72,54 +72,33 @@ class Additive(Composer):
         return input + perturbation
 
 
-class Overlay(Composer):
-    """We assume an adversary overlays a patch to the input."""
-
-    def __init__(self, premultiplied_alpha=False):
-        super().__init__()
-
-        self.premultiplied_alpha = premultiplied_alpha
-
-    def compose(self, perturbation, *, input, target):
-        # True is mutable, False is immutable.
-        mask = target["perturbable_mask"]
-
-        # Convert mask to a Tensor with same torch.dtype and torch.device as input,
-        #   because some data modules (e.g. Armory) gives binary mask.
-        mask = mask.to(input)
-
-        if self.premultiplied_alpha:
-            return input * (1 - mask) + perturbation
-        else:
-            return input * (1 - mask) + perturbation * mask
-
-
-class Underlay(Composer):
+class Composite(Composer):
     """We assume an adversary underlays a patch to the input."""
 
-    def __init__(self, premultiplied_alpha=False):
+    def __init__(self, premultiplied_alpha=False, use_masks=False):
         super().__init__()
 
         self.premultiplied_alpha = premultiplied_alpha
+        self.use_masks = use_masks
 
     def compose(self, perturbation, *, input, target):
         # True is mutable, False is immutable.
-        mask = target["perturbable_mask"]
-
-        object_mask = target["masks"].any(dim=0, keepdim=True)
+        perturbable_mask = target["perturbable_mask"]
 
         # Convert mask to a Tensor with same torch.dtype and torch.device as input,
         #   because some data modules (e.g. Armory) gives binary mask.
-        mask = mask.to(input)
+        perturbable_mask = perturbable_mask.to(input)
 
-        # If mask overlaps, object, then null out that part of mask
-        mask = mask * (1 - object_mask)
+        # Zero out perturbation and mask that overlaps any objects
+        if self.use_masks:
+            foreground_mask = target["masks"]
+            perturbation = perturbation * (1 - foreground_mask)
+            perturbable_mask = perturbable_mask * (1 - foreground_mask)
 
-        if self.premultiplied_alpha:
-            return input * (1 - mask) + perturbation * (1 - object_mask)
-        else:
-            return input * (1 - mask) + perturbation * mask
+        if not self.premultiplied_alpha:
+            perturbation = perturbation * perturbable_mask
 
+        return input * (1 - perturbable_mask) + perturbation
 
 class MaskAdditive(Composer):
     """We assume an adversary adds masked perturbation to the input."""
@@ -132,13 +111,16 @@ class MaskAdditive(Composer):
 
 
 # FIXME: It would be really nice if we could compose composers just like we can compose everything else...
-class WarpUnderlay(Underlay):
+class WarpComposite(Composite):
     def __init__(
         self,
         warp,
+        *args,
         clamp=(0, 255),
+        premultiplied_alpha=True,
+        **kwargs,
     ):
-        super().__init__(premultiplied_alpha=True)
+        super().__init__(*args, premultiplied_alpha=premultiplied_alpha, **kwargs)
 
         self.warp = warp
         self.clamp = clamp
@@ -168,7 +150,7 @@ class WarpUnderlay(Underlay):
 
 
 # FIXME: It would be really nice if we could compose composers just like we can compose everything else...
-class ColorJitterWarpUnderlay(WarpUnderlay):
+class ColorJitterWarpComposite(WarpComposite):
     def __init__(
         self,
         *args,

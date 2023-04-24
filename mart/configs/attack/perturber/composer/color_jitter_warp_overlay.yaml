@@ -1,4 +1,0 @@
-defaults:
-  - warp_overlay
-
-_target_: mart.attack.composer.ColorJitterWarpOverlay

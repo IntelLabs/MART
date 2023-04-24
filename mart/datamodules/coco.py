@@ -125,4 +125,9 @@ def yolo_collate_fn(batch):
     lengths = target["packed_length"]
     lengths = default_collate(lengths)
 
-    return images, {"target": packed, "lengths": lengths}
+    # Collapse masks into single foreground mask
+    masks = target["masks"]
+    masks = [m.any(dim=0, keepdim=True) for m in masks]
+    masks = default_collate(masks)
+
+    return images, {"target": packed, "lengths": lengths, "masks": masks}
