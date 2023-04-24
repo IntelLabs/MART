@@ -94,6 +94,20 @@ def collate_fn(batch):
     return tuple(zip(*batch))
 
 
+def to_padded_tensor(tensors, dim=0, fill=0.0):
+    sizes = np.array([list(t.shape) for t in tensors])
+    max_dim_size = sizes[:, dim].max()
+    sizes[:, dim] = max_dim_size - sizes[:, dim]
+
+    zeros = [
+        torch.full(s.tolist(), fill, device=t.device, dtype=t.dtype)
+        for t, s in zip(tensors, sizes)
+    ]
+    tensors = [torch.cat((t, z), dim=dim) for t, z in zip(tensors, zeros)]
+
+    return tensors
+
+
 def yolo_collate_fn(batch):
     images, targets = tuple(zip(*batch))
 
@@ -104,9 +118,10 @@ def yolo_collate_fn(batch):
     target = {k: tuple(t[k] for t in targets) for k in keys}
 
     # Pad packed using torch.nested
-    packed = torch.nested.nested_tensor(list(target["packed"]))
-    packed = torch.nested.to_padded_tensor(packed, 0.0)
+    packed = to_padded_tensor(target["packed"])
+    packed_length = target["packed_length"]
 
-    lengths = default_collate(target["packed_length"])
+    packed = default_collate(packed)
+    lengths = default_collate(packed_length)
 
     return images, {"target": packed, "lengths": lengths}
