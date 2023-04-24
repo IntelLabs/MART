@@ -94,6 +94,33 @@ class Overlay(Composer):
             return input * (1 - mask) + perturbation * mask
 
 
+class Underlay(Composer):
+    """We assume an adversary underlays a patch to the input."""
+
+    def __init__(self, premultiplied_alpha=False):
+        super().__init__()
+
+        self.premultiplied_alpha = premultiplied_alpha
+
+    def compose(self, perturbation, *, input, target):
+        # True is mutable, False is immutable.
+        mask = target["perturbable_mask"]
+
+        object_mask = target["masks"].any(dim=0, keepdim=True)
+
+        # Convert mask to a Tensor with same torch.dtype and torch.device as input,
+        #   because some data modules (e.g. Armory) gives binary mask.
+        mask = mask.to(input)
+
+        # If mask overlaps, object, then null out that part of mask
+        mask = mask * (1 - object_mask)
+
+        if self.premultiplied_alpha:
+            return input * (1 - mask) + perturbation * (1 - object_mask)
+        else:
+            return input * (1 - mask) + perturbation * mask
+
+
 class MaskAdditive(Composer):
     """We assume an adversary adds masked perturbation to the input."""
 
@@ -105,7 +132,7 @@ class MaskAdditive(Composer):
 
 
 # FIXME: It would be really nice if we could compose composers just like we can compose everything else...
-class WarpOverlay(Overlay):
+class WarpUnderlay(Underlay):
     def __init__(
         self,
         warp,
@@ -141,7 +168,7 @@ class WarpOverlay(Overlay):
 
 
 # FIXME: It would be really nice if we could compose composers just like we can compose everything else...
-class ColorJitterWarpOverlay(WarpOverlay):
+class ColorJitterWarpUnderlay(WarpUnderlay):
     def __init__(
         self,
         *args,

@@ -128,4 +128,3 @@ class Detections(torch.nn.Module):
         # Convert detections and targets to List[dict[str, torch.Tensor]]. This is the format
         # torchmetrics wants.
         return [Detections.tensor_to_dict(det) for det in detections]
-
