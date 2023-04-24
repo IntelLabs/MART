@@ -18,8 +18,11 @@ class Loss(torch.nn.Module):
         self.image_size = image_size
         self.average = average
 
-    def forward(self, logits, targets, target_lengths):
-        losses = yolo_loss_fn(logits, targets, target_lengths, self.image_size, self.average)
+    def forward(self, logits, target, **kwargs):
+        targets = target["target"]
+        lengths = target["lengths"]
+
+        losses = yolo_loss_fn(logits, targets, lengths, self.image_size, self.average)
         total_loss, coord_loss, obj_loss, noobj_loss, class_loss = losses
 
         pred_conf_logit = logits[..., 4]
@@ -93,13 +96,17 @@ class Detections(torch.nn.Module):
         return {"boxes": boxes, "labels": labels, "scores": scores}
 
     @torch.no_grad()
-    def forward(self, logits, targets, target_lengths):
+    def forward(self, logits, target, **kwargs):
         detections = post_process(logits, self.nms, self.conf_thres, self.nms_thres)
 
+        # FIXME: This should be another module
         # Convert detections and targets to List[dict[str, torch.Tensor]]. This is the format
         # torchmetrics wants.
         preds = [Detections.tensor_to_dict(det) for det in detections]
-        targets = [target[:length] for target, length in zip(targets, target_lengths)]
+
+        targets = target["target"]
+        lengths = target["lengths"]
+        targets = [target[:length] for target, length in zip(targets, lengths)]
         targets = [Detections.tensor_to_dict(target) for target in targets]
 
-        return {"preds": preds, "target": targets}
+        return {"preds": preds, "targets": targets}

@@ -29,11 +29,7 @@ training_sequence:
   seq010:
     logits: ["input"]
 
-  seq020:
-    losses:
-      logits: logits
-      targets: target.target
-      target_lengths: target.lengths
+  seq020: losses
 
   seq030:
     loss:
@@ -57,26 +53,18 @@ validation_sequence:
   seq010:
     logits: ["input"]
 
-  seq020:
-    losses:
-      logits: logits
-      targets: target.target
-      target_lengths: target.lengths
+  seq020: losses
 
   seq030:
     loss:
       - losses.total_loss
 
-  seq040:
-    detections:
-      logits: logits
-      targets: target.target
-      target_lengths: target.lengths
+  seq040: detections
 
   seq050:
     output:
       preds: detections.preds
-      target: detections.target
+      target: detections.targets
       loss: loss
       total_loss: losses.total_loss
       coord_loss: losses.coord_loss
@@ -93,26 +81,18 @@ test_sequence:
   seq010:
     logits: ["input"]
 
-  seq020:
-    losses:
-      logits: logits
-      targets: target.target
-      target_lengths: target.lengths
+  seq020: losses
 
   seq030:
     loss:
       - losses.total_loss
 
-  seq040:
-    detections:
-      logits: logits
-      targets: target.target
-      target_lengths: target.lengths
+  seq040: detections
 
   seq050:
     output:
       preds: detections.preds
-      target: detections.target
+      target: detections.targets
       loss: loss
       total_loss: losses.total_loss
       coord_loss: losses.coord_loss
