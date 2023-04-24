@@ -8,7 +8,7 @@ train_dataset:
   img_root: ${paths.data_dir}/coco/train2017
   ann_file_name: ${paths.data_dir}/coco/annotations/instances_train2017.json
   img_size: ???
-  transform: random
+  transform: default
 
 val_dataset:
   _target_: yolov3.datasets.coco.CocoDetectionBoundingBox
