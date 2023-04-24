@@ -83,10 +83,10 @@ model:
     loss:
       weights: [1, 1, 1e-5]
 
-  freeze: "logits"
+  freeze: "yolov3"
 
   load_state_dict:
-    logits: ${paths.data_dir}/yolov3_original.pt
+    yolov3: ${paths.data_dir}/yolov3_original.pt
 
   optimizer:
     lr: 0.01
@@ -97,13 +97,13 @@ model:
   training_sequence:
     seq005: perturber
     seq010:
-      logits: ["perturber.input_adv"]
+      yolov3: ["perturber.input_adv"]
     seq030:
       loss:
         - losses.hide_target_objects_loss
         - losses.correct_target_class_loss
         - perturber.total_variation
-    seq040:
+    seq050:
       output:
         total_variation: perturber.total_variation
 
@@ -126,7 +126,7 @@ model:
   validation_sequence:
     seq005: perturber
     seq010:
-      logits: ["perturber.input_adv"]
+      yolov3: ["perturber.input_adv"]
     seq030:
       loss:
         - losses.hide_target_objects_loss
@@ -136,7 +136,7 @@ model:
   test_sequence:
     seq005: perturber
     seq010:
-      logits: ["perturber.input_adv"]
+      yolov3: ["perturber.input_adv"]
     seq030:
       loss:
         - losses.hide_target_objects_loss

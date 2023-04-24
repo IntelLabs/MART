@@ -2,8 +2,8 @@ defaults:
   - modular
 
 modules:
-  logits:
-    _target_: yolov3.model.YoloNetV3
+  yolov3:
+    _target_: mart.models.yolov3.YoloNetV3
 
   losses:
     _target_: mart.models.yolov3.Loss
@@ -27,15 +27,23 @@ training_metrics: null
 
 training_sequence:
   seq010:
-    logits: ["input"]
+    yolov3: ["input"]
 
-  seq020: losses
+  seq020:
+    losses:
+      logits: yolov3.logits
+      target: target
 
   seq030:
     loss:
       - losses.total_loss
 
   seq040:
+    detections:
+      preds: yolov3.preds
+      target: target
+
+  seq050:
     output:
       loss: loss
       total_loss: losses.total_loss
@@ -51,15 +59,21 @@ training_sequence:
 
 validation_sequence:
   seq010:
-    logits: ["input"]
+    yolov3: ["input"]
 
-  seq020: losses
+  seq020:
+    losses:
+      logits: yolov3.logits
+      target: target
 
   seq030:
     loss:
       - losses.total_loss
 
-  seq040: detections
+  seq040:
+    detections:
+      preds: yolov3.preds
+      target: target
 
   seq050:
     output:
@@ -79,15 +93,21 @@ validation_sequence:
 
 test_sequence:
   seq010:
-    logits: ["input"]
+    yolov3: ["input"]
 
-  seq020: losses
+  seq020:
+    losses:
+      logits: yolov3.logits
+      target: target
 
   seq030:
     loss:
       - losses.total_loss
 
-  seq040: detections
+  seq040:
+    detections:
+      preds: yolov3.preds
+      target: target
 
   seq050:
     output:
