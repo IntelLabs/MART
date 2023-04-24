@@ -10,7 +10,7 @@ defaults:
   - override /datamodule: coco_yolov3
   - override /model: yolov3
   - override /metric: average_precision
-  - override /callbacks: [perturbation_visualizer, lr_monitor, override_mode]
+  - override /callbacks: [perturbation_visualizer, lr_monitor]
 
 task_name: "COCO_YOLOv3_ShapeShifter"
 tags: ["adv"]
@@ -28,12 +28,6 @@ trainer:
 callbacks:
   perturbation_visualizer:
     frequency: 500
-
-  override_mode:
-    # YOLOv3 uses training/eval modes to switch functionality. We disable this and just always use training mode.
-    training_mode: "train"
-    validation_mode: "train"
-    test_mode: "train"
 
 datamodule:
   num_workers: 32

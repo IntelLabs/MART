@@ -17,8 +17,8 @@ import torchvision.transforms.functional as F
 from torchvision.transforms.functional import InterpolationMode
 
 
-class Composer(abc.ABC):
-    def __call__(
+class Composer(torch.nn.Module):
+    def forward(
         self,
         perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
@@ -169,6 +169,7 @@ class ColorJitterWarpComposite(WarpComposite):
 
     def compose(self, perturbation, *, input, target):
         # ColorJitter and friends assume floating point tensors are between [0, 1]...
-        perturbation = self.color_jitter(perturbation / self.pixel_scale) * self.pixel_scale
+        if self.training:
+            perturbation = self.color_jitter(perturbation / self.pixel_scale) * self.pixel_scale
 
         return super().compose(perturbation, input=input, target=target)
