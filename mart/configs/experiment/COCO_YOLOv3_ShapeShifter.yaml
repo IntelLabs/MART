@@ -18,8 +18,8 @@ tags: ["adv"]
 optimized_metric: "test_metrics/map"
 
 trainer:
-  # 118287 training images, batch_size=16, FLOOR(118287/16) = 7392
-  max_steps: 73920 # 10 epochs
+  # 64115 training images, batch_size=16, FLOOR(64115/16) = 4007
+  max_steps: 40070 # 10 epochs
   # mAP can be slow to compute so limit number of images
   limit_val_batches: 100
   limit_test_batches: 100
@@ -38,6 +38,13 @@ callbacks:
 datamodule:
   num_workers: 32
   ims_per_batch: 16
+
+  train_dataset:
+    annFile: ${paths.data_dir}/coco/annotations/person_instances_train2017.json
+  val_dataset:
+    annFile: ${paths.data_dir}/coco/annotations/person_instances_val2017.json
+  test_dataset:
+    annFile: ${paths.data_dir}/coco/annotations/person_instances_val2017.json
 
 model:
   modules:
@@ -71,6 +78,7 @@ model:
         saturation: [0.5, 1.5]
         hue: [-0.05, 0.05]
         pixel_scale: 1.0
+        use_masks: True
 
     loss:
       weights: [1, 1, 1e-5]
