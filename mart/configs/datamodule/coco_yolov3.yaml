@@ -1,14 +1,10 @@
 defaults:
-  - default
+  - coco
 
 num_workers: 1
 
 train_dataset:
-  _target_: mart.datamodules.coco.CocoDetection
-  root: ${paths.data_dir}/coco/train2017
-  annFile: ${paths.data_dir}/coco/annotations/instances_train2017.json
   transforms:
-    _target_: mart.transforms.Compose
     transforms:
       - _target_: torchvision.transforms.ToTensor
       - _target_: mart.transforms.ConvertCocoPolysToMask
@@ -22,40 +18,10 @@ train_dataset:
         num_classes: 80
 
 val_dataset:
-  _target_: mart.datamodules.coco.CocoDetection
-  root: ${paths.data_dir}/coco/val2017
-  annFile: ${paths.data_dir}/coco/annotations/instances_val2017.json
-  transforms:
-    _target_: mart.transforms.Compose
-    transforms:
-      - _target_: torchvision.transforms.ToTensor
-      - _target_: mart.transforms.ConvertCocoPolysToMask
-      - _target_: mart.transforms.PadToSquare
-        fill: 0.5
-      - _target_: mart.transforms.Resize
-        size: [416, 416]
-      - _target_: mart.transforms.ConvertBoxesToCXCYHW
-      - _target_: mart.transforms.RemapLabels
-      - _target_: mart.transforms.PackTarget
-        num_classes: 80
+  transforms: ${..train_dataset.transforms}
 
 test_dataset:
-  _target_: mart.datamodules.coco.CocoDetection
-  root: ${paths.data_dir}/coco/val2017
-  annFile: ${paths.data_dir}/coco/annotations/instances_val2017.json
-  transforms:
-    _target_: mart.transforms.Compose
-    transforms:
-      - _target_: torchvision.transforms.ToTensor
-      - _target_: mart.transforms.ConvertCocoPolysToMask
-      - _target_: mart.transforms.PadToSquare
-        fill: 0.5
-      - _target_: mart.transforms.Resize
-        size: [416, 416]
-      - _target_: mart.transforms.ConvertBoxesToCXCYHW
-      - _target_: mart.transforms.RemapLabels
-      - _target_: mart.transforms.PackTarget
-        num_classes: 80
+  transforms: ${..val_dataset.transforms}
 
 collate_fn:
   _target_: hydra.utils.get_method
