@@ -32,10 +32,9 @@ class LitModular(LightningModule):
         test_sequence=None,
         test_step_log=None,
         test_metrics=None,
-        weights_fpath=None,
-        strict=True,
-        freeze=None,
         gradient_modifier=None,
+        freeze=None,
+        load_state_dict=None,
     ):
         super().__init__()
 
@@ -63,9 +62,6 @@ class LitModular(LightningModule):
         }
         self.model = SequentialDict(modules, sequences)
 
-        if weights_fpath is not None:
-            self.model.load_state_dict(torch.load(weights_fpath), strict=strict)
-
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
 
@@ -78,18 +74,26 @@ class LitModular(LightningModule):
         self.test_step_log = test_step_log or []
         self.test_metrics = test_metrics
 
-        if freeze:
-            # Turn of gradients for parameters
-            for name, param in self.model.named_parameters():
-                if re.match(freeze, name):
-                    param.requires_grad_(False)
-
-            # Turn off BatchNorm updating
-            for name, module in self.model.named_modules():
-                if re.match(freeze, name) and "Norm" in module.__class__.__name__:
-                    module.track_running_stats = False
-
         self.gradient_modifier = gradient_modifier
+
+        # Turn of gradients for parameters
+        for name, param in self.model.named_parameters():
+            if re.match(freeze, name):
+                logger.info(f"Setting requires_grad to False for {name}.")
+                param.requires_grad_(False)
+
+        # Turn off BatchNorm updating
+        for name, module in self.model.named_modules():
+            if re.match(freeze, name) and "Norm" in module.__class__.__name__:
+                logger.info(f"Setting track_running_stats to False for {name}.")
+                module.track_running_stats = False
+
+        # Load state dict for given modules
+        load_state_dict = load_state_dict or {}
+        for name, path in load_state_dict.items():
+            module = getattr(self.model, name)
+            logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
+            module.load_state_dict(torch.load(path))
 
     def configure_optimizers(self):
         config = {}

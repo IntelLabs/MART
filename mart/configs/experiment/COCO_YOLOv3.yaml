@@ -22,6 +22,9 @@ datamodule:
   ims_per_batch: 16
 
 model:
+  load_state_dict:
+    logits: ${paths.data_dir}/yolov3_original.pt
+
   # yolov3 model does not produce preds/targets in training sequence
   training_metrics: null
 

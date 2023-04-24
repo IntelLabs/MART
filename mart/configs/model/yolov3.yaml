@@ -3,11 +3,7 @@ defaults:
 
 modules:
   logits:
-    _target_: yolov3.main.load_yolov3_model
-    device: cpu
-    ckpt: false
-    mode: eval
-    weight_path: ${paths.data_dir}/yolov3_original.pt
+    _target_: yolov3.model.YoloNetV3
 
   losses:
     _target_: mart.models.yolov3.Loss
