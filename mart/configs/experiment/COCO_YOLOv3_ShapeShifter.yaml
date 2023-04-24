@@ -119,6 +119,8 @@ model:
     - hide_target_objects_loss
     - correct_target_class_loss
     - target_count
+    - score_count
+    - target_score_count
     - total_variation
 
   training_metrics: null
