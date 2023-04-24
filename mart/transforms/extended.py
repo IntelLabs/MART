@@ -282,7 +282,7 @@ class Resize(ExTransform):
     def resize_masks(self, masks, ratio):
         # Resize fails on empty tensors
         if masks.shape[0] == 0:
-            return masks
+            return torch.zeros((0, *self.size), dtype=masks.dtype, device=masks.device)
 
         return F.resize(masks, size=self.size, interpolation=F.InterpolationMode.NEAREST)
 
