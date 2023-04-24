@@ -118,10 +118,11 @@ def yolo_collate_fn(batch):
     target = {k: tuple(t[k] for t in targets) for k in keys}
 
     # Pad packed using torch.nested
-    packed = to_padded_tensor(target["packed"])
-    packed_length = target["packed_length"]
-
+    packed = target["packed"]
+    packed = to_padded_tensor(packed)
     packed = default_collate(packed)
-    lengths = default_collate(packed_length)
+
+    lengths = target["packed_length"]
+    lengths = default_collate(lengths)
 
     return images, {"target": packed, "lengths": lengths}
