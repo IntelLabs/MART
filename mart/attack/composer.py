@@ -100,6 +100,7 @@ class Composite(Composer):
 
         return input * (1 - perturbable_mask) + perturbation
 
+
 class MaskAdditive(Composer):
     """We assume an adversary adds masked perturbation to the input."""
 
