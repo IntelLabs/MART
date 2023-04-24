@@ -42,12 +42,13 @@ class PerturbedImageVisualizer(Callback):
 
 
 class PerturbationVisualizer(Callback):
-    def __init__(self, frequency: int = 100):
+    def __init__(self, frequency: int = 100, pixel_scale: float = 1.0):
         self.frequency = frequency
+        self.pixel_scale = pixel_scale
 
     def log_perturbation(self, trainer, pl_module):
         # FIXME: Generalize this by using DotDict?
-        perturbation = pl_module.model.perturber.perturbation
+        perturbation = pl_module.model.perturber.perturbation / self.pixel_scale
 
         # Add image to each logger
         for logger in trainer.loggers:
