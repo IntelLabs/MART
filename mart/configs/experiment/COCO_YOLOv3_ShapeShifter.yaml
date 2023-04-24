@@ -39,9 +39,6 @@ datamodule:
   num_workers: 32
   ims_per_batch: 16
 
-  train_dataset:
-    img_size: 416
-
 model:
   modules:
     perturber:

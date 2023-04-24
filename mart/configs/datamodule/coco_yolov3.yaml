@@ -1,24 +1,62 @@
 defaults:
-  - default.yaml
+  - default
 
-num_workers: 2
+num_workers: 1
 
 train_dataset:
-  _target_: yolov3.datasets.coco.CocoDetectionBoundingBox
-  img_root: ${paths.data_dir}/coco/train2017
-  ann_file_name: ${paths.data_dir}/coco/annotations/instances_train2017.json
-  img_size: ???
-  transform: default
+  _target_: mart.datamodules.coco.CocoDetection
+  root: ${paths.data_dir}/coco/train2017
+  annFile: ${paths.data_dir}/coco/annotations/instances_train2017.json
+  transforms:
+    _target_: mart.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.ConvertCocoPolysToMask
+      - _target_: mart.transforms.PadToSquare
+        fill: 0.5
+      - _target_: mart.transforms.Resize
+        size: [416, 416]
+      - _target_: mart.transforms.ConvertBoxesToCXCYHW
+      - _target_: mart.transforms.RemapLabels
+      - _target_: mart.transforms.PackTarget
+        num_classes: 80
 
 val_dataset:
-  _target_: yolov3.datasets.coco.CocoDetectionBoundingBox
-  img_root: ${paths.data_dir}/coco/val2017
-  ann_file_name: ${paths.data_dir}/coco/annotations/instances_val2017.json
-  img_size: ${..train_dataset.img_size}
-  transform: default
+  _target_: mart.datamodules.coco.CocoDetection
+  root: ${paths.data_dir}/coco/val2017
+  annFile: ${paths.data_dir}/coco/annotations/instances_val2017.json
+  transforms:
+    _target_: mart.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.ConvertCocoPolysToMask
+      - _target_: mart.transforms.PadToSquare
+        fill: 0.5
+      - _target_: mart.transforms.Resize
+        size: [416, 416]
+      - _target_: mart.transforms.ConvertBoxesToCXCYHW
+      - _target_: mart.transforms.RemapLabels
+      - _target_: mart.transforms.PackTarget
+        num_classes: 80
 
-test_dataset: ${.val_dataset}
+test_dataset:
+  _target_: mart.datamodules.coco.CocoDetection
+  root: ${paths.data_dir}/coco/val2017
+  annFile: ${paths.data_dir}/coco/annotations/instances_val2017.json
+  transforms:
+    _target_: mart.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.ConvertCocoPolysToMask
+      - _target_: mart.transforms.PadToSquare
+        fill: 0.5
+      - _target_: mart.transforms.Resize
+        size: [416, 416]
+      - _target_: mart.transforms.ConvertBoxesToCXCYHW
+      - _target_: mart.transforms.RemapLabels
+      - _target_: mart.transforms.PackTarget
+        num_classes: 80
 
 collate_fn:
   _target_: hydra.utils.get_method
-  path: mart.datamodules.coco.collate_img_label_fn
+  path: mart.datamodules.coco.yolo_collate_fn

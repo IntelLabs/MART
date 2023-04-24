@@ -8,6 +8,8 @@ import os
 from typing import Any, Callable, List, Optional
 
 import numpy as np
+import torch
+from torch.utils.data import default_collate
 from torchvision.datasets.coco import CocoDetection as CocoDetection_
 from torchvision.datasets.folder import default_loader
 from yolov3.datasets.utils import collate_img_label_fn as collate_img_label_fn_
@@ -92,8 +94,19 @@ def collate_fn(batch):
     return tuple(zip(*batch))
 
 
-def collate_img_label_fn(batch):
-    image, target, lengths = collate_img_label_fn_(batch)
+def yolo_collate_fn(batch):
+    images, targets = tuple(zip(*batch))
 
-    # Collate into tuple of (input, target) where target is a dict.
-    return image, {"target": target, "lengths": lengths}
+    images = default_collate(images)
+
+    # Turn tuple of dicts into dict of tuples
+    keys = targets[0].keys()
+    target = {k: tuple(t[k] for t in targets) for k in keys}
+
+    # Pad packed using torch.nested
+    packed = torch.nested.nested_tensor(list(target["packed"]))
+    packed = torch.nested.to_padded_tensor(packed, 0.0)
+
+    lengths = default_collate(target["packed_length"])
+
+    return images, {"target": packed, "lengths": lengths}
