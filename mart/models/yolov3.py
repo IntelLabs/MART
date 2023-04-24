@@ -83,11 +83,13 @@ class YoloLayer(torch.nn.Module):
 
 
 class Loss(torch.nn.Module):
-    def __init__(self, image_size, average=True):
+    def __init__(self, image_size, average=True, score_thresh=0.1, target_idx=0):
         super().__init__()
 
         self.image_size = image_size
         self.average = average
+        self.score_thresh = score_thresh
+        self.target_idx = target_idx
 
     def forward(self, logits, target, **kwargs):
         targets = target["target"]
@@ -98,28 +100,30 @@ class Loss(torch.nn.Module):
 
         pred_conf_logit = logits[..., 4]
         pred_conf_score = torch.sigmoid(pred_conf_logit)
+        score_mask = pred_conf_score > self.score_thresh
+
         class_logits = logits[..., 5:]
-        target_mask = (torch.argmax(class_logits, dim=-1) == 0) & (pred_conf_score > 0.1)
+        target_mask = torch.argmax(class_logits, dim=-1) == self.target_idx
 
         # make objectness go to zero
         tgt_zero = torch.zeros(pred_conf_logit.size(), device=pred_conf_logit.device)
         hide_objects_losses = F.binary_cross_entropy_with_logits(
             pred_conf_logit, tgt_zero, reduction="none"
         )
-        hide_objects_loss = hide_objects_losses.sum()
+        hide_objects_loss = hide_objects_losses[score_mask].sum()
 
         # make target objectness go to zero
-        hide_target_objects_loss = hide_objects_losses[target_mask].sum()
+        hide_target_objects_loss = hide_objects_losses[target_mask & score_mask].sum()
 
         # make target logit go to zero
         target_class_logit = class_logits[..., 0]  # 0 == person
         target_class_losses = F.binary_cross_entropy_with_logits(
             target_class_logit, tgt_zero, reduction="none"
         )
-        target_class_loss = target_class_losses.sum()
+        target_class_loss = target_class_losses[score_mask].sum()
 
         # make correctly predicted target class logit go to zero
-        correct_target_class_loss = target_class_losses[target_mask].sum()
+        correct_target_class_loss = target_class_losses[target_mask & score_mask].sum()
 
         return {
             "total_loss": total_loss,
@@ -131,7 +135,9 @@ class Loss(torch.nn.Module):
             "hide_target_objects_loss": hide_target_objects_loss,
             "target_class_loss": target_class_loss,
             "correct_target_class_loss": correct_target_class_loss,
+            "score_count": score_mask.sum(),
             "target_count": target_mask.sum(),
+            "target_score_count": (target_mask & score_mask).sum(),
         }
 
 
