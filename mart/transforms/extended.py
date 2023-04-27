@@ -28,6 +28,7 @@ __all__ = [
     "Lambda",
     "SplitLambda",
     "LoadPerturbableMask",
+    "LoadTensors",
     "ConvertInstanceSegmentationToPerturbable",
     "RandomHorizontalFlip",
     "ConvertCocoPolysToMask",
@@ -145,6 +146,26 @@ class LoadPerturbableMask(ExTransform):
         perturbable_mask = self.to_tensor(im)[0]
         # Convert to float to be differentiable.
         target["perturbable_mask"] = perturbable_mask
+        return image, target
+
+
+class LoadTensors(ExTransform):
+    def __init__(self, root, ext=".pt") -> None:
+        self.root = root
+        self.ext = ext
+
+    def __call__(self, image, target):
+        filename, ext = os.path.splitext(target["file_name"])
+
+        metadata = torch.load(
+            os.path.join(self.root, filename + self.ext), map_location=image.device
+        )
+        assert isinstance(metadata, dict)
+
+        for key in metadata:
+            assert key not in target
+            target[key] = metadata[key]
+
         return image, target
 
 
