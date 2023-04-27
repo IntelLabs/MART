@@ -75,11 +75,10 @@ class Additive(Composer):
 class Composite(Composer):
     """We assume an adversary underlays a patch to the input."""
 
-    def __init__(self, premultiplied_alpha=False, bg_mask_key=None):
+    def __init__(self, premultiplied_alpha=False):
         super().__init__()
 
         self.premultiplied_alpha = premultiplied_alpha
-        self.bg_mask_key = bg_mask_key
 
     def compose(self, perturbation, *, input, target):
         # True is mutable, False is immutable.
@@ -88,12 +87,6 @@ class Composite(Composer):
         # Convert mask to a Tensor with same torch.dtype and torch.device as input,
         #   because some data modules (e.g. Armory) gives binary mask.
         perturbable_mask = perturbable_mask.to(input)
-
-        # Keep portion of perturbation that is background
-        if self.bg_mask_key:
-            bg_mask = target[self.bg_mask_key]
-            perturbation = perturbation * bg_mask
-            perturbable_mask = perturbable_mask * bg_mask
 
         if not self.premultiplied_alpha:
             perturbation = perturbation * perturbable_mask
@@ -140,12 +133,18 @@ class WarpComposite(Composite):
         mask_perturbation = self.warp(mask_perturbation)
         mask_perturbation = crop(mask_perturbation)
 
-        # Clamp perturbation to input min/max
-        perturbation = mask_perturbation[1:]
+        # Set/update perturbable mask
+        perturbable_mask = 1
+        if "perturbable_mask" in target:
+            perturbable_mask = target["perturbable_mask"] # NCHW
+        perturbable_mask *= mask_perturbation[:1] # CHW
+
+        # Pre multiply perturbation and clamp it to input min/max
+        perturbation = mask_perturbation[1:] * perturbable_mask
         perturbation.clamp_(*self.clamp)
 
         # Set mask for super().compose
-        target["perturbable_mask"] = mask_perturbation[:1]
+        target["perturbable_mask"] = perturbable_mask
 
         return super().compose(perturbation, input=input, target=target)
 

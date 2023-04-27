@@ -37,8 +37,7 @@ __all__ = [
     "ConvertBoxesToCXCYHW",
     "RemapLabels",
     "PackBoxesAndLabels",
-    "CreateBackgroundMaskFromCOCOMasks",
-    "CreateBackgroundMaskFromImage",
+    "CreatePerturbableMaskFromImage",
 ]
 
 
@@ -125,7 +124,7 @@ class ConvertInstanceSegmentationToPerturbable(ExTransform):
     """Merge all instance masks and reverse."""
 
     def __call__(self, image, target):
-        perturbable_mask = torch.sum(target["masks"], dim=0) == 0
+        perturbable_mask = torch.sum(target["masks"], dim=0, keepdim=True) == 0
         # Convert to float to be differentiable.
         target["perturbable_mask"] = perturbable_mask.float()
 
@@ -251,8 +250,8 @@ class PadToSquare(ExTransform):
                 target["masks"] = self.pad_masks(target["masks"], padding)
             if "keypoints" in target:
                 target["keypoints"] = self.pad_keypoints(target["keypoints"], padding)
-            if "bg_mask" in target:
-                target["bg_mask"] = self.pad_masks(target["bg_mask"], padding)
+            if "perturbable_mask" in target:
+                target["perturbable_mask"] = self.pad_masks(target["perturbable_mask"], padding)
 
         return image, target
 
@@ -293,8 +292,8 @@ class Resize(ExTransform):
                 target["masks"] = self.resize_masks(target["masks"], (dw, dh))
             if "keypoints" in target:
                 target["keypoints"] = self.resize_keypoints(target["keypoints"], (dw, dh))
-            if "bg_mask" in target:
-                target["bg_mask"] = self.resize_masks(target["bg_mask"], (dw, dh))
+            if "perturbable_mask" in target:
+                target["perturbable_mask"] = self.resize_masks(target["perturbable_mask"], (dw, dh))
 
         return image, target
 
@@ -471,25 +470,7 @@ class PackBoxesAndLabels(ExTransform):
         return image, target
 
 
-class CreateBackgroundMaskFromCOCOMasks(ExTransform):
-    def __call__(
-        self,
-        image: Tensor,
-        target: dict[str, Tensor],
-    ):
-        assert "masks" in target
-        masks = target["masks"]
-
-        # Collapse masks into single foreground mask
-        fg_mask = masks.any(dim=0, keepdim=True)
-
-        # Turn foreground mask into background mask
-        target["bg_mask"] = 1 - fg_mask
-
-        return image, target
-
-
-class CreateBackgroundMaskFromImage(ExTransform):
+class CreatePerturbableMaskFromImage(ExTransform):
     def __init__(self, chroma_key, threshold):
         self.chroma_key = torch.tensor(chroma_key)
         self.threshold = threshold
@@ -502,8 +483,8 @@ class CreateBackgroundMaskFromImage(ExTransform):
         self.chroma_key = self.chroma_key.to(image.device)
 
         l2_dist = ((image - self.chroma_key[:, None, None]) ** 2).sum(dim=0, keepdim=True).sqrt()
-        bg_mask = l2_dist <= self.threshold
+        perturbable_mask = l2_dist <= self.threshold
 
-        target["bg_mask"] = bg_mask
+        target["perturbable_mask"] = perturbable_mask.float()
 
         return image, target

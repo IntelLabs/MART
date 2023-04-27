@@ -124,10 +124,10 @@ def yolo_collate_fn(batch):
     # Pad packed using torch.nested
     target["packed"] = to_padded_tensor(target["packed"])
 
-    COLLATE_KEYS = ["packed", "packed_length", "bg_mask"]
+    COLLATABLE_KEYS = ["packed", "packed_length", "perturbable_mask"]
 
     for key in target.keys():
-        if key in COLLATE_KEYS:
+        if key in COLLATABLE_KEYS:
             target[key] = default_collate(target[key])
 
     return images, target

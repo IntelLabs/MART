@@ -16,7 +16,7 @@ train_dataset:
       - _target_: mart.transforms.RemapLabels
       - _target_: mart.transforms.PackBoxesAndLabels
         num_classes: 80
-      - _target_: mart.transforms.CreateBackgroundMaskFromCOCOMasks
+      - _target_: mart.transforms.ConvertInstanceSegmentationToPerturbable
 
 val_dataset:
   transforms: ${..train_dataset.transforms}
