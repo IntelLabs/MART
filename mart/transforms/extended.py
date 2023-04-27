@@ -36,6 +36,7 @@ __all__ = [
     "ConvertBoxesToCXCYHW",
     "RemapLabels",
     "PackBoxesAndLabels",
+    "CreateBackgroundMask",
 ]
 
 
@@ -438,5 +439,23 @@ class PackBoxesAndLabels(ExTransform):
 
         target["packed"] = torch.cat([boxes, scores, labels], dim=-1)
         target["packed_length"] = target["packed"].shape[0]
+
+        return image, target
+
+
+class CreateBackgroundMask(ExTransform):
+    def __call__(
+        self,
+        image: Tensor,
+        target: dict[str, Tensor],
+    ):
+        assert "masks" in target
+        masks = target["masks"]
+
+        # Collapse masks into single foreground mask
+        fg_mask = masks.any(dim=0)
+
+        # Turn foreground mask into background mask
+        target["bg_mask"] = 1 - fg_mask
 
         return image, target

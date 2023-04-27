@@ -75,11 +75,11 @@ class Additive(Composer):
 class Composite(Composer):
     """We assume an adversary underlays a patch to the input."""
 
-    def __init__(self, premultiplied_alpha=False, use_masks=False):
+    def __init__(self, premultiplied_alpha=False, bg_mask_key=None):
         super().__init__()
 
         self.premultiplied_alpha = premultiplied_alpha
-        self.use_masks = use_masks
+        self.bg_mask_key = None
 
     def compose(self, perturbation, *, input, target):
         # True is mutable, False is immutable.
@@ -89,11 +89,11 @@ class Composite(Composer):
         #   because some data modules (e.g. Armory) gives binary mask.
         perturbable_mask = perturbable_mask.to(input)
 
-        # Zero out perturbation and mask that overlaps any objects
-        if self.use_masks:
-            foreground_mask = target["masks"]
-            perturbation = perturbation * (1 - foreground_mask)
-            perturbable_mask = perturbable_mask * (1 - foreground_mask)
+        # Keep portion of perturbation that is background
+        if self.bg_mask_key:
+            bg_mask = target[self.bg_mask_key]
+            perturbation = perturbation * bg_mask
+            perturbable_mask = perturbable_mask * bg_mask
 
         if not self.premultiplied_alpha:
             perturbation = perturbation * perturbable_mask

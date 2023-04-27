@@ -68,7 +68,7 @@ model:
         saturation: [0.5, 1.5]
         hue: [-0.05, 0.05]
         pixel_scale: 1.0
-        use_masks: True
+        bg_mask_key: "bg_mask"
 
     loss:
       weights: [1, 1, 1e-5]
