@@ -270,6 +270,9 @@ class Resize(ExTransform):
             if "keypoints" in target:
                 target["keypoints"] = self.resize_keypoints(target["keypoints"], (dw, dh))
 
+            if "bg_mask" in target:
+                target["bg_mask"] = self.resize_masks(target["bg_mask"], (dw, dh))
+
         return image, target
 
     def resize_boxes(self, boxes, ratio):
@@ -281,6 +284,8 @@ class Resize(ExTransform):
         return boxes
 
     def resize_masks(self, masks, ratio):
+        assert len(masks.shape) == 3
+
         # Resize fails on empty tensors
         if masks.shape[0] == 0:
             return torch.zeros((0, *self.size), dtype=masks.dtype, device=masks.device)
