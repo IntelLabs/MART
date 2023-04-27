@@ -64,7 +64,8 @@ class UniformLp(Initializer):
 
 class Image(Initializer):
     def __init__(self, path: str):
-        self.image = torchvision.io.read_image(path, torchvision.io.ImageReadMode.RGB)
+        self.image = torchvision.io.read_image(path, torchvision.io.ImageReadMode.RGB) / 255
+
 
     @torch.no_grad()
     def initialize_(self, parameter: torch.Tensor) -> None:
