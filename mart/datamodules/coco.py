@@ -47,6 +47,10 @@ class CocoDetection(CocoDetection_):
 
         self.modalities = modalities
 
+        # Targets can contain a lot of information...
+        # https://discuss.pytorch.org/t/runtimeerror-received-0-items-of-ancdata/4999/4
+        torch.multiprocessing.set_sharing_strategy("file_system")
+
     def _load_image(self, id: int) -> Any:
         if self.modalities is None:
             return super()._load_image(id)
@@ -118,15 +122,12 @@ def yolo_collate_fn(batch):
     target = {k: tuple(t[k] for t in targets) for k in keys}
 
     # Pad packed using torch.nested
-    packed = target["packed"]
-    packed = to_padded_tensor(packed)
-    packed = default_collate(packed)
+    target["packed"] = to_padded_tensor(target["packed"])
 
-    lengths = target["packed_length"]
-    lengths = default_collate(lengths)
+    COLLATE_KEYS = ["packed", "packed_length", "bg_masks"]
 
-    # Collapse masks into single foreground mask
-    bg_masks = target["bg_mask"]
-    bg_masks = default_collate(bg_masks)
+    for key in target.keys():
+        if key in COLLATE_KEYS:
+            target[key] = default_collate(target[key])
 
-    return images, {"target": packed, "lengths": lengths, "bg_masks": bg_masks}
+    return images, target

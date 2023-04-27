@@ -102,8 +102,8 @@ class Loss(torch.nn.Module):
         self.target_idx = target_idx
 
     def forward(self, logits, target, **kwargs):
-        targets = target["target"]
-        lengths = target["lengths"]
+        targets = target["packed"]
+        lengths = target["packed_length"]
 
         losses = yolo_loss_fn(logits, targets, lengths, self.image_size, self.average)
         total_loss, coord_loss, obj_loss, noobj_loss, class_loss = losses
@@ -191,8 +191,8 @@ class Detections(torch.nn.Module):
         # torchmetrics wants.
         preds = [Detections.tensor_to_dict(det) for det in detections]
 
-        targets = target["target"]
-        lengths = target["lengths"]
+        targets = target["packed"]
+        lengths = target["packed_length"]
         targets = [target[:length] for target, length in zip(targets, lengths)]
         targets = [Detections.tensor_to_dict(target) for target in targets]
 
