@@ -36,7 +36,7 @@ __all__ = [
     "ConvertBoxesToCXCYHW",
     "RemapLabels",
     "PackBoxesAndLabels",
-    "CreateBackgroundMask",
+    "CreateBackgroundMaskFromCOCOMasks",
 ]
 
 
@@ -443,7 +443,7 @@ class PackBoxesAndLabels(ExTransform):
         return image, target
 
 
-class CreateBackgroundMask(ExTransform):
+class CreateBackgroundMaskFromCOCOMasks(ExTransform):
     def __call__(
         self,
         image: Tensor,
