@@ -35,7 +35,7 @@ __all__ = [
     "Resize",
     "ConvertBoxesToCXCYHW",
     "RemapLabels",
-    "PackTarget",
+    "PackBoxesAndLabels",
 ]
 
 
@@ -421,7 +421,7 @@ class RemapLabels(ExTransform):
         return image, target
 
 
-class PackTarget(ExTransform):
+class PackBoxesAndLabels(ExTransform):
     def __init__(self, num_classes: int):
         self.num_classes = num_classes
 

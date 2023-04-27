@@ -14,7 +14,7 @@ train_dataset:
         size: [416, 416]
       - _target_: mart.transforms.ConvertBoxesToCXCYHW
       - _target_: mart.transforms.RemapLabels
-      - _target_: mart.transforms.PackTarget
+      - _target_: mart.transforms.PackBoxesAndLabels
         num_classes: 80
 
 val_dataset:
