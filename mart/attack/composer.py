@@ -121,16 +121,65 @@ class WarpComposite(Composite):
 
     def warp(self, perturbation, *, input, target):
         # Support for batch warping
-        if len(input.shape) == 4 and len(perturbation.shape) == 3:
-            return torch.stack([self.warp(perturbation, input=inp, target=target) for inp in input])
+        if self._warp is not None:
+            if len(input.shape) == 4 and len(perturbation.shape) == 3:
+                return torch.stack(
+                    [self.warp(perturbation, input=inp, target=target) for inp in input]
+                )
+            else:
+                pert_w, pert_h = F.get_image_size(perturbation)
+                image_w, image_h = F.get_image_size(input)
 
-        return self._warp(perturbation)
+                # Pad perturbation to image size
+                if pert_w < image_w or pert_h < image_h:
+                    # left, top, right and bottom
+                    padding = [0, 0, max(image_w - pert_w, 0), max(image_h - pert_h, 0)]
+                    perturbation = F.pad(perturbation, padding)
+
+                perturbation = self._warp(perturbation)
+
+                # Crop perturbation to image size
+                if pert_w != image_w or pert_h != image_h:
+                    perturbation = F.crop(perturbation, 0, 0, image_h, image_w)
+                return perturbation
+
+        # Use gs_coords to do fixed perspective warp
+        if len(input.shape) == 4 and len(perturbation.shape) == 3:
+            return torch.stack(
+                [
+                    self.warp(perturbation, input=inp, target={"gs_coords": endpoints})
+                    for inp, endpoints in zip(input, target["gs_coords"])
+                ]
+            )
+        else:
+            # coordinates are [[left, top], [right, top], [right, bottom], [left, bottom]]
+            # perturbation is CHW
+            startpoints = [
+                [0, 0],
+                [perturbation.shape[2], 0],
+                [perturbation.shape[2], perturbation.shape[1]],
+                [0, perturbation.shape[1]],
+            ]
+            endpoints = target["gs_coords"]
+
+            pert_w, pert_h = F.get_image_size(perturbation)
+            image_w, image_h = F.get_image_size(input)
+
+            # Pad perturbation to image size
+            if pert_w < image_w or pert_h < image_h:
+                # left, top, right and bottom
+                padding = [0, 0, max(image_w - pert_w, 0), max(image_h - pert_h, 0)]
+                perturbation = F.pad(perturbation, padding)
+
+            perturbation = F.perspective(perturbation, startpoints, endpoints)
+
+            # Crop perturbation to image size
+            if pert_w != image_w or pert_h != image_h:
+                perturbation = F.crop(perturbation, 0, 0, image_h, image_w)
+            return perturbation
+
 
     def compose(self, perturbation, *, input, target):
-        # FIXME: This is a hack to make the perturbation the same shape as the input. This shouldn't
-        #        actually crop but pad the perturbation instead.
-        crop = T.RandomCrop(input.shape[-2:], pad_if_needed=True)
-
         # Create mask of ones to keep track of filled in pixels
         mask = torch.ones_like(perturbation[:1])
 
@@ -139,7 +188,6 @@ class WarpComposite(Composite):
 
         # Apply warp transform
         perturbation = self.warp(perturbation, input=input, target=target)
-        perturbation = crop(perturbation)
 
         # Extract mask from perturbation. The use of channels first forces this hack.
         if len(perturbation.shape) == 4:

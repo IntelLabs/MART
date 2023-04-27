@@ -252,6 +252,8 @@ class PadToSquare(ExTransform):
                 target["keypoints"] = self.pad_keypoints(target["keypoints"], padding)
             if "perturbable_mask" in target:
                 target["perturbable_mask"] = self.pad_masks(target["perturbable_mask"], padding)
+            if "gs_coords" in target:
+                target["gs_coords"] = self.pad_coordinates(target["gs_coords"], padding)
 
         return image, target
 
@@ -268,6 +270,14 @@ class PadToSquare(ExTransform):
 
     def pad_keypoints(self, keypoints, padding):
         raise NotImplementedError
+
+    def pad_coordinates(self, coordinates, padding):
+        # coordinates are [[left, top], [right, top], [right, bottom], [left, bottom]]
+        # padding is [left, top, right bottom]
+        coordinates[:, 0] += padding[0]  # left padding
+        coordinates[:, 1] += padding[1]  # top padding
+
+        return coordinates
 
 
 class Resize(ExTransform):
@@ -293,7 +303,11 @@ class Resize(ExTransform):
             if "keypoints" in target:
                 target["keypoints"] = self.resize_keypoints(target["keypoints"], (dw, dh))
             if "perturbable_mask" in target:
-                target["perturbable_mask"] = self.resize_masks(target["perturbable_mask"], (dw, dh))
+                target["perturbable_mask"] = self.resize_masks(
+                    target["perturbable_mask"], (dw, dh)
+                )
+            if "gs_coords" in target:
+                target["gs_coords"] = self.resize_coordinates(target["gs_coords"], (dw, dh))
 
         return image, target
 
@@ -316,6 +330,14 @@ class Resize(ExTransform):
 
     def resize_keypoints(self, keypoints, ratio):
         raise NotImplementedError
+
+    def resize_coordinates(self, coordinates, ratio):
+        # coordinates are [[left, top], [right, top], [right, bottom], [left, bottom]]
+        # ratio is [width, height]
+        coordinates[:, 0] = (coordinates[:, 0] * ratio[0]).to(int)  # width ratio
+        coordinates[:, 1] = (coordinates[:, 1] * ratio[1]).to(int)  # height ratio
+
+        return coordinates
 
 
 class ConvertBoxesToCXCYHW(ExTransform):
