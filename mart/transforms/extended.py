@@ -230,6 +230,8 @@ class PadToSquare(ExTransform):
                 target["masks"] = self.pad_masks(target["masks"], padding)
             if "keypoints" in target:
                 target["keypoints"] = self.pad_keypoints(target["keypoints"], padding)
+            if "bg_mask" in target:
+                target["bg_mask"] = self.pad_masks(target["bg_mask"], padding)
 
         return image, target
 
@@ -270,7 +272,6 @@ class Resize(ExTransform):
                 target["masks"] = self.resize_masks(target["masks"], (dw, dh))
             if "keypoints" in target:
                 target["keypoints"] = self.resize_keypoints(target["keypoints"], (dw, dh))
-
             if "bg_mask" in target:
                 target["bg_mask"] = self.resize_masks(target["bg_mask"], (dw, dh))
 
