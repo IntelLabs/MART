@@ -453,7 +453,7 @@ class CreateBackgroundMask(ExTransform):
         masks = target["masks"]
 
         # Collapse masks into single foreground mask
-        fg_mask = masks.any(dim=0)
+        fg_mask = masks.any(dim=0, keepdim=True)
 
         # Turn foreground mask into background mask
         target["bg_mask"] = 1 - fg_mask

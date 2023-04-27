@@ -79,7 +79,7 @@ class Composite(Composer):
         super().__init__()
 
         self.premultiplied_alpha = premultiplied_alpha
-        self.bg_mask_key = None
+        self.bg_mask_key = bg_mask_key
 
     def compose(self, perturbation, *, input, target):
         # True is mutable, False is immutable.
