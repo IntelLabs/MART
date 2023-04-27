@@ -37,6 +37,7 @@ __all__ = [
     "RemapLabels",
     "PackBoxesAndLabels",
     "CreateBackgroundMaskFromCOCOMasks",
+    "CreateBackgroundMaskFromImage",
 ]
 
 
@@ -462,5 +463,25 @@ class CreateBackgroundMaskFromCOCOMasks(ExTransform):
 
         # Turn foreground mask into background mask
         target["bg_mask"] = 1 - fg_mask
+
+        return image, target
+
+
+class CreateBackgroundMaskFromImage(ExTransform):
+    def __init__(self, chroma_key, threshold):
+        self.chroma_key = torch.tensor(chroma_key)
+        self.threshold = threshold
+
+    def __call__(
+        self,
+        image: Tensor,
+        target: dict[str, Tensor],
+    ):
+        self.chroma_key = self.chroma_key.to(image.device)
+
+        l2_dist = ((image - self.chroma_key[:, None, None]) ** 2).sum(dim=0, keepdim=True).sqrt()
+        bg_mask = l2_dist <= self.threshold
+
+        target["bg_mask"] = bg_mask
 
         return image, target
