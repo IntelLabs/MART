@@ -116,31 +116,47 @@ class WarpComposite(Composite):
     ):
         super().__init__(*args, premultiplied_alpha=premultiplied_alpha, **kwargs)
 
-        self.warp = warp
+        self._warp = warp
         self.clamp = clamp
 
+    def warp(self, perturbation, *, input, target):
+        # Support for batch warping
+        if len(input.shape) == 4 and len(perturbation.shape) == 3:
+            return torch.stack([self.warp(perturbation, input=inp, target=target) for inp in input])
+
+        return self._warp(perturbation)
+
     def compose(self, perturbation, *, input, target):
+        # FIXME: This is a hack to make the perturbation the same shape as the input. This shouldn't
+        #        actually crop but pad the perturbation instead.
         crop = T.RandomCrop(input.shape[-2:], pad_if_needed=True)
 
         # Create mask of ones to keep track of filled in pixels
         mask = torch.ones_like(perturbation[:1])
 
-        # Add mask to perturbation so we can keep track of warping. Note the use of
-        # premultiplied alpha here.
-        mask_perturbation = torch.cat((mask, mask * perturbation))
+        # Add mask to perturbation so we can keep track of warping.
+        perturbation = torch.cat((mask, perturbation))
 
-        # Apply warp transform and crop/pad to input size
-        mask_perturbation = self.warp(mask_perturbation)
-        mask_perturbation = crop(mask_perturbation)
+        # Apply warp transform
+        perturbation = self.warp(perturbation, input=input, target=target)
+        perturbation = crop(perturbation)
+
+        # Extract mask from perturbation. The use of channels first forces this hack.
+        if len(perturbation.shape) == 4:
+            mask = perturbation[:, :1, ...]
+            perturbation = perturbation[:, 1:, ...]
+        else:
+            mask = perturbation[:1, ...]
+            perturbation = perturbation[1:, ...]
 
         # Set/update perturbable mask
         perturbable_mask = 1
         if "perturbable_mask" in target:
-            perturbable_mask = target["perturbable_mask"] # NCHW
-        perturbable_mask *= mask_perturbation[:1] # CHW
+            perturbable_mask = target["perturbable_mask"]
+        perturbable_mask = perturbable_mask * mask
 
         # Pre multiply perturbation and clamp it to input min/max
-        perturbation = mask_perturbation[1:] * perturbable_mask
+        perturbation = perturbation * perturbable_mask
         perturbation.clamp_(*self.clamp)
 
         # Set mask for super().compose
