@@ -28,7 +28,8 @@ class FreezeModule(Callback):
                 f"The LightningModule should have a nn.Module `{self.name}` attribute"
             )
 
-        module.eval()
+        for param in module.parameters():
+            param.requires_grad_(False)
 
     def on_train_epoch_start(self, trainer, pl_module):
         module = getattr(pl_module.model, self.name, None)
