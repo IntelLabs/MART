@@ -1,0 +1,3 @@
+freeze_module:
+  _target_: mart.callbacks.FreezeModule
+  module_name: ???

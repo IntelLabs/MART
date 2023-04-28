@@ -33,7 +33,6 @@ class LitModular(LightningModule):
         test_step_log=None,
         test_metrics=None,
         gradient_modifier=None,
-        freeze=None,
         load_state_dict=None,
     ):
         super().__init__()
@@ -75,18 +74,6 @@ class LitModular(LightningModule):
         self.test_metrics = test_metrics
 
         self.gradient_modifier = gradient_modifier
-
-        # Turn of gradients for parameters
-        for name, param in self.model.named_parameters():
-            if re.match(freeze, name):
-                logger.info(f"Setting requires_grad to False for {name}.")
-                param.requires_grad_(False)
-
-        # Turn off BatchNorm updating
-        for name, module in self.model.named_modules():
-            if re.match(freeze, name) and "Norm" in module.__class__.__name__:
-                logger.info(f"Setting track_running_stats to False for {name}.")
-                module.track_running_stats = False
 
         # Load state dict for given modules
         load_state_dict = load_state_dict or {}
