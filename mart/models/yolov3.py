@@ -121,9 +121,11 @@ class Loss(torch.nn.Module):
             pred_conf_logit, tgt_zero, reduction="none"
         )
         hide_objects_loss = hide_objects_losses[score_mask].sum()
+        hide_objects_loss = hide_objects_loss / logits.shape[0]
 
         # make target objectness go to zero
         hide_target_objects_loss = hide_objects_losses[target_mask & score_mask].sum()
+        hide_target_objects_loss = hide_target_objects_loss / logits.shape[0]
 
         # make target logit go to zero
         target_class_logit = class_logits[..., 0]  # 0 == person
@@ -131,9 +133,15 @@ class Loss(torch.nn.Module):
             target_class_logit, tgt_zero, reduction="none"
         )
         target_class_loss = target_class_losses[score_mask].sum()
+        target_class_loss = target_class_loss / logits.shape[0]
 
         # make correctly predicted target class logit go to zero
         correct_target_class_loss = target_class_losses[target_mask & score_mask].sum()
+        correct_target_class_loss = correct_target_class_loss / logits.shape[0]
+
+        score_count = score_mask.sum() / logits.shape[0]
+        target_count = target_mask.sum() / logits.shape[0]
+        target_score_count = (target_mask & score_mask).sum() / logits.shape[0]
 
         return {
             "total_loss": total_loss,
@@ -145,9 +153,9 @@ class Loss(torch.nn.Module):
             "hide_target_objects_loss": hide_target_objects_loss,
             "target_class_loss": target_class_loss,
             "correct_target_class_loss": correct_target_class_loss,
-            "score_count": score_mask.sum(),
-            "target_count": target_mask.sum(),
-            "target_score_count": (target_mask & score_mask).sum(),
+            "score_count": score_count,
+            "target_count": target_count,
+            "target_score_count": target_score_count,
         }
 
 
