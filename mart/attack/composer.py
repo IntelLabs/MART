@@ -183,18 +183,18 @@ class WarpComposite(Composite):
         mask = torch.ones_like(perturbation[:1])
 
         # Add mask to perturbation so we can keep track of warping.
-        perturbation = torch.cat((mask, perturbation))
+        perturbation = torch.cat((perturbation, mask))
 
         # Apply warp transform
         perturbation = self.warp(perturbation, input=input, target=target)
 
         # Extract mask from perturbation. The use of channels first forces this hack.
         if len(perturbation.shape) == 4:
-            mask = perturbation[:, :1, ...]
-            perturbation = perturbation[:, 1:, ...]
+            mask = perturbation[:, 3:, ...]
+            perturbation = perturbation[:, :3, ...]
         else:
-            mask = perturbation[:1, ...]
-            perturbation = perturbation[1:, ...]
+            mask = perturbation[3:, ...]
+            perturbation = perturbation[:3, ...]
 
         # Set/update perturbable mask
         perturbable_mask = 1

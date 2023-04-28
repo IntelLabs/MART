@@ -16,6 +16,7 @@ __all__ = [
     "Chunk",
     "TupleTransforms",
     "GetItems",
+    "ColorJitter",
 ]
 
 
@@ -101,3 +102,21 @@ class GetItems:
     def __call__(self, x):
         x_list = [x[key] for key in self.keys]
         return x_list
+
+
+class ColorJitter(T.ColorJitter):
+    def forward(self, img):
+        # Assume final channel is alpha
+        if len(img.shape) == 3:
+            alpha = img[3:4, ...]
+            rgb = img[:3, ...]
+            dim = 0
+        elif len(img.shape) == 4:
+            alpha = img[:, 3:4, ...]
+            rgb = img[:, :3, ...]
+            dim = 1
+        else:
+            raise NotImplementedError
+
+        rgb = super().forward(rgb)
+        return torch.cat([rgb, alpha], dim=dim)
