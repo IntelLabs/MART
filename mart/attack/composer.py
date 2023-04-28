@@ -120,8 +120,8 @@ class WarpComposite(Composite):
         self.clamp = clamp
 
     def warp(self, perturbation, *, input, target):
-        # Support for batch warping
-        if self._warp is not None:
+        if self._warp is not None and self.training:
+            # Support for batch warping
             if len(input.shape) == 4 and len(perturbation.shape) == 3:
                 return torch.stack(
                     [self.warp(perturbation, input=inp, target=target) for inp in input]
