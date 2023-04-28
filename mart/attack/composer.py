@@ -178,7 +178,6 @@ class WarpComposite(Composite):
                 perturbation = F.crop(perturbation, 0, 0, image_h, image_w)
             return perturbation
 
-
     def compose(self, perturbation, *, input, target):
         # Create mask of ones to keep track of filled in pixels
         mask = torch.ones_like(perturbation[:1])
