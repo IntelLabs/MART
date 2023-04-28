@@ -3,7 +3,7 @@
 defaults:
   - /attack/perturber@model.modules.perturber: default
   - /attack/perturber/initializer@model.modules.perturber.initializer: uniform
-  - /attack/perturber/composer@model.modules.perturber.composer: color_jitter_warp_composite
+  - /attack/perturber/composer@model.modules.perturber.composer: warp_composite
   - /attack/perturber/projector@model.modules.perturber.projector: range
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
   - override /optimization: super_convergence
@@ -60,6 +60,11 @@ model:
         warp:
           _target_: torchvision.transforms.Compose
           transforms:
+            - _target_: mart.transforms.ColorJitter
+              brightness: [0.5, 1.5]
+              contrast: [0.5, 1.5]
+              saturation: [0.5, 1.0]
+              hue: [-0.05, 0.05]
             - _target_: torchvision.transforms.RandomAffine
               degrees: [-5, 5]
               scale: [0.3, 0.5]
