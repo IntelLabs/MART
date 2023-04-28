@@ -67,7 +67,8 @@ model:
               hue: [-0.05, 0.05]
             - _target_: torchvision.transforms.RandomAffine
               degrees: [-5, 5]
-              scale: [0.3, 0.5]
+              translate: [0.1, 0.25]
+              scale: [0.4, 0.6]
               shear: [-3, 3, -3, 3]
               interpolation: 2 # BILINEAR
         clamp: [0, 1]
