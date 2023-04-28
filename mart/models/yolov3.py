@@ -93,7 +93,7 @@ class YoloLayer(torch.nn.Module):
 
 
 class Loss(torch.nn.Module):
-    def __init__(self, image_size, average=True, score_thresh=0.1, target_idx=0):
+    def __init__(self, image_size, average=True, score_thresh=0.01, target_idx=0):
         super().__init__()
 
         self.image_size = image_size
