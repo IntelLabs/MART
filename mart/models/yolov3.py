@@ -108,6 +108,12 @@ class Loss(torch.nn.Module):
         losses = yolo_loss_fn(logits, targets, lengths, self.image_size, self.average)
         total_loss, coord_loss, obj_loss, noobj_loss, class_loss = losses
 
+        # normalize individual losses by batch size
+        coord_loss = coord_loss / logits.shape[0]
+        obj_loss = obj_loss / logits.shape[0]
+        noobj_loss = noobj_loss / logits.shape[0]
+        class_loss = class_loss / logits.shape[0]
+
         pred_conf_logit = logits[..., 4]
         pred_conf_score = torch.sigmoid(pred_conf_logit)
         score_mask = pred_conf_score > self.score_thresh
