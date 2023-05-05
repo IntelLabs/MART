@@ -25,7 +25,7 @@ class Callback(abc.ABC):
         *,
         adversary: Adversary,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -36,7 +36,7 @@ class Callback(abc.ABC):
         *,
         adversary: Adversary,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -47,7 +47,7 @@ class Callback(abc.ABC):
         *,
         adversary: Adversary,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -58,7 +58,7 @@ class Callback(abc.ABC):
         *,
         adversary: Adversary,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -69,7 +69,7 @@ class Callback(abc.ABC):
         *,
         adversary: Adversary,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -80,7 +80,7 @@ class Callback(abc.ABC):
         *,
         adversary: Adversary,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):

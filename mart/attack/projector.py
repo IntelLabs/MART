@@ -20,7 +20,7 @@ class Projector:
         perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         **kwargs,
     ) -> None:
         if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
@@ -43,7 +43,7 @@ class Projector:
         perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
     ) -> None:
         pass
 
@@ -60,7 +60,7 @@ class Compose(Projector):
         perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         **kwargs,
     ) -> None:
         for projector in self.projectors:

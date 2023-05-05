@@ -104,7 +104,7 @@ class Enforcer:
         input_adv: torch.Tensor | Iterable[torch.Tensor],
         *,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         **kwargs,
     ):
         if isinstance(input_adv, torch.Tensor) and isinstance(input, torch.Tensor):
