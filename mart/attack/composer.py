@@ -17,8 +17,8 @@ import torchvision.transforms.functional as F
 from torchvision.transforms.functional import InterpolationMode
 
 
-class Composer(abc.ABC):
-    def __call__(
+class Composer(torch.nn.Module):
+    def forward(
         self,
         perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
@@ -72,8 +72,8 @@ class Additive(Composer):
         return input + perturbation
 
 
-class Overlay(Composer):
-    """We assume an adversary overlays a patch to the input."""
+class Composite(Composer):
+    """We assume an adversary underlays a patch to the input."""
 
     def __init__(self, premultiplied_alpha=False):
         super().__init__()
@@ -82,16 +82,16 @@ class Overlay(Composer):
 
     def compose(self, perturbation, *, input, target):
         # True is mutable, False is immutable.
-        mask = target["perturbable_mask"]
+        perturbable_mask = target["perturbable_mask"]
 
         # Convert mask to a Tensor with same torch.dtype and torch.device as input,
         #   because some data modules (e.g. Armory) gives binary mask.
-        mask = mask.to(input)
+        perturbable_mask = perturbable_mask.to(input)
 
-        if self.premultiplied_alpha:
-            return input * (1 - mask) + perturbation
-        else:
-            return input * (1 - mask) + perturbation * mask
+        if not self.premultiplied_alpha:
+            perturbation = perturbation * perturbable_mask
+
+        return input * (1 - perturbable_mask) + perturbation
 
 
 class MaskAdditive(Composer):
@@ -105,43 +105,115 @@ class MaskAdditive(Composer):
 
 
 # FIXME: It would be really nice if we could compose composers just like we can compose everything else...
-class WarpOverlay(Overlay):
+class WarpComposite(Composite):
     def __init__(
         self,
         warp,
+        *args,
         clamp=(0, 255),
+        premultiplied_alpha=True,
+        **kwargs,
     ):
-        super().__init__(premultiplied_alpha=True)
+        super().__init__(*args, premultiplied_alpha=premultiplied_alpha, **kwargs)
 
-        self.warp = warp
+        self._warp = warp
         self.clamp = clamp
 
-    def compose(self, perturbation, *, input, target):
-        crop = T.RandomCrop(input.shape[-2:], pad_if_needed=True)
+    def warp(self, perturbation, *, input, target):
+        if self._warp is not None and self.training:
+            # Support for batch warping
+            if len(input.shape) == 4 and len(perturbation.shape) == 3:
+                return torch.stack(
+                    [self.warp(perturbation, input=inp, target=target) for inp in input]
+                )
+            else:
+                pert_w, pert_h = F.get_image_size(perturbation)
+                image_w, image_h = F.get_image_size(input)
 
+                # Pad perturbation to image size
+                if pert_w < image_w or pert_h < image_h:
+                    # left, top, right and bottom
+                    padding = [0, 0, max(image_w - pert_w, 0), max(image_h - pert_h, 0)]
+                    perturbation = F.pad(perturbation, padding)
+
+                perturbation = self._warp(perturbation)
+
+                # Crop perturbation to image size
+                if pert_w != image_w or pert_h != image_h:
+                    perturbation = F.crop(perturbation, 0, 0, image_h, image_w)
+                return perturbation
+
+        # Use gs_coords to do fixed perspective warp
+        if len(input.shape) == 4 and len(perturbation.shape) == 3:
+            return torch.stack(
+                [
+                    self.warp(perturbation, input=inp, target={"gs_coords": endpoints})
+                    for inp, endpoints in zip(input, target["gs_coords"])
+                ]
+            )
+        else:
+            # coordinates are [[left, top], [right, top], [right, bottom], [left, bottom]]
+            # perturbation is CHW
+            startpoints = [
+                [0, 0],
+                [perturbation.shape[2], 0],
+                [perturbation.shape[2], perturbation.shape[1]],
+                [0, perturbation.shape[1]],
+            ]
+            endpoints = target["gs_coords"]
+
+            pert_w, pert_h = F.get_image_size(perturbation)
+            image_w, image_h = F.get_image_size(input)
+
+            # Pad perturbation to image size
+            if pert_w < image_w or pert_h < image_h:
+                # left, top, right and bottom
+                padding = [0, 0, max(image_w - pert_w, 0), max(image_h - pert_h, 0)]
+                perturbation = F.pad(perturbation, padding)
+
+            perturbation = F.perspective(perturbation, startpoints, endpoints)
+
+            # Crop perturbation to image size
+            if pert_w != image_w or pert_h != image_h:
+                perturbation = F.crop(perturbation, 0, 0, image_h, image_w)
+            return perturbation
+
+    def compose(self, perturbation, *, input, target):
         # Create mask of ones to keep track of filled in pixels
         mask = torch.ones_like(perturbation[:1])
 
-        # Add mask to perturbation so we can keep track of warping. Note the use of
-        # premultiplied alpha here.
-        mask_perturbation = torch.cat((mask, mask * perturbation))
+        # Add mask to perturbation so we can keep track of warping.
+        perturbation = torch.cat((perturbation, mask))
 
-        # Apply warp transform and crop/pad to input size
-        mask_perturbation = self.warp(mask_perturbation)
-        mask_perturbation = crop(mask_perturbation)
+        # Apply warp transform
+        perturbation = self.warp(perturbation, input=input, target=target)
 
-        # Clamp perturbation to input min/max
-        perturbation = mask_perturbation[1:]
+        # Extract mask from perturbation. The use of channels first forces this hack.
+        if len(perturbation.shape) == 4:
+            mask = perturbation[:, 3:, ...]
+            perturbation = perturbation[:, :3, ...]
+        else:
+            mask = perturbation[3:, ...]
+            perturbation = perturbation[:3, ...]
+
+        # Set/update perturbable mask
+        perturbable_mask = 1
+        if "perturbable_mask" in target:
+            perturbable_mask = target["perturbable_mask"]
+        perturbable_mask = perturbable_mask * mask
+
+        # Pre multiply perturbation and clamp it to input min/max
+        perturbation = perturbation * perturbable_mask
         perturbation.clamp_(*self.clamp)
 
         # Set mask for super().compose
-        target["perturbable_mask"] = mask_perturbation[:1]
+        target["perturbable_mask"] = perturbable_mask
 
         return super().compose(perturbation, input=input, target=target)
 
 
 # FIXME: It would be really nice if we could compose composers just like we can compose everything else...
-class ColorJitterWarpOverlay(WarpOverlay):
+class ColorJitterWarpComposite(WarpComposite):
     def __init__(
         self,
         *args,
@@ -159,6 +231,7 @@ class ColorJitterWarpOverlay(WarpOverlay):
 
     def compose(self, perturbation, *, input, target):
         # ColorJitter and friends assume floating point tensors are between [0, 1]...
-        perturbation = self.color_jitter(perturbation / self.pixel_scale) * self.pixel_scale
+        if self.training:
+            perturbation = self.color_jitter(perturbation / self.pixel_scale) * self.pixel_scale
 
         return super().compose(perturbation, input=input, target=target)
