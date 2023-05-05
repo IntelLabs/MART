@@ -14,10 +14,8 @@ model:
   modules:
     losses_and_detections:
       model:
-        weights_fpath: null
-        model:
-          num_classes: 3
-          weights: null
+        num_classes: 3
+        weights: null
 
   optimizer:
     lr: 0.0125
