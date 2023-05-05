@@ -6,9 +6,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 import torch
+
+if TYPE_CHECKING:
+    from .enforcer import Enforcer
 
 __all__ = ["NormalizedAdversaryAdapter"]
 
@@ -22,7 +25,7 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
     def __init__(
         self,
         adversary: Callable[[Callable], Callable],
-        enforcer: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], None],
+        enforcer: Enforcer,
     ):
         """
 
@@ -37,8 +40,8 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
 
     def forward(
         self,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
         model: torch.nn.Module | None = None,
         **kwargs,
     ):

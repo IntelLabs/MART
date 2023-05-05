@@ -154,7 +154,7 @@ def test_compose(input_data, target_data):
     ]
 
     compose = Compose(projectors)
-    tensor = Mock()
+    tensor = Mock(spec=torch.Tensor)
     tensor.norm.return_value = 10
     compose(tensor, input=input_data, target=target_data)
 

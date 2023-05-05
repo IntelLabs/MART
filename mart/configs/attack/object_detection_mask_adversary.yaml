@@ -1,21 +1,22 @@
 defaults:
-  - iterative_sgd
-  - perturber: batch
+  - adversary
+  - perturber: default
   - perturber/initializer: constant
-  - perturber/gradient_modifier: sign
+  - perturber/composer: overlay
   - perturber/projector: mask_range
-  - callbacks: [progress_bar, image_visualizer]
-  - objective: zero_ap
+  - optimizer: sgd
   - gain: rcnn_training_loss
-  - composer: overlay
+  - gradient_modifier: sign
+  - objective: zero_ap
+  - callbacks: [image_visualizer]
   - enforcer: default
   - enforcer/constraints: [mask, pixel_range]
 
 # Make a 5-step attack for the demonstration purpose.
+max_iters: 5
+
 optimizer:
   lr: 55
-
-max_iters: 5
 
 perturber:
   initializer:
