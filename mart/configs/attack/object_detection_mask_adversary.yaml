@@ -2,7 +2,7 @@ defaults:
   - adversary
   - perturber: default
   - perturber/initializer: constant
-  - perturber/composer: overlay
+  - perturber/composer: composite
   - perturber/projector: mask_range
   - optimizer: sgd
   - gain: rcnn_training_loss

@@ -140,6 +140,10 @@ class Adversary(pl.LightningModule):
 
         input_adv = self.perturber(**batch)
 
+        # FIXME: What happens if we want to pass total_variation?!
+        if isinstance(input_adv, dict):
+            input_adv = input_adv["input_adv"]
+
         # Enforce constraints after the attack optimization ends.
         if model and sequence:
             self.enforcer(input_adv, **batch)
