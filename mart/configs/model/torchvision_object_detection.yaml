@@ -17,6 +17,7 @@ modules:
     _target_: mart.models.DualMode
     model:
       _target_: mart.nn.load_state_dict
+      weights_fpath: ???
       model:
         _target_: ???
 

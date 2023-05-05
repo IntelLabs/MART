@@ -84,5 +84,7 @@ modules:
     # 23s: DualMode
     _target_: mart.models.DualModeGeneralizedRCNN
     model:
+      weights_fpath: ???
       model:
         _target_: torchvision.models.detection.fasterrcnn_resnet50_fpn
+        num_classes: ???

@@ -11,4 +11,6 @@ modules:
 
   logits:
     _target_: mart.nn.load_state_dict
+    # File path to state_dict of a pretrained model.
+    weights_fpath: null
     model: ???

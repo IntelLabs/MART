@@ -26,6 +26,8 @@ datamodule:
   num_workers: 8
 
 model:
+  weights_fpath: null
+
   optimizer:
     lr: 0.1
     momentum: 0.9
