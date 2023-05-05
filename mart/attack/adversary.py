@@ -45,7 +45,7 @@ class Adversary(pl.LightningModule):
         """_summary_
 
         Args:
-            perturber (Perturber): A perturbation
+            perturber (Perturber): A MART Perturber.
             optimizer (OptimizerFactory): A MART OptimizerFactory.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
