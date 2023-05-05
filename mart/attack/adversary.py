@@ -18,11 +18,11 @@ from mart.utils import silent
 from .gradient_modifier import GradientModifier
 
 if TYPE_CHECKING:
+    from ..optim import OptimizerFactory
     from .enforcer import Enforcer
     from .gain import Gain
     from .objective import Objective
     from .perturber import Perturber
-    from ..optim import OptimizerFactory
 
 __all__ = ["Adversary"]
 
