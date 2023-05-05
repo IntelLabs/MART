@@ -10,7 +10,7 @@ from PIL import Image, ImageChops
 from torchvision.transforms import ToPILImage
 
 from mart.attack import Adversary
-from mart.attack.callbacks import PerturbedImageVisualizer
+from mart.callbacks import PerturbedImageVisualizer
 
 
 def test_visualizer_run_end(input_data, target_data, perturbation, tmp_path):
