@@ -17,15 +17,13 @@ from mart.attack.perturber import Perturber
 
 
 def test_adversary(input_data, target_data, perturbation):
-    composer = mart.attack.composer.Additive()
     enforcer = Mock()
-    perturber = Mock(return_value=perturbation)
+    perturber = Mock(return_value=input_data + perturbation)
     optimizer = Mock()
     max_iters = 3
     gain = Mock()
 
     adversary = Adversary(
-        composer=composer,
         enforcer=enforcer,
         perturber=perturber,
         optimizer=optimizer,
@@ -44,18 +42,15 @@ def test_adversary(input_data, target_data, perturbation):
 
 
 def test_adversary_with_model(input_data, target_data, perturbation):
-    composer = mart.attack.composer.Additive()
     enforcer = Mock()
     initializer = Mock()
-    parameter_groups = Mock(return_value=[])
-    perturber = Mock(return_value=perturbation, parameter_groups=parameter_groups)
+    perturber = Mock(return_value=input_data + perturbation)
     optimizer = Mock()
     max_iters = 3
     model = Mock(return_value={})
     gain = Mock(return_value=torch.tensor(0.0, requires_grad=True))
 
     adversary = Adversary(
-        composer=composer,
         enforcer=enforcer,
         perturber=perturber,
         optimizer=optimizer,
@@ -65,7 +60,6 @@ def test_adversary_with_model(input_data, target_data, perturbation):
 
     output_data = adversary(input_data, target_data, model=model)
 
-    parameter_groups.assert_called_once()
     optimizer.assert_called_once()
     # The enforcer is only called when model is not None.
     enforcer.assert_called_once()
@@ -82,23 +76,21 @@ def test_adversary_with_model(input_data, target_data, perturbation):
 
 def test_adversary_perturber_hidden_params(input_data, target_data):
     initializer = Mock()
-    perturber = Perturber(initializer)
-
     composer = mart.attack.composer.Additive()
+    perturber = Perturber(initializer=initializer, composer=composer)
+
     enforcer = Mock()
     optimizer = Mock()
     gain = Mock(return_value=torch.tensor(0.0, requires_grad=True))
     model = Mock(return_value={})
 
     adversary = Adversary(
-        composer=composer,
         enforcer=enforcer,
         perturber=perturber,
         optimizer=optimizer,
         max_iters=1,
         gain=gain,
     )
-    output_data = adversary(input_data, target_data, model=model)
 
     # Adversarial perturbation should not be updated by a regular training optimizer.
     params = [p for p in adversary.parameters()]
@@ -121,10 +113,9 @@ def test_adversary_perturbation(input_data, target_data):
     def initializer(x):
         torch.nn.init.constant_(x, 0)
 
-    perturber = Perturber(initializer)
+    perturber = Perturber(initializer=initializer, composer=composer)
 
     adversary = Adversary(
-        composer=composer,
         enforcer=enforcer,
         perturber=perturber,
         optimizer=optimizer,
@@ -165,15 +156,15 @@ def test_adversary_gradient(input_data, target_data):
     def initializer(x):
         torch.nn.init.constant_(x, 0)
 
-    perturber = Perturber(initializer, Sign())
+    perturber = Perturber(initializer=initializer, composer=composer)
 
     adversary = Adversary(
-        composer=composer,
         enforcer=enforcer,
         perturber=perturber,
         optimizer=optimizer,
         max_iters=1,
         gain=gain,
+        gradient_modifier=Sign(),
     )
 
     def model(input, target, model=None, **kwargs):

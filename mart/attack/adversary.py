@@ -12,11 +12,11 @@ from typing import Any
 import torch
 
 from .callbacks import Callback
-from .composer import Composer
 from .enforcer import Enforcer
 from .gain import Gain
 from .objective import Objective
 from .perturber import Perturber
+from .gradient_modifier import GradientModifier
 
 __all__ = ["Adversary", "Attacker"]
 
@@ -82,18 +82,17 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         self,
         *,
         perturber: Perturber,
-        composer: Composer,
         optimizer: torch.optim.Optimizer,
         max_iters: int,
         gain: Gain,
         objective: Objective | None = None,
         callbacks: dict[str, Callback] | None = None,
+        gradient_modifier: GradientModifier | None = None,
     ):
         """_summary_
 
         Args:
             perturber (Perturber): A module that stores perturbations.
-            composer (Composer): A module which composes adversarial examples from input and perturbation.
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
@@ -103,7 +102,6 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         super().__init__()
 
         self.perturber = perturber
-        self.composer = composer
         self.optimizer_fn = optimizer
 
         self.max_iters = max_iters
@@ -120,6 +118,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         self.objective_fn = objective
         # self.gain is a tensor.
         self.gain_fn = gain
+        self.gradient_modifier = gradient_modifier
 
     @property
     def done(self) -> bool:
@@ -157,7 +156,8 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         self.cur_iter = 0
 
         # param_groups with learning rate and other optim params.
-        param_groups = self.perturber.parameter_groups()
+        self.perturber.configure_perturbation(input)
+        param_groups = self.perturber.parameters()
 
         self.opt = self.optimizer_fn(param_groups)
 
@@ -290,6 +290,11 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         # Do not flip the gain value, because we set maximize=True in optimizer.
         self.total_gain.backward()
 
+        if self.gradient_modifier is not None:
+            for param_group in self.opt.param_groups:
+                for param in param_group["params"]:
+                    self.gradient_modifier(param)
+
         self.opt.step()
 
     def forward(
@@ -299,16 +304,19 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        perturbation = self.perturber(input, target)
-        output = self.composer(perturbation, input=input, target=target)
-
-        return output
+        return self.perturber(input=input, target=target)
 
 
 class Adversary(torch.nn.Module):
     """An adversary module which generates and applies perturbation to input."""
 
-    def __init__(self, *, enforcer: Enforcer, attacker: Attacker | None = None, **kwargs):
+    def __init__(
+        self,
+        *,
+        enforcer: Enforcer,
+        attacker: Attacker | None = None,
+        **kwargs
+    ):
         """_summary_
 
         Args:
