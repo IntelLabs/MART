@@ -17,6 +17,7 @@ from .gain import Gain
 from .objective import Objective
 from .perturber import Perturber
 from .gradient_modifier import GradientModifier
+from ..optim import OptimizerFactory
 
 __all__ = ["Adversary", "Attacker"]
 
@@ -82,7 +83,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         self,
         *,
         perturber: Perturber,
-        optimizer: torch.optim.Optimizer,
+        optimizer: OptimizerFactory,
         max_iters: int,
         gain: Gain,
         objective: Objective | None = None,
@@ -93,7 +94,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
 
         Args:
             perturber (Perturber): A module that stores perturbations.
-            optimizer (torch.optim.Optimizer): A PyTorch optimizer.
+            optimizer (OptimizerFactory): A MART OptimizerFactory.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             objective (Objective | None): A function for computing adversarial objective, which returns True or False. Optional.
@@ -102,7 +103,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         super().__init__()
 
         self.perturber = perturber
-        self.optimizer_fn = optimizer
+        self.optimizer = optimizer
 
         self.max_iters = max_iters
         self.callbacks = OrderedDict()
@@ -157,9 +158,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
 
         # param_groups with learning rate and other optim params.
         self.perturber.configure_perturbation(input)
-        param_groups = self.perturber.parameters()
-
-        self.opt = self.optimizer_fn(param_groups)
+        self.opt = self.optimizer(self.perturber)
 
     def on_run_end(
         self,
