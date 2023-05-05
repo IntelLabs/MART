@@ -63,14 +63,14 @@ class UniformLp(Initializer):
 
 
 class Image(Initializer):
-    def __init__(self, path: str):
-        self.image = torchvision.io.read_image(path, torchvision.io.ImageReadMode.RGB) / 255
+    def __init__(self, path: str, scale: int = 1):
+        self.image = torchvision.io.read_image(path, torchvision.io.ImageReadMode.RGB) / scale
 
     @torch.no_grad()
     def initialize_(self, parameter: torch.Tensor) -> None:
         image = self.image
 
-        if self.image.shape != parameter.shape:
+        if image.shape != parameter.shape:
             print(f"Resizing image from {image.shape} to {parameter.shape}...")
             image = F.resize(image, parameter.shape[1:])
 
