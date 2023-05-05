@@ -16,7 +16,7 @@ from .composer import Composer
 from .enforcer import Enforcer
 from .gain import Gain
 from .objective import Objective
-from .perturber import BatchPerturber, Perturber
+from .perturber import Perturber
 
 __all__ = ["Adversary", "Attacker"]
 
@@ -81,7 +81,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
     def __init__(
         self,
         *,
-        perturber: BatchPerturber | Perturber,
+        perturber: Perturber,
         composer: Composer,
         optimizer: torch.optim.Optimizer,
         max_iters: int,
@@ -92,7 +92,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         """_summary_
 
         Args:
-            perturber (BatchPerturber | Perturber): A module that stores perturbations.
+            perturber (Perturber): A module that stores perturbations.
             composer (Composer): A module which composes adversarial examples from input and perturbation.
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             max_iters (int): The max number of attack iterations.
