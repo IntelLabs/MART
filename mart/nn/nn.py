@@ -12,7 +12,7 @@ from typing import OrderedDict  # noqa: E402
 
 import torch  # noqa: E402
 
-__all__ = ["GroupNorm32", "SequentialDict", "ReturnKwargs", "CallWith", "Sum", "load_state_dict"]
+__all__ = ["GroupNorm32", "SequentialDict", "ReturnKwargs", "CallWith", "Sum"]
 
 
 class SequentialDict(torch.nn.ModuleDict):
@@ -250,10 +250,3 @@ class Sum(torch.nn.Module):
 
         assert len(weights) == len(values)
         return sum(value * weight for value, weight in zip(values, weights))
-
-
-def load_state_dict(model, weights_fpath):
-    """Load a state dict for any model."""
-    if weights_fpath is not None:
-        model.load_state_dict(torch.load(weights_fpath, map_location="cpu"))
-    return model

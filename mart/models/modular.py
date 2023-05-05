@@ -31,9 +31,8 @@ class LitModular(LightningModule):
         test_sequence=None,
         test_step_log=None,
         test_metrics=None,
-        weights_fpath=None,
-        strict=True,
         gradient_modifier=None,
+        load_state_dict=None,
     ):
         super().__init__()
 
@@ -61,9 +60,6 @@ class LitModular(LightningModule):
         }
         self.model = SequentialDict(modules, sequences)
 
-        if weights_fpath is not None:
-            self.model.load_state_dict(torch.load(weights_fpath), strict=strict)
-
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
 
@@ -77,6 +73,14 @@ class LitModular(LightningModule):
         self.test_metrics = test_metrics
 
         self.gradient_modifier = gradient_modifier
+
+        # Load state dict for specified modules
+        load_state_dict = load_state_dict or {}
+        for name, path in load_state_dict.items():
+            # FIXME: Use DotDict?
+            module = getattr(self.model, name)
+            logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
+            module.load_state_dict(torch.load(path))
 
     def configure_optimizers(self):
         config = {}
