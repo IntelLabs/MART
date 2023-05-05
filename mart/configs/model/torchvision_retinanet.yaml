@@ -50,5 +50,7 @@ modules:
   losses_and_detections:
     # _target_: mart.models.DualMode
     model:
+      weights_fpath: ???
       model:
         _target_: torchvision.models.detection.retinanet_resnet50_fpn
+        num_classes: ???

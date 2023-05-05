@@ -252,7 +252,7 @@ class Sum(torch.nn.Module):
         return sum(value * weight for value, weight in zip(values, weights))
 
 
-def load_state_dict(model, weights_fpath=None):
+def load_state_dict(model, weights_fpath):
     """Load a state dict for any model."""
     if weights_fpath is not None:
         model.load_state_dict(torch.load(weights_fpath, map_location="cpu"))
