@@ -1,6 +1,7 @@
 _target_: mart.attack.Adversary
 perturber: ???
-optimizer: ???
+optimizer:
+  maximize: True
 gain: ???
 gradient_modifier: null
 objective: null
