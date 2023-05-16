@@ -136,19 +136,20 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
 
 
 def test_perturbation(input_data, target_data, perturbation):
-    perturber = Mock(return_value=perturbation + input_data)
+    perturber = Mock(spec=Perturber, return_value=perturbation + input_data)
     gain = Mock()
     enforcer = Mock()
-    attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
-    model = Mock()
+    model = Mock(return_value={"loss": 0})
     sequence = Mock()
+    optimizer = Mock()
+    optimizer_fn = Mock(return_value=optimizer)
 
     adversary = Adversary(
         perturber=perturber,
-        optimizer=None,
+        optimizer=optimizer_fn,
         gain=gain,
         enforcer=enforcer,
-        attacker=attacker,
+        max_iters=1,
     )
 
     _ = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
@@ -156,9 +157,9 @@ def test_perturbation(input_data, target_data, perturbation):
 
     # The enforcer is only called when model is not None.
     enforcer.assert_called_once()
-    attacker.fit.assert_called_once()
 
     # Once with model and sequence and once without
+    perturber.configure_perturbation.assert_called_once()
     assert perturber.call_count == 2
 
     torch.testing.assert_close(output_data, input_data + perturbation)
