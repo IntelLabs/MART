@@ -41,31 +41,31 @@ def test_adversary(input_data, target_data, perturbation):
 
 
 def test_with_model(input_data, target_data, perturbation):
-    perturber = Mock(return_value=perturbation + input_data)
+    perturber = Mock(spec=Perturber, return_value=input_data + perturbation)
     gain = Mock()
     enforcer = Mock()
-    attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
-    model = Mock()
+    model = Mock(return_value={"loss": 0})
     sequence = Mock()
+    optimizer = Mock()
+    optimizer_fn = Mock(return_value=optimizer)
 
     adversary = Adversary(
         perturber=perturber,
-        optimizer=None,
+        optimizer=optimizer_fn,
         gain=gain,
         enforcer=enforcer,
-        attacker=attacker,
+        max_iters=1,
     )
 
     output_data = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
 
     # The enforcer is only called when model is not None.
     enforcer.assert_called_once()
-    attacker.fit.assert_called_once()
 
     # Once with model=None to get perturbation.
     # When model=model, configure_perturbation() should be called.
     perturber.assert_called_once()
-    gain.assert_not_called()  # we mock attacker so this shouldn't be called
+    assert gain.call_count == 2  # examine is called before done
 
     torch.testing.assert_close(output_data, input_data + perturbation)
 
