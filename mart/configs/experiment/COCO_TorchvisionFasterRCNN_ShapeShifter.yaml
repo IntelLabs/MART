@@ -11,7 +11,7 @@ defaults:
   - override /metric: average_precision
   - override /optimization: super_convergence
   - override /callbacks:
-      [model_checkpoint, lr_monitor, perturbation_visualizer, gradient_monitor]
+      [model_checkpoint, lr_monitor, perturbation_visualizer, gradient_monitor, freeze]
 
 task_name: "COCO_TorchvisionFasterRCNN_ShapeShifter"
 tags: ["adv"]
@@ -22,6 +22,9 @@ callbacks:
   model_checkpoint:
     monitor: "validation_metrics/map"
     mode: "min"
+
+  freeze:
+    module: "losses_and_detections"
 
 trainer:
   # 117,266 training images, 6 epochs, batch_size=2, 351798
@@ -66,9 +69,6 @@ model:
       model:
         num_classes: null # inferred by torchvision
         weights: COCO_V1
-
-  # FIXME: Would be much nicer if we could specify _freeze_: True for each module
-  freeze: "losses_and_detections"
 
   optimizer:
     lr: 25.5
