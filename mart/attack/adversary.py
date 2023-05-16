@@ -83,7 +83,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         self,
         *,
         perturber: Perturber,
-        optimizer: OptimizerFactory,
+        optimizer: Callable[[Any], torch.optim.Optimizer],
         max_iters: int,
         gain: Gain,
         objective: Objective | None = None,
@@ -94,7 +94,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
 
         Args:
             perturber (Perturber): A module that stores perturbations.
-            optimizer (OptimizerFactory): A MART OptimizerFactory.
+            optimizer (Callable[[Any], torch.optim.Optimizer]): A partial that returns an Optimizer when given params.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             objective (Objective | None): A function for computing adversarial objective, which returns True or False. Optional.
@@ -103,7 +103,9 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         super().__init__()
 
         self.perturber = perturber
-        self.optimizer = optimizer
+        self.optimizer_fn = optimizer
+        if not isinstance(self.optimizer_fn, OptimizerFactory):
+            self.optimizer_fn = OptimizerFactory(self.optimizer_fn)
 
         self.max_iters = max_iters
         self.callbacks = OrderedDict()
@@ -153,7 +155,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
 
         # param_groups with learning rate and other optim params.
         self.perturber.configure_perturbation(input)
-        self.opt = self.optimizer(self.perturber)
+        self.opt = self.optimizer_fn(self.perturber)
 
     def on_run_end(
         self,

@@ -47,7 +47,7 @@ def test_with_model(input_data, target_data, perturbation):
     model = Mock(return_value={"loss": 0})
     sequence = Mock()
     optimizer = Mock()
-    optimizer_fn = Mock(return_value=optimizer)
+    optimizer_fn = Mock(spec=mart.optim.OptimizerFactory, return_value=optimizer)
 
     adversary = Adversary(
         perturber=perturber,
@@ -142,7 +142,7 @@ def test_perturbation(input_data, target_data, perturbation):
     model = Mock(return_value={"loss": 0})
     sequence = Mock()
     optimizer = Mock()
-    optimizer_fn = Mock(return_value=optimizer)
+    optimizer_fn = Mock(spec=mart.optim.OptimizerFactory, return_value=optimizer)
 
     adversary = Adversary(
         perturber=perturber,
