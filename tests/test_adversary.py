@@ -21,13 +21,14 @@ def test_adversary(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=input_data + perturbation)
     gain = Mock()
     enforcer = Mock()
+    attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
 
     adversary = Adversary(
         perturber=perturber,
         optimizer=None,
         gain=gain,
         enforcer=enforcer,
-        max_iters=1,
+        attacker=attacker,
     )
 
     output_data = adversary(input=input_data, target=target_data)
@@ -48,13 +49,14 @@ def test_with_model(input_data, target_data, perturbation):
     sequence = Mock()
     optimizer = Mock()
     optimizer_fn = Mock(spec=mart.optim.OptimizerFactory, return_value=optimizer)
+    attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
 
     adversary = Adversary(
         perturber=perturber,
         optimizer=optimizer_fn,
         gain=gain,
         enforcer=enforcer,
-        max_iters=1,
+        attacker=attacker,
     )
 
     output_data = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
@@ -65,7 +67,7 @@ def test_with_model(input_data, target_data, perturbation):
     # Once with model=None to get perturbation.
     # When model=model, configure_perturbation() should be called.
     perturber.assert_called_once()
-    assert gain.call_count == 2  # examine is called before done
+    gain.assert_not_called()
 
     torch.testing.assert_close(output_data, input_data + perturbation)
 
@@ -115,13 +117,14 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
     sequence = Mock()
     optimizer = Mock()
     optimizer_fn = Mock(return_value=optimizer)
+    attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
 
     adversary = Adversary(
         perturber=perturber,
         optimizer=optimizer_fn,
         gain=gain,
         enforcer=enforcer,
-        max_iters=1,
+        attacker=attacker,
     )
 
     output_data = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
@@ -143,13 +146,14 @@ def test_perturbation(input_data, target_data, perturbation):
     sequence = Mock()
     optimizer = Mock()
     optimizer_fn = Mock(spec=mart.optim.OptimizerFactory, return_value=optimizer)
+    attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
 
     adversary = Adversary(
         perturber=perturber,
         optimizer=optimizer_fn,
         gain=gain,
         enforcer=enforcer,
-        max_iters=1,
+        attacker=attacker,
     )
 
     _ = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
