@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Any
+from typing import Any, Callable
 
 import torch
 
@@ -83,7 +83,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         self,
         *,
         perturber: Perturber,
-        optimizer: Callable[[Any], torch.optim.Optimizer],
+        optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
         max_iters: int,
         gain: Gain,
         objective: Objective | None = None,
@@ -94,7 +94,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
 
         Args:
             perturber (Perturber): A module that stores perturbations.
-            optimizer (Callable[[Any], torch.optim.Optimizer]): A partial that returns an Optimizer when given params.
+            optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A partial that returns an Optimizer when given params.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             objective (Objective | None): A function for computing adversarial objective, which returns True or False. Optional.
