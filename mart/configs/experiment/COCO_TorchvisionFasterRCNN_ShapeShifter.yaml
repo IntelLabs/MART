@@ -64,7 +64,7 @@ model:
 
     losses_and_detections:
       model:
-        num_classes: null  # inferred by torchvision
+        num_classes: null # inferred by torchvision
         weights: COCO_V1
 
   # FIXME: Would be much nicer if we could specify _freeze_: True for each module
