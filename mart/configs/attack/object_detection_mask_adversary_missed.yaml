@@ -7,7 +7,6 @@ max_iters: 100
 
 optimizer:
   lr: 3
-  maximize: True
 
 perturber:
   initializer:
