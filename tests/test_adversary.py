@@ -294,7 +294,9 @@ def test_training_step_with_objective(input_data, target_data):
 
 def test_configure_gradient_clipping():
     perturber = Mock()
-    optimizer = Mock(spec=mart.optim.OptimizerFactory, param_groups=[{"params": Mock()}, {"params": Mock()}])
+    optimizer = Mock(
+        spec=mart.optim.OptimizerFactory, param_groups=[{"params": Mock()}, {"params": Mock()}]
+    )
     gradient_modifier = Mock()
     gain = Mock()
 
