@@ -142,6 +142,8 @@ class WarpComposite(Composite):
                     perturbation = F.crop(perturbation, 0, 0, image_h, image_w)
                 return perturbation
 
+        # FIXME: Detect situation when there are no gs_coords so use _warp
+
         # Use gs_coords to do fixed perspective warp
         if len(input.shape) == 4 and len(perturbation.shape) == 3:
             return torch.stack(
