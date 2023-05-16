@@ -14,9 +14,9 @@ import torch
 from .callbacks import Callback
 from .enforcer import Enforcer
 from .gain import Gain
+from .gradient_modifier import GradientModifier
 from .objective import Objective
 from .perturber import Perturber
-from .gradient_modifier import GradientModifier
 
 __all__ = ["Adversary", "Attacker"]
 
@@ -310,13 +310,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
 class Adversary(torch.nn.Module):
     """An adversary module which generates and applies perturbation to input."""
 
-    def __init__(
-        self,
-        *,
-        enforcer: Enforcer,
-        attacker: Attacker | None = None,
-        **kwargs
-    ):
+    def __init__(self, *, enforcer: Enforcer, attacker: Attacker | None = None, **kwargs):
         """_summary_
 
         Args:
