@@ -18,7 +18,7 @@ from mart.attack.gradient_modifier import Sign
 
 
 def test_adversary(input_data, target_data, perturbation):
-    perturber = Mock(return_value=perturbation + input_data)
+    perturber = Mock(spec=Perturber, return_value=input_data + perturbation)
     gain = Mock()
     enforcer = Mock()
 
@@ -33,9 +33,9 @@ def test_adversary(input_data, target_data, perturbation):
     output_data = adversary(input=input_data, target=target_data)
 
     # The enforcer and attacker should only be called when model is not None.
-    enforcer.assert_not_called()
     perturber.assert_called_once()
     gain.assert_not_called()
+    enforcer.assert_not_called()
 
     torch.testing.assert_close(output_data, input_data + perturbation)
 
