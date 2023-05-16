@@ -31,6 +31,7 @@ class LitModular(LightningModule):
         test_sequence=None,
         test_step_log=None,
         test_metrics=None,
+        gradient_modifier=None,
         load_state_dict=None,
     ):
         super().__init__()
