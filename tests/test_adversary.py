@@ -111,27 +111,28 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
 
     gain = Mock()
     enforcer = Mock()
-    attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
-    model = Mock()
+    model = Mock(return_value={"loss": 0})
     sequence = Mock()
+    optimizer = Mock()
+    optimizer_fn = Mock(return_value=optimizer)
 
     adversary = Adversary(
         perturber=perturber,
-        optimizer=None,
+        optimizer=optimizer_fn,
         gain=gain,
         enforcer=enforcer,
-        attacker=attacker,
+        max_iters=1,
     )
 
     output_data = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
 
-    # Adversarial perturbation should not have a perturbation after forward is called
+    # Adversarial perturbation will have a perturbation after forward is called
     params = [p for p in adversary.parameters()]
-    assert len(params) == 0
+    assert len(params) == 1
 
-    # Adversarial perturbation should not have any state dict items
+    # Adversarial perturbation should have a single state dict item
     state_dict = adversary.state_dict()
-    assert len(state_dict) == 0
+    assert len(state_dict) == 1
 
 
 def test_perturbation(input_data, target_data, perturbation):
