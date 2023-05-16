@@ -108,11 +108,6 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         self.max_iters = max_iters
         self.callbacks = OrderedDict()
 
-        # Register perturber as callback if it implements Callback interface
-        if isinstance(self.perturber, Callback):
-            # FIXME: Use self.perturber.__class__.__name__ as key?
-            self.callbacks["_perturber"] = self.perturber
-
         if callbacks is not None:
             self.callbacks.update(callbacks)
 
