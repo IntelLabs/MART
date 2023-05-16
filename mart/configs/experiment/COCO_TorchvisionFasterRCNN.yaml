@@ -31,12 +31,9 @@ model:
   modules:
     losses_and_detections:
       model:
-        # A generic pytorch weight loading mechanism.
-        weights_fpath: null
-        model:
-          # Inferred by torchvision.
-          num_classes: null
-          weights: COCO_V1
+        # Inferred by torchvision.
+        num_classes: null
+        weights: COCO_V1
 
   optimizer:
     lr: 0.0125
