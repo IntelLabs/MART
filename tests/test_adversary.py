@@ -21,23 +21,19 @@ def test_adversary(input_data, target_data, perturbation):
     perturber = Mock(return_value=perturbation + input_data)
     gain = Mock()
     enforcer = Mock()
-    attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
 
     adversary = Adversary(
         perturber=perturber,
         optimizer=None,
         gain=gain,
         enforcer=enforcer,
-        attacker=attacker,
+        max_iters=1,
     )
 
     output_data = adversary(input=input_data, target=target_data)
 
     # The enforcer and attacker should only be called when model is not None.
     enforcer.assert_not_called()
-    attacker.fit.assert_not_called()
-    assert attacker.fit_loop.max_epochs == 0
-
     perturber.assert_called_once()
     gain.assert_not_called()
 
