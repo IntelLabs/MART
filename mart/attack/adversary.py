@@ -8,20 +8,20 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import cycle
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import pytorch_lightning as pl
 import torch
 
 from mart.utils import silent
 
+from ..optim import OptimizerFactory
 from .gradient_modifier import GradientModifier
 
 if TYPE_CHECKING:
     from .enforcer import Enforcer
     from .gain import Gain
     from .objective import Objective
-    from .optim import OptimizerFactory
     from .perturber import Perturber
 
 __all__ = ["Adversary"]
@@ -34,7 +34,7 @@ class Adversary(pl.LightningModule):
         self,
         *,
         perturber: Perturber,
-        optimizer: OptimizerFactory,
+        optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
         gain: Gain,
         gradient_modifier: GradientModifier | None = None,
         objective: Objective | None = None,
@@ -46,7 +46,7 @@ class Adversary(pl.LightningModule):
 
         Args:
             perturber (Perturber): A MART Perturber.
-            optimizer (OptimizerFactory): A MART OptimizerFactory.
+            optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A MART OptimizerFactory or partial that returns an Optimizer when given params.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
@@ -57,6 +57,8 @@ class Adversary(pl.LightningModule):
 
         self.perturber = perturber
         self.optimizer = optimizer
+        if not isinstance(self.optimizer, OptimizerFactory):
+            self.optimizer = OptimizerFactory(self.optimizer)
         self.gain_fn = gain
         self.gradient_modifier = gradient_modifier or GradientModifier()
         self.objective_fn = objective
@@ -139,10 +141,6 @@ class Adversary(pl.LightningModule):
             self._attack(**batch)
 
         input_adv = self.perturber(**batch)
-
-        # FIXME: What happens if we want to pass total_variation?!
-        if isinstance(input_adv, dict):
-            input_adv = input_adv["input_adv"]
 
         # Enforce constraints after the attack optimization ends.
         if model and sequence:
