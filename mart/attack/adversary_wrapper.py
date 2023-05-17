@@ -41,7 +41,7 @@ class NormalizedAdversaryAdapter(torch.nn.Module):
     def forward(
         self,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module | None = None,
         **kwargs,
     ):
