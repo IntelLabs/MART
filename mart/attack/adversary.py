@@ -8,13 +8,14 @@ from __future__ import annotations
 
 from functools import partial
 from itertools import cycle
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import pytorch_lightning as pl
 import torch
 
 from mart.utils import silent
 
+from ..optim import OptimizerFactory
 from .gradient_modifier import GradientModifier
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ class Adversary(pl.LightningModule):
         self,
         *,
         perturber: Perturber,
-        optimizer: Callable,
+        optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
         gain: Gain,
         gradient_modifier: GradientModifier | None = None,
         objective: Objective | None = None,
@@ -44,8 +45,8 @@ class Adversary(pl.LightningModule):
         """_summary_
 
         Args:
-            perturber (Perturber): A perturbation
-            optimizer (Callable): A PyTorch optimizer.
+            perturber (Perturber): A MART Perturber.
+            optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A MART OptimizerFactory or partial that returns an Optimizer when given params.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
@@ -55,7 +56,9 @@ class Adversary(pl.LightningModule):
         super().__init__()
 
         self.perturber = perturber
-        self.optimizer_fn = optimizer
+        self.optimizer = optimizer
+        if not isinstance(self.optimizer, OptimizerFactory):
+            self.optimizer = OptimizerFactory(self.optimizer)
         self.gain_fn = gain
         self.gradient_modifier = gradient_modifier or GradientModifier()
         self.objective_fn = objective
@@ -86,7 +89,7 @@ class Adversary(pl.LightningModule):
             assert self._attacker.limit_train_batches > 0
 
     def configure_optimizers(self):
-        return self.optimizer_fn(self.perturber.parameters())
+        return self.optimizer(self.perturber)
 
     def training_step(self, batch, batch_idx):
         # copy batch since we modify it and it is used internally

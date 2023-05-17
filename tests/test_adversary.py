@@ -214,7 +214,7 @@ def test_forward_with_model(input_data, target_data):
 
 def test_configure_optimizers(input_data, target_data):
     perturber = Mock()
-    optimizer = Mock()
+    optimizer = Mock(spec=mart.optim.OptimizerFactory)
     composer = mart.attack.composer.Additive()
     gain = Mock()
 
@@ -232,7 +232,7 @@ def test_configure_optimizers(input_data, target_data):
 
 def test_training_step(input_data, target_data):
     perturber = Mock()
-    optimizer = Mock()
+    optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor(1337))
     model = Mock(return_value={})
 
@@ -252,7 +252,7 @@ def test_training_step(input_data, target_data):
 
 def test_training_step_with_many_gain(input_data, target_data):
     perturber = Mock()
-    optimizer = Mock()
+    optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
     model = Mock(return_value={})
 
@@ -271,7 +271,7 @@ def test_training_step_with_many_gain(input_data, target_data):
 
 def test_training_step_with_objective(input_data, target_data):
     perturber = Mock()
-    optimizer = Mock()
+    optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
     model = Mock(return_value={})
     objective = Mock(return_value=torch.tensor([True, False], dtype=torch.bool))
@@ -294,7 +294,9 @@ def test_training_step_with_objective(input_data, target_data):
 
 def test_configure_gradient_clipping():
     perturber = Mock()
-    optimizer = Mock(param_groups=[{"params": Mock()}, {"params": Mock()}])
+    optimizer = Mock(
+        spec=mart.optim.OptimizerFactory, param_groups=[{"params": Mock()}, {"params": Mock()}]
+    )
     gradient_modifier = Mock()
     gain = Mock()
 

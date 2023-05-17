@@ -18,7 +18,7 @@ class Composer(abc.ABC):
         perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         **kwargs,
     ) -> torch.Tensor | Iterable[torch.Tensor]:
         if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
