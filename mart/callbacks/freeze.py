@@ -10,6 +10,10 @@ import torch
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
+from mart import utils
+
+logger = utils.get_pylogger(__name__)
+
 __all__ = ["FreezeModule"]
 
 
@@ -29,8 +33,14 @@ class FreezeModule(Callback):
                 f"The LightningModule should have a nn.Module `{self.name}` attribute"
             )
 
-        for param in module.parameters():
+        for name, param in module.named_parameters():
+            logger.debug(f"Disabling gradient for {name}")
             param.requires_grad_(False)
+
+        for name, module in module.named_modules():
+            module_kind = module.__class__.__name__
+            if "BatchNorm" in module_kind:
+                logger.info(f"Setting eval mode for {name} ({module_kind})")
 
     def on_train_epoch_start(self, trainer, pl_module):
         # FIXME: Use DotDict?
@@ -41,4 +51,7 @@ class FreezeModule(Callback):
                 f"The LightningModule should have a nn.Module `{self.name}` attribute"
             )
 
-        module.eval()
+        for name, module in module.named_modules():
+            module_kind = module.__class__.__name__
+            if "BatchNorm" in module_kind or "Dropout" in module_kind:
+                module.eval()
