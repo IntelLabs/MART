@@ -21,6 +21,7 @@ class FreezeModule(Callback):
         self.name = module
 
     def setup(self, trainer, pl_module, stage):
+        # FIXME: Use DotDict?
         module = getattr(pl_module.model, self.name, None)
 
         if module is None or not isinstance(module, torch.nn.Module):
@@ -32,6 +33,7 @@ class FreezeModule(Callback):
             param.requires_grad_(False)
 
     def on_train_epoch_start(self, trainer, pl_module):
+        # FIXME: Use DotDict?
         module = getattr(pl_module.model, self.name, None)
 
         if module is None or not isinstance(module, torch.nn.Module):
