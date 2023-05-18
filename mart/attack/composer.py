@@ -81,16 +81,16 @@ class Composite(Composer):
 
     def compose(self, perturbation, *, input, target):
         # True is mutable, False is immutable.
-        perturbable_mask = target["perturbable_mask"]
+        mask = target["perturbable_mask"]
 
         # Convert mask to a Tensor with same torch.dtype and torch.device as input,
         #   because some data modules (e.g. Armory) gives binary mask.
-        perturbable_mask = perturbable_mask.to(input)
+        mask = mask.to(input)
 
         if not self.premultiplied_alpha:
-            perturbation = perturbation * perturbable_mask
+            perturbation = perturbation * mask
 
-        return input * (1 - perturbable_mask) + perturbation
+        return input * (1 - mask) + perturbation
 
 
 class MaskAdditive(Composer):
