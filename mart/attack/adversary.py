@@ -7,17 +7,20 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import torch
 
 from ..optim import OptimizerFactory
 from .callbacks import Callback
-from .enforcer import Enforcer
-from .gain import Gain
-from .gradient_modifier import GradientModifier
-from .objective import Objective
-from .perturber import Perturber
+
+if TYPE_CHECKING:
+    from .composer import Composer
+    from .enforcer import Enforcer
+    from .gain import Gain
+    from .gradient_modifier import GradientModifier
+    from .objective import Objective
+    from .perturber import Perturber
 
 __all__ = ["Adversary", "Attacker"]
 
@@ -83,6 +86,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         self,
         *,
         perturber: Perturber,
+        composer: Composer,
         optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
         max_iters: int,
         gain: Gain,
@@ -94,6 +98,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
 
         Args:
             perturber (Perturber): A module that stores perturbations.
+            composer (Composer): A module which composes adversarial examples from input and perturbation.
             optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A partial that returns an Optimizer when given params.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
@@ -103,6 +108,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         super().__init__()
 
         self.perturber = perturber
+        self.composer = composer
         self.optimizer_fn = optimizer
         if not isinstance(self.optimizer_fn, OptimizerFactory):
             self.optimizer_fn = OptimizerFactory(self.optimizer_fn)
@@ -300,7 +306,10 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        return self.perturber(input=input, target=target)
+        perturbation = self.perturber(input=input, target=target)
+        output = self.composer(perturbation, input=input, target=target)
+
+        return output
 
 
 class Adversary(torch.nn.Module):

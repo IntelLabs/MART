@@ -13,17 +13,19 @@ from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from torch.optim import SGD
 
 import mart
-from mart.attack import Adversary, Perturber
+from mart.attack import Adversary, Composer, Perturber
 from mart.attack.gradient_modifier import Sign
 
 
 def test_adversary(input_data, target_data, perturbation):
-    perturber = Mock(spec=Perturber, return_value=input_data + perturbation)
+    perturber = Mock(spec=Perturber, return_value=perturbation)
+    composer = Mock(sepc=Composer, return_value=input_data + perturbation)
     gain = Mock()
     enforcer = Mock()
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=None,
         gain=gain,
         enforcer=enforcer,
@@ -41,7 +43,8 @@ def test_adversary(input_data, target_data, perturbation):
 
 
 def test_with_model(input_data, target_data, perturbation):
-    perturber = Mock(spec=Perturber, return_value=input_data + perturbation)
+    perturber = Mock(spec=Perturber, return_value=perturbation)
+    composer = Mock(sepc=Composer, return_value=input_data + perturbation)
     gain = Mock()
     enforcer = Mock()
     model = Mock(return_value={"loss": 0})
@@ -51,6 +54,7 @@ def test_with_model(input_data, target_data, perturbation):
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=optimizer_fn,
         gain=gain,
         enforcer=enforcer,
@@ -75,7 +79,7 @@ def test_hidden_params(input_data, target_data, perturbation):
     composer = Mock()
     projector = Mock()
 
-    perturber = Perturber(initializer=initializer, composer=composer, projector=projector)
+    perturber = Perturber(initializer=initializer, projector=projector)
 
     gain = Mock()
     enforcer = Mock()
@@ -85,6 +89,7 @@ def test_hidden_params(input_data, target_data, perturbation):
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=None,
         gain=gain,
         enforcer=enforcer,
@@ -107,7 +112,7 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
     composer = Mock()
     projector = Mock()
 
-    perturber = Perturber(initializer=initializer, composer=composer, projector=projector)
+    perturber = Perturber(initializer=initializer, projector=projector)
 
     gain = Mock()
     enforcer = Mock()
@@ -118,6 +123,7 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=optimizer_fn,
         gain=gain,
         enforcer=enforcer,
@@ -136,7 +142,8 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
 
 
 def test_perturbation(input_data, target_data, perturbation):
-    perturber = Mock(spec=Perturber, return_value=perturbation + input_data)
+    perturber = Mock(spec=Perturber, return_value=perturbation)
+    composer = Mock(spec=Composer, return_value=perturbation + input_data)
     gain = Mock()
     enforcer = Mock()
     model = Mock(return_value={"loss": 0})
@@ -146,6 +153,7 @@ def test_perturbation(input_data, target_data, perturbation):
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=optimizer_fn,
         gain=gain,
         enforcer=enforcer,
@@ -184,12 +192,12 @@ def test_forward_with_model(input_data, target_data):
 
     perturber = Perturber(
         initializer=initializer,
-        composer=composer,
         projector=None,
     )
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=optimizer,
         gain=gain,
         gradient_modifier=Sign(),
