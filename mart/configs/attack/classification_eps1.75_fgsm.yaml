@@ -2,8 +2,8 @@ defaults:
   - adversary
   - perturber: default
   - perturber/initializer: constant
-  - perturber/composer: additive
   - perturber/projector: linf_additive_range
+  - composer: additive
   - /optimizer@optimizer: sgd
   - gain: cross_entropy
   - gradient_modifier: sign
