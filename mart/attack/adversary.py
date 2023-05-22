@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from .gain import Gain
     from .objective import Objective
     from .perturber import Perturber
+    from .composer import Composer
 
 __all__ = ["Adversary"]
 
@@ -34,6 +35,7 @@ class Adversary(pl.LightningModule):
         self,
         *,
         perturber: Perturber,
+        composer: Composer,
         optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
         gain: Gain,
         gradient_modifier: GradientModifier | None = None,
@@ -46,6 +48,7 @@ class Adversary(pl.LightningModule):
 
         Args:
             perturber (Perturber): A MART Perturber.
+            composer (Composer): A MART Composer.
             optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A MART OptimizerFactory or partial that returns an Optimizer when given params.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
@@ -56,6 +59,7 @@ class Adversary(pl.LightningModule):
         super().__init__()
 
         self.perturber = perturber
+        self.composer = composer
         self.optimizer = optimizer
         if not isinstance(self.optimizer, OptimizerFactory):
             self.optimizer = OptimizerFactory(self.optimizer)
@@ -140,7 +144,8 @@ class Adversary(pl.LightningModule):
         if model and sequence:
             self._attack(**batch)
 
-        input_adv = self.perturber(**batch)
+        perturbation = self.perturber(**batch)
+        input_adv = self.composer(perturbation, **batch)
 
         # Enforce constraints after the attack optimization ends.
         if model and sequence:
