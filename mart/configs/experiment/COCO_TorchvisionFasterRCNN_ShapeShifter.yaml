@@ -3,8 +3,8 @@
 defaults:
   - /attack/perturber@model.modules.perturber: default
   - /attack/perturber/initializer@model.modules.perturber.initializer: uniform
-  - /attack/perturber/composer@model.modules.perturber.composer: color_jitter_warp_composite
   - /attack/perturber/projector@model.modules.perturber.projector: range
+  - /attack/composer@model.modules.composer: warp_composite
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
   - override /datamodule: coco
   - override /model: torchvision_faster_rcnn
@@ -45,22 +45,22 @@ model:
         min: 127
         max: 129
 
-      composer:
-        warp:
-          _target_: torchvision.transforms.Compose
-          transforms:
-            - _target_: mart.transforms.ColorJitter
-              brightness: [0.5, 1.5]
-              contrast: [0.5, 1.5]
-              saturation: [0.5, 1.0]
-              hue: [-0.05, 0.05]
-            - _target_: torchvision.transforms.RandomAffine
-              degrees: [-5, 5]
-              translate: [0.1, 0.25]
-              scale: [0.4, 0.6]
-              shear: [-3, 3, -3, 3]
-              interpolation: 2 # BILINEAR
-        clamp: [0, 255]
+    composer:
+      warp:
+        _target_: torchvision.transforms.Compose
+        transforms:
+          - _target_: mart.transforms.ColorJitter
+            brightness: [0.5, 1.5]
+            contrast: [0.5, 1.5]
+            saturation: [0.5, 1.0]
+            hue: [-0.05, 0.05]
+          - _target_: torchvision.transforms.RandomAffine
+            degrees: [-5, 5]
+            translate: [0.1, 0.25]
+            scale: [0.4, 0.6]
+            shear: [-3, 3, -3, 3]
+            interpolation: 2 # BILINEAR
+      clamp: [0, 255]
 
     losses_and_detections:
       model:
@@ -77,9 +77,14 @@ model:
 
   training_sequence:
     seq005: perturber
+    seq006:
+      composer:
+        perturbation: "perturber"
+        input: "input"
+        target: "target"
 
     seq010:
-      preprocessor: ["perturber"]
+      preprocessor: composer
 
   validation_sequence: ${.training_sequence}
 
