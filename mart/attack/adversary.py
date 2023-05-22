@@ -97,7 +97,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
 
         Args:
             perturber (Perturber): A module that stores perturbations.
-            composer (Composer): A module which composes adversarial input from input and perturbation.
+            composer (Composer): A module which composes adversarial examples from input and perturbation.
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
@@ -305,10 +305,10 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        perturbation = self.perturber(input=input, target=target, **kwargs)
-        input_adv = self.composer(perturbation, input=input, target=target, **kwargs)
+        perturbation = self.perturber(input, target)
+        output = self.composer(perturbation, input=input, target=target)
 
-        return input_adv
+        return output
 
 
 class Adversary(torch.nn.Module):
