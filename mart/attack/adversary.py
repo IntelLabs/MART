@@ -305,7 +305,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        perturbation = self.perturber(input, target)
+        perturbation = self.perturber(input=input, target=target)
         output = self.composer(perturbation, input=input, target=target)
 
         return output
