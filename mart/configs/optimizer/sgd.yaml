@@ -7,4 +7,3 @@ momentum: 0
 weight_decay: 0
 bias_decay: 0
 norm_decay: 0
-maximize: True

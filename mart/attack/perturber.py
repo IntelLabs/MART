@@ -14,7 +14,6 @@ from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from .projector import Projector
 
 if TYPE_CHECKING:
-    from .composer import Composer
     from .initializer import Initializer
 
 __all__ = ["Perturber"]
@@ -25,7 +24,6 @@ class Perturber(torch.nn.Module):
         self,
         *,
         initializer: Initializer,
-        composer: Composer,
         projector: Projector | None = None,
         size: Iterable[int] | None = None,
     ):
@@ -33,13 +31,11 @@ class Perturber(torch.nn.Module):
 
         Args:
             initializer (Initializer): To initialize the perturbation.
-            composer (Composer): A module which composes adversarial input from input and perturbation.
             projector (Projector): To project the perturbation into some space.
         """
         super().__init__()
 
         self.initializer_ = initializer
-        self.composer = composer
         self.projector = projector or Projector()
 
         self.perturbation = None
@@ -106,14 +102,6 @@ class Perturber(torch.nn.Module):
             )
 
         self.projector(self.perturbation, **batch)
-        input_adv = self.composer(self.perturbation, **batch)
 
-        # FIXME: This is a hack
-        total_variation = torch.mean(
-            torch.sum(torch.square(self.perturbation[:, 1:, :] - self.perturbation[:, :-1, :]))
-            + torch.sum(  # noqa: W503
-                torch.square(self.perturbation[:, :, 1:] - self.perturbation[:, :, :-1])
-            )
-        )
+        return self.perturbation
 
-        return {"input_adv": input_adv, "total_variation": total_variation}

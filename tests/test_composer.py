@@ -6,7 +6,7 @@
 
 import torch
 
-from mart.attack.composer import Additive, MaskAdditive, Overlay
+from mart.attack.composer import Additive, Composite, MaskAdditive
 
 
 def test_additive_composer_forward(input_data, target_data, perturbation):
@@ -18,7 +18,7 @@ def test_additive_composer_forward(input_data, target_data, perturbation):
 
 
 def test_overlay_composer_forward(input_data, target_data, perturbation):
-    composer = Overlay()
+    composer = Composite()
 
     output = composer(perturbation, input=input_data, target=target_data)
     mask = target_data["perturbable_mask"]

@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import abc
-import random
 from typing import Any, Iterable
 
 import torch
@@ -23,7 +22,7 @@ class Composer(torch.nn.Module):
         perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
         input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor | dict[str, Any]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         **kwargs,
     ) -> torch.Tensor | Iterable[torch.Tensor]:
         if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
@@ -82,16 +81,16 @@ class Composite(Composer):
 
     def compose(self, perturbation, *, input, target):
         # True is mutable, False is immutable.
-        perturbable_mask = target["perturbable_mask"]
+        mask = target["perturbable_mask"]
 
         # Convert mask to a Tensor with same torch.dtype and torch.device as input,
         #   because some data modules (e.g. Armory) gives binary mask.
-        perturbable_mask = perturbable_mask.to(input)
+        mask = mask.to(input)
 
         if not self.premultiplied_alpha:
-            perturbation = perturbation * perturbable_mask
+            perturbation = perturbation * mask
 
-        return input * (1 - perturbable_mask) + perturbation
+        return input * (1 - mask) + perturbation
 
 
 class MaskAdditive(Composer):
@@ -142,6 +141,8 @@ class WarpComposite(Composite):
                 if pert_w != image_w or pert_h != image_h:
                     perturbation = F.crop(perturbation, 0, 0, image_h, image_w)
                 return perturbation
+
+        # FIXME: Detect situation when there are no gs_coords so use _warp
 
         # Use gs_coords to do fixed perspective warp
         if len(input.shape) == 4 and len(perturbation.shape) == 3:

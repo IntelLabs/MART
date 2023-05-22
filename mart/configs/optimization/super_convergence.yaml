@@ -1,14 +1,8 @@
 # @package model
-optimizer:
-  _target_: mart.optim.OptimizerFactory
-  optimizer:
-    _target_: hydra.utils.get_method
-    path: torch.optim.SGD
-  lr: ???
-  momentum: 0
-  weight_decay: 0
-  bias_decay: 0
-  norm_decay: 0
+defaults:
+  - /optimizer@optimizer: sgd
+
+optimizer: ???
 
 lr_scheduler:
   scheduler:
