@@ -7,16 +7,19 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 
 from .callbacks import Callback
-from .enforcer import Enforcer
-from .gain import Gain
-from .gradient_modifier import GradientModifier
-from .objective import Objective
-from .perturber import Perturber
+
+if TYPE_CHECKING:
+    from .composer import Composer
+    from .enforcer import Enforcer
+    from .gain import Gain
+    from .gradient_modifier import GradientModifier
+    from .objective import Objective
+    from .perturber import Perturber
 
 __all__ = ["Adversary", "Attacker"]
 
@@ -82,6 +85,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         self,
         *,
         perturber: Perturber,
+        composer: Composer,
         optimizer: torch.optim.Optimizer,
         max_iters: int,
         gain: Gain,
@@ -93,6 +97,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
 
         Args:
             perturber (Perturber): A module that stores perturbations.
+            composer (Composer): A module which composes adversarial input from input and perturbation.
             optimizer (torch.optim.Optimizer): A PyTorch optimizer.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
@@ -102,6 +107,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         super().__init__()
 
         self.perturber = perturber
+        self.composer = composer
         self.optimizer_fn = optimizer
 
         self.max_iters = max_iters
@@ -299,7 +305,10 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         target: torch.Tensor | dict[str, Any] | tuple,
         **kwargs,
     ):
-        return self.perturber(input=input, target=target)
+        perturbation = self.perturber(input=input, target=target, **kwargs)
+        input_adv = self.composer(perturbation, input=input, target=target, **kwargs)
+
+        return input_adv
 
 
 class Adversary(torch.nn.Module):

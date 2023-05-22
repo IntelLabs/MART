@@ -1,5 +1,6 @@
 _target_: mart.attack.Adversary
 perturber: ???
+composer: ???
 optimizer: ???
 gain: ???
 gradient_modifier: null
