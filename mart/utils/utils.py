@@ -26,6 +26,7 @@ __all__ = [
     "log_hyperparameters",
     "save_file",
     "task_wrapper",
+    "get_object",
 ]
 
 log = pylogger.get_pylogger(__name__)
@@ -272,3 +273,15 @@ def get_resume_checkpoint(config: DictConfig) -> Tuple[DictConfig]:
         config = hydra.compose(config_name, overrides=overrides)
 
     return config
+
+
+def get_object(module, path):
+    if hasattr(module, path):
+        return getattr(module, path)
+
+    attr, *path = path.split(".")
+    path = ".".join(path)
+
+    module = getattr(module, attr)
+
+    return get_object(module, path)
