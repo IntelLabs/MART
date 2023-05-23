@@ -93,7 +93,7 @@ model:
         input: "input"
         target: "target"
     seq010:
-      yolov3: composer
+      yolov3: ["composer"]
     seq030:
       loss:
         - losses.hide_target_objects_loss
@@ -129,7 +129,7 @@ model:
         input: "input"
         target: "target"
     seq010:
-      yolov3: composer
+      yolov3: ["composer"]
     seq030:
       loss:
         - losses.hide_target_objects_loss
@@ -144,7 +144,7 @@ model:
         input: "input"
         target: "target"
     seq010:
-      yolov3: composer
+      yolov3: ["composer"]
     seq030:
       loss:
         - losses.hide_target_objects_loss
