@@ -26,6 +26,9 @@ callbacks:
   freeze:
     module: "losses_and_detections"
 
+  perturbation_visualizer:
+    perturbation: "model.perturbation.perturbation"
+
 trainer:
   # 117,266 training images, 6 epochs, batch_size=2, 351798
   max_steps: 351798
