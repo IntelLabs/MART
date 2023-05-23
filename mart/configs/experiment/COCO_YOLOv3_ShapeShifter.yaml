@@ -86,7 +86,7 @@ model:
       clamp: [0, 1]
 
     loss:
-      weights: [1, 1, 1e-5]
+      weights: [1, 1]
 
   load_state_dict:
     yolov3: ${paths.data_dir}/yolov3_original.pt
@@ -107,10 +107,6 @@ model:
       loss:
         - losses.hide_target_objects_loss
         - losses.correct_target_class_loss
-        - perturbation.total_variation
-    seq050:
-      output:
-        total_variation: perturbation.total_variation
 
   training_step_log:
     - loss
@@ -126,7 +122,6 @@ model:
     - target_count
     - score_count
     - target_score_count
-    - total_variation
 
   training_metrics: null
 
@@ -140,7 +135,6 @@ model:
       loss:
         - losses.hide_target_objects_loss
         - losses.correct_target_class_loss
-        - perturbation.total_variation
 
   test_sequence:
     seq005: perturbation
@@ -152,4 +146,3 @@ model:
       loss:
         - losses.hide_target_objects_loss
         - losses.correct_target_class_loss
-        - perturbation.total_variation
