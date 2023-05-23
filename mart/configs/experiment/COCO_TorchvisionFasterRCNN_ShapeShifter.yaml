@@ -1,10 +1,10 @@
 # @package _global_
 
 defaults:
-  - /attack/perturber@model.modules.perturber: default
-  - /attack/perturber/initializer@model.modules.perturber.initializer: uniform
-  - /attack/perturber/projector@model.modules.perturber.projector: range
-  - /attack/composer@model.modules.composer: warp_composite
+  - /attack/perturber@model.modules.perturbation: default
+  - /attack/perturber/initializer@model.modules.perturbation.initializer: uniform
+  - /attack/perturber/projector@model.modules.perturbation.projector: range
+  - /attack/composer@model.modules.input_adv: warp_composite
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
   - override /datamodule: coco
   - override /model: torchvision_faster_rcnn
@@ -38,14 +38,14 @@ datamodule:
 
 model:
   modules:
-    perturber:
+    perturbation:
       size: [3, 416, 416]
 
       initializer:
         min: 127
         max: 129
 
-    composer:
+    input_adv:
       warp:
         _target_: torchvision.transforms.Compose
         transforms:
@@ -76,15 +76,10 @@ model:
     p: inf
 
   training_sequence:
-    seq005: perturber
-    seq006:
-      composer:
-        perturbation: "perturber"
-        input: "input"
-        target: "target"
-
+    seq005: perturbation
+    seq006: input_adv
     seq010:
-      preprocessor: composer
+      preprocessor: ["input_adv"]
 
   validation_sequence: ${.training_sequence}
 
