@@ -104,4 +104,3 @@ class Perturber(torch.nn.Module):
         self.projector(self.perturbation, **batch)
 
         return self.perturbation
-

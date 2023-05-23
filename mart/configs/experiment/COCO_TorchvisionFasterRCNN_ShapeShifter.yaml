@@ -11,7 +11,13 @@ defaults:
   - override /metric: average_precision
   - override /optimization: super_convergence
   - override /callbacks:
-      [model_checkpoint, lr_monitor, perturbation_visualizer, gradient_monitor, freeze]
+      [
+        model_checkpoint,
+        lr_monitor,
+        perturbation_visualizer,
+        gradient_monitor,
+        freeze,
+      ]
 
 task_name: "COCO_TorchvisionFasterRCNN_ShapeShifter"
 tags: ["adv"]
