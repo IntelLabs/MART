@@ -10,7 +10,14 @@ defaults:
   - override /datamodule: coco_yolov3
   - override /model: yolov3
   - override /metric: average_precision
-  - override /callbacks: [perturbation_visualizer, lr_monitor, freeze]
+  - override /callbacks:
+      [
+        model_checkpoint,
+        lr_monitor,
+        perturbation_visualizer,
+        gradient_monitor,
+        freeze,
+      ]
 
 task_name: "COCO_YOLOv3_ShapeShifter"
 tags: ["adv"]
@@ -26,11 +33,16 @@ trainer:
   precision: 32
 
 callbacks:
-  perturbation_visualizer:
-    frequency: 500
+  model_checkpoint:
+    monitor: "validation_metrics/map"
+    mode: "min"
 
   freeze:
     module: "yolov3"
+
+  perturbation_visualizer:
+    perturbation: "model.perturbation.perturbation"
+    frequency: 500
 
 datamodule:
   num_workers: 32
