@@ -1,3 +1,0 @@
-image_visualizer:
-  _target_: mart.callbacks.PerturbedImageVisualizer
-  folder: ${paths.output_dir}/adversarial_examples
