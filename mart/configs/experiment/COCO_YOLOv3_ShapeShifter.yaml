@@ -1,10 +1,10 @@
 # @package _global_
 
 defaults:
-  - /attack/perturber@model.modules.perturber: default
-  - /attack/perturber/initializer@model.modules.perturber.initializer: uniform
-  - /attack/perturber/projector@model.modules.perturber.projector: range
-  - /attack/composer@model.modules.composer: warp_composite
+  - /attack/perturber@model.modules.perturbation: default
+  - /attack/perturber/initializer@model.modules.perturbation.initializer: uniform
+  - /attack/perturber/projector@model.modules.perturbation.projector: range
+  - /attack/composer@model.modules.input_adv: warp_composite
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
   - override /optimization: super_convergence
   - override /datamodule: coco_yolov3
@@ -45,7 +45,7 @@ datamodule:
 
 model:
   modules:
-    perturber:
+    perturbation:
       size: [3, 416, 234]
 
       initializer:
@@ -56,7 +56,7 @@ model:
         min: 0.0
         max: 1.0
 
-    composer:
+    input_adv:
       warp:
         _target_: torchvision.transforms.Compose
         transforms:
@@ -86,22 +86,19 @@ model:
   gradient_modifier: null
 
   training_sequence:
-    seq005: perturber
-    seq006:
-      composer:
-        perturbation: "perturber"
-        input: "input"
-        target: "target"
+    seq005: perturbation
+    seq006: input_adv
     seq010:
-      yolov3: ["composer"]
+      yolov3:
+        x: "input_adv"
     seq030:
       loss:
         - losses.hide_target_objects_loss
         - losses.correct_target_class_loss
-        - perturber.total_variation
+        - perturbation.total_variation
     seq050:
       output:
-        total_variation: perturber.total_variation
+        total_variation: perturbation.total_variation
 
   training_step_log:
     - loss
@@ -122,31 +119,25 @@ model:
   training_metrics: null
 
   validation_sequence:
-    seq005: perturber
-    seq006:
-      composer:
-        perturbation: "perturber"
-        input: "input"
-        target: "target"
+    seq005: perturbation
+    seq006: input_adv
     seq010:
-      yolov3: ["composer"]
+      yolov3:
+        x: "input_adv"
     seq030:
       loss:
         - losses.hide_target_objects_loss
         - losses.correct_target_class_loss
-        - perturber.total_variation
+        - perturbation.total_variation
 
   test_sequence:
-    seq005: perturber
-    seq006:
-      composer:
-        perturbation: "perturber"
-        input: "input"
-        target: "target"
+    seq005: perturbation
+    seq006: input_adv
     seq010:
-      yolov3: ["composer"]
+      yolov3:
+        x: "input_adv"
     seq030:
       loss:
         - losses.hide_target_objects_loss
         - losses.correct_target_class_loss
-        - perturber.total_variation
+        - perturbation.total_variation

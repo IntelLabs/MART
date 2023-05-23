@@ -27,7 +27,8 @@ training_metrics: null
 
 training_sequence:
   seq010:
-    yolov3: ["input"]
+    yolov3:
+      x: "input"
 
   seq020:
     losses:
@@ -61,7 +62,8 @@ training_sequence:
 
 validation_sequence:
   seq010:
-    yolov3: ["input"]
+    yolov3:
+      x: "input"
 
   seq020:
     losses:
@@ -97,7 +99,8 @@ validation_sequence:
 
 test_sequence:
   seq010:
-    yolov3: ["input"]
+    yolov3:
+      x: "input"
 
   seq020:
     losses:
