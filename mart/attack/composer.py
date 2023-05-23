@@ -93,16 +93,6 @@ class Composite(Composer):
         return input * (1 - mask) + perturbation
 
 
-class MaskAdditive(Composer):
-    """We assume an adversary adds masked perturbation to the input."""
-
-    def compose(self, perturbation, *, input, target):
-        mask = target["perturbable_mask"]
-        masked_perturbation = perturbation * mask
-
-        return input + masked_perturbation
-
-
 # FIXME: It would be really nice if we could compose composers just like we can compose everything else...
 class WarpComposite(Composite):
     def __init__(
