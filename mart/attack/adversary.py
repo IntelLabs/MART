@@ -16,11 +16,12 @@ import torch
 from mart.utils import silent
 
 from ..optim import OptimizerFactory
-from .gradient_modifier import GradientModifier
 
 if TYPE_CHECKING:
+    from .composer import Composer
     from .enforcer import Enforcer
     from .gain import Gain
+    from .gradient_modifier import GradientModifier
     from .objective import Objective
     from .perturber import Perturber
 
@@ -34,6 +35,7 @@ class Adversary(pl.LightningModule):
         self,
         *,
         perturber: Perturber,
+        composer: Composer,
         optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
         gain: Gain,
         gradient_modifier: GradientModifier | None = None,
@@ -46,6 +48,7 @@ class Adversary(pl.LightningModule):
 
         Args:
             perturber (Perturber): A MART Perturber.
+            composer (Composer): A MART Composer.
             optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A MART OptimizerFactory or partial that returns an Optimizer when given params.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
@@ -55,12 +58,14 @@ class Adversary(pl.LightningModule):
         """
         super().__init__()
 
-        self.perturber = perturber
+        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
+        self._perturber = [perturber]
+        self.composer = composer
         self.optimizer = optimizer
         if not isinstance(self.optimizer, OptimizerFactory):
             self.optimizer = OptimizerFactory(self.optimizer)
         self.gain_fn = gain
-        self.gradient_modifier = gradient_modifier or GradientModifier()
+        self.gradient_modifier = gradient_modifier
         self.objective_fn = objective
         self.enforcer = enforcer
 
@@ -87,6 +92,11 @@ class Adversary(pl.LightningModule):
             # the number of attack steps via limit_train_batches.
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
+
+    @property
+    def perturber(self) -> Perturber:
+        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
+        return self._perturber[0]
 
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
@@ -125,8 +135,9 @@ class Adversary(pl.LightningModule):
             optimizer, optimizer_idx, gradient_clip_val, gradient_clip_algorithm
         )
 
-        for group in optimizer.param_groups:
-            self.gradient_modifier(group["params"])
+        if self.gradient_modifier:
+            for group in optimizer.param_groups:
+                self.gradient_modifier(group["params"])
 
     @silent()
     def forward(self, *, model=None, sequence=None, **batch):
@@ -140,7 +151,8 @@ class Adversary(pl.LightningModule):
         if model and sequence:
             self._attack(**batch)
 
-        input_adv = self.perturber(**batch)
+        perturbation = self.perturber(**batch)
+        input_adv = self.composer(perturbation, **batch)
 
         # Enforce constraints after the attack optimization ends.
         if model and sequence:
