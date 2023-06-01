@@ -12,6 +12,7 @@ import torch  # noqa: E402
 from pytorch_lightning import LightningModule  # noqa: E402
 
 from ..nn import SequentialDict  # noqa: E402
+from ..optim import OptimizerFactory  # noqa: E402
 
 __all__ = ["LitModular"]
 
@@ -60,7 +61,11 @@ class LitModular(LightningModule):
         }
         self.model = SequentialDict(modules, sequences)
 
-        self.optimizer = optimizer
+        self.optimizer_fn = optimizer
+        if not isinstance(self.optimizer_fn, OptimizerFactory):
+            # Set bias_decay and norm_decay to 0.
+            self.optimizer_fn = OptimizerFactory(self.optimizer_fn)
+
         self.lr_scheduler = lr_scheduler
 
         self.training_step_log = training_step_log or ["loss"]
@@ -84,7 +89,7 @@ class LitModular(LightningModule):
 
     def configure_optimizers(self):
         config = {}
-        config["optimizer"] = self.optimizer(self.model)
+        config["optimizer"] = self.optimizer_fn(self.model)
 
         if self.lr_scheduler is not None:
             # FIXME: I don't think this actually work correctly, but we don't have an example of an lr_scheduler that is not a DictConfig

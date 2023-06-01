@@ -93,16 +93,6 @@ class Composite(Composer):
         return input * (1 - mask) + perturbation
 
 
-class MaskAdditive(Composer):
-    """We assume an adversary adds masked perturbation to the input."""
-
-    def compose(self, perturbation, *, input, target):
-        mask = target["perturbable_mask"]
-        masked_perturbation = perturbation * mask
-
-        return input + masked_perturbation
-
-
 # FIXME: It would be really nice if we could compose composers just like we can compose everything else...
 class WarpComposite(Composite):
     def __init__(
@@ -214,30 +204,5 @@ class WarpComposite(Composite):
 
         # Set mask for super().compose
         target["perturbable_mask"] = perturbable_mask
-
-        return super().compose(perturbation, input=input, target=target)
-
-
-# FIXME: It would be really nice if we could compose composers just like we can compose everything else...
-class ColorJitterWarpComposite(WarpComposite):
-    def __init__(
-        self,
-        *args,
-        brightness=0,
-        contrast=0,
-        saturation=0,
-        hue=0,
-        pixel_scale=255,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-
-        self.color_jitter = T.ColorJitter(brightness, contrast, saturation, hue)
-        self.pixel_scale = pixel_scale
-
-    def compose(self, perturbation, *, input, target):
-        # ColorJitter and friends assume floating point tensors are between [0, 1]...
-        if self.training:
-            perturbation = self.color_jitter(perturbation / self.pixel_scale) * self.pixel_scale
 
         return super().compose(perturbation, input=input, target=target)
