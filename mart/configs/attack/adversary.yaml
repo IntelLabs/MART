@@ -1,14 +1,9 @@
 _target_: mart.attack.Adversary
-# Composition
 perturber: ???
 composer: ???
-
-# Optimization
 optimizer: ???
-max_iters: ???
-callbacks: ???
 gain: ???
-
-# Threat model
-objective: ???
+gradient_modifier: null
+objective: null
 enforcer: ???
+attacker: null
