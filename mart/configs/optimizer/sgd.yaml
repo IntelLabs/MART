@@ -7,3 +7,8 @@ momentum: 0
 weight_decay: 0
 bias_decay: 0
 norm_decay: 0
+## You may simplify the config as below, if you just want to set bias_decay and norm_decay to 0.
+## LitModular and Adversary will wrap the optimizer with OptimizerFactor for you.
+# _target_: torch.optim.SGD
+# _partial_: true
+# lr: ???
