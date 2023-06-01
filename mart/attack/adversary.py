@@ -107,7 +107,8 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         """
         super().__init__()
 
-        self.perturber = perturber
+        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
+        self._perturber = [perturber]
         self.composer = composer
         self.optimizer_fn = optimizer
         if not isinstance(self.optimizer_fn, OptimizerFactory):
@@ -123,6 +124,11 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         # self.gain is a tensor.
         self.gain_fn = gain
         self.gradient_modifier = gradient_modifier
+
+    @property
+    def perturber(self) -> Perturber:
+        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
+        return self._perturber[0]
 
     @property
     def done(self) -> bool:

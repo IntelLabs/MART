@@ -35,7 +35,7 @@ class Perturber(torch.nn.Module):
         super().__init__()
 
         self.initializer_ = initializer
-        self.projector = projector or Projector()
+        self.projector_ = projector or Projector()
 
         self.perturbation = None
 
@@ -96,6 +96,6 @@ class Perturber(torch.nn.Module):
                 "You need to call the configure_perturbation before forward."
             )
 
-        self.projector(self.perturbation, **batch)
+        self.projector_(self.perturbation, **batch)
 
         return self.perturbation
