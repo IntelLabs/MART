@@ -4,7 +4,7 @@ defaults:
   - perturber/initializer: constant
   - perturber/projector: mask_range
   - composer: overlay
-  - optimizer: sgd
+  - /optimizer@optimizer: sgd
   - gain: rcnn_training_loss
   - gradient_modifier: sign
   - objective: zero_ap

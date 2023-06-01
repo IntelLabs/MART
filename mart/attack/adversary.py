@@ -7,10 +7,11 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import torch
 
+from ..optim import OptimizerFactory
 from .callbacks import Callback
 
 if TYPE_CHECKING:
@@ -86,7 +87,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         *,
         perturber: Perturber,
         composer: Composer,
-        optimizer: torch.optim.Optimizer,
+        optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
         max_iters: int,
         gain: Gain,
         objective: Objective | None = None,
@@ -98,7 +99,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         Args:
             perturber (Perturber): A module that stores perturbations.
             composer (Composer): A module which composes adversarial examples from input and perturbation.
-            optimizer (torch.optim.Optimizer): A PyTorch optimizer.
+            optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A partial that returns an Optimizer when given params.
             max_iters (int): The max number of attack iterations.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             objective (Objective | None): A function for computing adversarial objective, which returns True or False. Optional.
@@ -110,6 +111,8 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
         self._perturber = [perturber]
         self.composer = composer
         self.optimizer_fn = optimizer
+        if not isinstance(self.optimizer_fn, OptimizerFactory):
+            self.optimizer_fn = OptimizerFactory(self.optimizer_fn)
 
         self.max_iters = max_iters
         self.callbacks = OrderedDict()
@@ -164,9 +167,7 @@ class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
 
         # param_groups with learning rate and other optim params.
         self.perturber.configure_perturbation(input)
-        param_groups = self.perturber.parameters()
-
-        self.opt = self.optimizer_fn(param_groups)
+        self.opt = self.optimizer_fn(self.perturber)
 
     def on_run_end(
         self,
