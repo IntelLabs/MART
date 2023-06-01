@@ -4,42 +4,67 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-import importlib
-from unittest.mock import Mock, patch
+from functools import partial
+from unittest.mock import Mock
 
 import pytest
 import torch
+from pytorch_lightning.utilities.exceptions import MisconfigurationException
+from torch.optim import SGD
 
-from mart.attack.perturber import Perturber
+import mart
+from mart.attack import Perturber
 
 
-def test_perturber_repr(input_data, target_data):
+def test_forward(input_data, target_data):
     initializer = Mock()
-    gradient_modifier = Mock()
     projector = Mock()
-    perturber = Perturber(initializer, gradient_modifier, projector)
 
-    # get additive perturber representation
-    perturbation = torch.nn.UninitializedBuffer()
-    expected_repr = (
-        f"{repr(perturbation)}, initializer={initializer},"
-        f"gradient_modifier={gradient_modifier}, projector={projector}"
-    )
-    representation = perturber.extra_repr()
-    assert expected_repr == representation
+    perturber = Perturber(initializer=initializer, projector=projector)
 
-    # generate again the perturber with an initialized
-    # perturbation
-    perturber.on_run_start(adversary=None, input=input_data, target=target_data, model=None)
-    representation = perturber.extra_repr()
-    assert expected_repr != representation
+    perturber.configure_perturbation(input_data)
+
+    output = perturber(input=input_data, target=target_data)
+
+    initializer.assert_called_once()
+    projector.assert_called_once()
 
 
-def test_perturber_forward(input_data, target_data):
+def test_misconfiguration(input_data, target_data):
     initializer = Mock()
-    perturber = Perturber(initializer)
+    projector = Mock()
 
-    perturber.on_run_start(adversary=None, input=input_data, target=target_data, model=None)
-    output = perturber(input_data, target_data)
-    expected_output = perturber.perturbation
-    torch.testing.assert_close(output, expected_output, equal_nan=True)
+    perturber = Perturber(initializer=initializer, projector=projector)
+
+    with pytest.raises(MisconfigurationException):
+        perturber(input=input_data, target=target_data)
+
+    with pytest.raises(MisconfigurationException):
+        perturber.parameters()
+
+
+def test_configure_perturbation(input_data, target_data):
+    initializer = Mock()
+    projector = Mock()
+
+    perturber = Perturber(initializer=initializer, projector=projector)
+
+    perturber.configure_perturbation(input_data)
+    perturber.configure_perturbation(input_data)
+    perturber.configure_perturbation(input_data[:, :16, :16])
+
+    # Each call to configure_perturbation should re-initialize the perturbation
+    assert initializer.call_count == 3
+
+
+def test_parameters(input_data, target_data):
+    initializer = Mock()
+    projector = Mock()
+
+    perturber = Perturber(initializer=initializer, projector=projector)
+
+    perturber.configure_perturbation(input_data)
+
+    # Make sure each parameter in optimizer requires a gradient
+    for param in perturber.parameters():
+        assert param.requires_grad

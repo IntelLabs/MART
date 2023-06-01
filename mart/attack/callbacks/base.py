@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterable
 
 import torch
 
@@ -24,8 +24,8 @@ class Callback(abc.ABC):
         self,
         *,
         adversary: Adversary,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -35,8 +35,8 @@ class Callback(abc.ABC):
         self,
         *,
         adversary: Adversary,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -46,8 +46,8 @@ class Callback(abc.ABC):
         self,
         *,
         adversary: Adversary,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -57,8 +57,8 @@ class Callback(abc.ABC):
         self,
         *,
         adversary: Adversary,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -68,8 +68,8 @@ class Callback(abc.ABC):
         self,
         *,
         adversary: Adversary,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):
@@ -79,8 +79,8 @@ class Callback(abc.ABC):
         self,
         *,
         adversary: Adversary,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         model: torch.nn.Module,
         **kwargs,
     ):

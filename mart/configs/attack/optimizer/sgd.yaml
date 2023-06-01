@@ -1,6 +1,0 @@
-_target_: torch.optim.SGD
-_partial_: true
-# Start with a large learning, then decay.
-lr: ???
-momentum: 0
-maximize: True
