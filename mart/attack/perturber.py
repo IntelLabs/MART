@@ -14,7 +14,6 @@ from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from .projector import Projector
 
 if TYPE_CHECKING:
-    from .composer import Composer
     from .initializer import Initializer
 
 __all__ = ["Perturber"]
@@ -25,21 +24,18 @@ class Perturber(torch.nn.Module):
         self,
         *,
         initializer: Initializer,
-        composer: Composer,
         projector: Projector | None = None,
     ):
         """_summary_
 
         Args:
             initializer (Initializer): To initialize the perturbation.
-            composer (Composer): A module which composes adversarial input from input and perturbation.
             projector (Projector): To project the perturbation into some space.
         """
         super().__init__()
 
         self.initializer_ = initializer
-        self.composer = composer
-        self.projector = projector or Projector()
+        self.projector_ = projector or Projector()
 
         self.perturbation = None
 
@@ -100,7 +96,6 @@ class Perturber(torch.nn.Module):
                 "You need to call the configure_perturbation before forward."
             )
 
-        self.projector(self.perturbation, **batch)
-        input_adv = self.composer(self.perturbation, **batch)
+        self.projector_(self.perturbation, **batch)
 
-        return input_adv
+        return self.perturbation

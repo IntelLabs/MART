@@ -13,18 +13,20 @@ from pytorch_lightning.utilities.exceptions import MisconfigurationException
 from torch.optim import SGD
 
 import mart
-from mart.attack import Adversary, Perturber
+from mart.attack import Adversary, Composer, Perturber
 from mart.attack.gradient_modifier import Sign
 
 
 def test_adversary(input_data, target_data, perturbation):
-    perturber = Mock(return_value=perturbation + input_data)
+    perturber = Mock(spec=Perturber, return_value=perturbation)
+    composer = mart.attack.composer.Additive()
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=None,
         gain=gain,
         enforcer=enforcer,
@@ -45,7 +47,8 @@ def test_adversary(input_data, target_data, perturbation):
 
 
 def test_with_model(input_data, target_data, perturbation):
-    perturber = Mock(return_value=perturbation + input_data)
+    perturber = Mock(spec=Perturber, return_value=perturbation)
+    composer = mart.attack.composer.Additive()
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
@@ -54,6 +57,7 @@ def test_with_model(input_data, target_data, perturbation):
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=None,
         gain=gain,
         enforcer=enforcer,
@@ -76,10 +80,10 @@ def test_with_model(input_data, target_data, perturbation):
 
 def test_hidden_params(input_data, target_data, perturbation):
     initializer = Mock()
-    composer = Mock()
+    composer = mart.attack.composer.Additive()
     projector = Mock()
 
-    perturber = Perturber(initializer=initializer, composer=composer, projector=projector)
+    perturber = Perturber(initializer=initializer, projector=projector)
 
     gain = Mock()
     enforcer = Mock()
@@ -89,6 +93,7 @@ def test_hidden_params(input_data, target_data, perturbation):
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=None,
         gain=gain,
         enforcer=enforcer,
@@ -108,10 +113,10 @@ def test_hidden_params(input_data, target_data, perturbation):
 
 def test_hidden_params_after_forward(input_data, target_data, perturbation):
     initializer = Mock()
-    composer = Mock()
+    composer = mart.attack.composer.Additive()
     projector = Mock()
 
-    perturber = Perturber(initializer=initializer, composer=composer, projector=projector)
+    perturber = Perturber(initializer=initializer, projector=projector)
 
     gain = Mock()
     enforcer = Mock()
@@ -121,6 +126,7 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=None,
         gain=gain,
         enforcer=enforcer,
@@ -129,17 +135,18 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
 
     output_data = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
 
-    # Adversarial perturbation will have a perturbation after forward is called
+    # Adversarial perturbation will not have parameter even after forward is called.
     params = [p for p in adversary.parameters()]
-    assert len(params) == 1
+    assert len(params) == 0
 
-    # Adversarial perturbation should not have any state dict items
+    # Adversarial perturbation should not have any state dict items being exported to the model checkpoint.
     state_dict = adversary.state_dict()
-    assert len(state_dict) == 1
+    assert len(state_dict) == 0
 
 
 def test_perturbation(input_data, target_data, perturbation):
-    perturber = Mock(return_value=perturbation + input_data)
+    perturber = Mock(spec=Perturber, return_value=perturbation)
+    composer = mart.attack.composer.Additive()
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
@@ -148,6 +155,7 @@ def test_perturbation(input_data, target_data, perturbation):
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=None,
         gain=gain,
         enforcer=enforcer,
@@ -186,12 +194,12 @@ def test_forward_with_model(input_data, target_data):
 
     perturber = Perturber(
         initializer=initializer,
-        composer=composer,
         projector=None,
     )
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=optimizer,
         gain=gain,
         gradient_modifier=Sign(),
@@ -214,12 +222,13 @@ def test_forward_with_model(input_data, target_data):
 
 def test_configure_optimizers(input_data, target_data):
     perturber = Mock()
-    optimizer = Mock(spec=mart.optim.OptimizerFactory)
     composer = mart.attack.composer.Additive()
+    optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock()
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=optimizer,
         gain=gain,
     )
@@ -232,12 +241,14 @@ def test_configure_optimizers(input_data, target_data):
 
 def test_training_step(input_data, target_data):
     perturber = Mock()
+    composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor(1337))
     model = Mock(return_value={})
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=optimizer,
         gain=gain,
     )
@@ -252,12 +263,14 @@ def test_training_step(input_data, target_data):
 
 def test_training_step_with_many_gain(input_data, target_data):
     perturber = Mock()
+    composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
     model = Mock(return_value={})
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=optimizer,
         gain=gain,
     )
@@ -271,6 +284,7 @@ def test_training_step_with_many_gain(input_data, target_data):
 
 def test_training_step_with_objective(input_data, target_data):
     perturber = Mock()
+    composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
     model = Mock(return_value={})
@@ -278,6 +292,7 @@ def test_training_step_with_objective(input_data, target_data):
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=optimizer,
         objective=objective,
         gain=gain,
@@ -294,6 +309,7 @@ def test_training_step_with_objective(input_data, target_data):
 
 def test_configure_gradient_clipping():
     perturber = Mock()
+    composer = mart.attack.composer.Additive()
     optimizer = Mock(
         spec=mart.optim.OptimizerFactory, param_groups=[{"params": Mock()}, {"params": Mock()}]
     )
@@ -302,6 +318,7 @@ def test_configure_gradient_clipping():
 
     adversary = Adversary(
         perturber=perturber,
+        composer=composer,
         optimizer=optimizer,
         gradient_modifier=gradient_modifier,
         gain=gain,
