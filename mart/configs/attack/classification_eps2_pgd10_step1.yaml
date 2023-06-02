@@ -10,7 +10,6 @@ defaults:
   - objective: misclassification
   - enforcer: default
   - enforcer/constraints: [lp, pixel_range]
-  - /callbacks@callbacks: [progress_bar]
 
 enforcer:
   constraints:
