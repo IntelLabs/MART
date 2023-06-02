@@ -6,338 +6,197 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
-from typing import Any
+from functools import partial
+from itertools import cycle
+from typing import TYPE_CHECKING, Any, Callable
 
+import pytorch_lightning as pl
 import torch
 
-from .callbacks import Callback
-from .composer import Composer
-from .enforcer import Enforcer
-from .gain import Gain
-from .objective import Objective
-from .perturber import BatchPerturber, Perturber
+from mart.utils import silent
 
-__all__ = ["Adversary", "Attacker"]
+from ..optim import OptimizerFactory
 
+if TYPE_CHECKING:
+    from .composer import Composer
+    from .enforcer import Enforcer
+    from .gain import Gain
+    from .gradient_modifier import GradientModifier
+    from .objective import Objective
+    from .perturber import Perturber
 
-class AttackerCallbackHookMixin(Callback):
-    """Define event hooks in the Adversary Loop for callbacks."""
-
-    callbacks = {}
-
-    def on_run_start(self, **kwargs) -> None:
-        """Prepare the attack loop state."""
-        for _name, callback in self.callbacks.items():
-            # FIXME: Skip incomplete callback instance.
-            # Give access of self to callbacks by `adversary=self`.
-            callback.on_run_start(**kwargs)
-
-    def on_examine_start(self, **kwargs) -> None:
-        for _name, callback in self.callbacks.items():
-            callback.on_examine_start(**kwargs)
-
-    def on_examine_end(self, **kwargs) -> None:
-        for _name, callback in self.callbacks.items():
-            callback.on_examine_end(**kwargs)
-
-    def on_advance_start(self, **kwargs) -> None:
-        for _name, callback in self.callbacks.items():
-            callback.on_advance_start(**kwargs)
-
-    def on_advance_end(self, **kwargs) -> None:
-        for _name, callback in self.callbacks.items():
-            callback.on_advance_end(**kwargs)
-
-    def on_run_end(self, **kwargs) -> None:
-        for _name, callback in self.callbacks.items():
-            callback.on_run_end(**kwargs)
+__all__ = ["Adversary"]
 
 
-class Attacker(AttackerCallbackHookMixin, torch.nn.Module):
-    """The attack optimization loop.
-
-    This class implements the following loop structure:
-
-    .. code-block:: python
-
-        on_run_start()
-
-        while true:
-            on_examine_start()
-            examine()
-            on_examine_end()
-
-            if not done:
-                on_advance_start()
-                advance()
-                on_advance_end()
-            else:
-                break
-
-        on_run_end()
-    """
+class Adversary(pl.LightningModule):
+    """An adversary module which generates and applies perturbation to input."""
 
     def __init__(
         self,
         *,
-        perturber: BatchPerturber | Perturber,
+        perturber: Perturber,
         composer: Composer,
-        optimizer: torch.optim.Optimizer,
-        max_iters: int,
+        optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
         gain: Gain,
+        gradient_modifier: GradientModifier | None = None,
         objective: Objective | None = None,
-        callbacks: dict[str, Callback] | None = None,
+        enforcer: Enforcer | None = None,
+        attacker: pl.Trainer | None = None,
+        **kwargs,
     ):
         """_summary_
 
         Args:
-            perturber (BatchPerturber | Perturber): A module that stores perturbations.
-            composer (Composer): A module which composes adversarial examples from input and perturbation.
-            optimizer (torch.optim.Optimizer): A PyTorch optimizer.
-            max_iters (int): The max number of attack iterations.
+            perturber (Perturber): A MART Perturber.
+            composer (Composer): A MART Composer.
+            optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A MART OptimizerFactory or partial that returns an Optimizer when given params.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
-            objective (Objective | None): A function for computing adversarial objective, which returns True or False. Optional.
-            callbacks (dict[str, Callback] | None): A dictionary of callback objects. Optional.
+            gradient_modifier (GradientModifier): To modify the gradient of perturbation.
+            objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
+            enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
+            attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
         """
         super().__init__()
 
-        self.perturber = perturber
+        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
+        self._perturber = [perturber]
         self.composer = composer
-        self.optimizer_fn = optimizer
-
-        self.max_iters = max_iters
-        self.callbacks = OrderedDict()
-
-        # Register perturber as callback if it implements Callback interface
-        if isinstance(self.perturber, Callback):
-            # FIXME: Use self.perturber.__class__.__name__ as key?
-            self.callbacks["_perturber"] = self.perturber
-
-        if callbacks is not None:
-            self.callbacks.update(callbacks)
-
-        self.objective_fn = objective
-        # self.gain is a tensor.
+        self.optimizer = optimizer
+        if not isinstance(self.optimizer, OptimizerFactory):
+            self.optimizer = OptimizerFactory(self.optimizer)
         self.gain_fn = gain
+        self.gradient_modifier = gradient_modifier
+        self.objective_fn = objective
+        self.enforcer = enforcer
+
+        self._attacker = attacker
+
+        if self._attacker is None:
+            # Enable attack to be late bound in forward
+            self._attacker = partial(
+                pl.Trainer,
+                num_sanity_val_steps=0,
+                logger=False,
+                max_epochs=0,
+                limit_train_batches=kwargs.pop("max_iters", 10),
+                callbacks=list(kwargs.pop("callbacks", {}).values()),  # dict to list of values
+                enable_model_summary=False,
+                enable_checkpointing=False,
+                # We should disable progress bar in the progress_bar callback config if needed.
+                enable_progress_bar=True,
+                # detect_anomaly=True,
+            )
+
+        else:
+            # We feed the same batch to the attack every time so we treat each step as an
+            # attack iteration. As such, attackers must only run for 1 epoch and must limit
+            # the number of attack steps via limit_train_batches.
+            assert self._attacker.max_epochs == 0
+            assert self._attacker.limit_train_batches > 0
 
     @property
-    def done(self) -> bool:
-        # Reach the max iteration;
-        if self.cur_iter >= self.max_iters:
-            return True
+    def perturber(self) -> Perturber:
+        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
+        return self._perturber[0]
 
-        # All adv. examples are found;
-        if hasattr(self, "found") and bool(self.found.all()) is True:
-            return True
+    def configure_optimizers(self):
+        return self.optimizer(self.perturber)
 
-        # Compatible with models which return None gain when objective is reached.
-        # TODO: Remove gain==None stopping criteria in all models,
-        #       because the BestPerturbation callback relies on gain to determine which pert is the best.
-        if self.gain is None:
-            return True
+    def training_step(self, batch, batch_idx):
+        # copy batch since we modify it and it is used internally
+        batch = batch.copy()
 
-        return False
+        # We need to evaluate the perturbation against the whole model, so call it normally to get a gain.
+        model = batch.pop("model")
+        outputs = model(**batch)
 
-    def on_run_start(
-        self,
-        *,
-        adversary: torch.nn.Module,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module,
-        **kwargs,
-    ):
-        super().on_run_start(
-            adversary=adversary, input=input, target=target, model=model, **kwargs
-        )
-
-        # FIXME: We should probably just register IterativeAdversary as a callback.
-        # Set up the optimizer.
-        self.cur_iter = 0
-
-        # param_groups with learning rate and other optim params.
-        param_groups = self.perturber.parameter_groups()
-
-        self.opt = self.optimizer_fn(param_groups)
-
-    def on_run_end(
-        self,
-        *,
-        adversary: torch.nn.Module,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module,
-        **kwargs,
-    ):
-        super().on_run_end(adversary=adversary, input=input, target=target, model=model, **kwargs)
-
-        # Release optimization resources
-        del self.opt
-
-    # Disable mixed-precision optimization for attacks,
-    #   since we haven't implemented it yet.
-    @torch.autocast("cuda", enabled=False)
-    @torch.autocast("cpu", enabled=False)
-    def fit(
-        self,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module,
-        **kwargs,
-    ):
-
-        self.on_run_start(adversary=self, input=input, target=target, model=model, **kwargs)
-
-        while True:
-            try:
-                self.on_examine_start(
-                    adversary=self, input=input, target=target, model=model, **kwargs
-                )
-                self.examine(input=input, target=target, model=model, **kwargs)
-                self.on_examine_end(
-                    adversary=self, input=input, target=target, model=model, **kwargs
-                )
-
-                # Check the done condition here, so that every update of perturbation is examined.
-                if not self.done:
-                    self.on_advance_start(
-                        adversary=self,
-                        input=input,
-                        target=target,
-                        model=model,
-                        **kwargs,
-                    )
-                    self.advance(
-                        input=input,
-                        target=target,
-                        model=model,
-                        **kwargs,
-                    )
-                    self.on_advance_end(
-                        adversary=self,
-                        input=input,
-                        target=target,
-                        model=model,
-                        **kwargs,
-                    )
-                    # Update cur_iter at the end so that all hooks get the correct cur_iter.
-                    self.cur_iter += 1
-                else:
-                    break
-            except StopIteration:
-                break
-
-        self.on_run_end(adversary=self, input=input, target=target, model=model, **kwargs)
-
-    # Make sure we can do autograd.
-    # Earlier Pytorch Lightning uses no_grad(), but later PL uses inference_mode():
-    #   https://github.com/Lightning-AI/lightning/pull/12715
-    @torch.enable_grad()
-    @torch.inference_mode(False)
-    def examine(
-        self,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module,
-        **kwargs,
-    ):
-        """Examine current perturbation, update self.gain and self.found."""
-
-        # Clone tensors for autograd, in case it was created in the inference mode.
-        # FIXME: object detection uses non-pure-tensor data, but it may have cloned somewhere else implicitly?
-        if isinstance(input, torch.Tensor):
-            input = input.clone()
-        if isinstance(target, torch.Tensor):
-            target = target.clone()
-
-        # Set model as None, because no need to update perturbation.
-        # Save everything to self.outputs so that callbacks have access to them.
-        self.outputs = model(input=input, target=target, model=None, **kwargs)
-
+        # FIXME: This should really be just `return outputs`. But this might require a new sequence?
+        # FIXME: Everything below here should live in the model as modules.
         # Use CallWith to dispatch **outputs.
-        self.gain = self.gain_fn(**self.outputs)
+        gain = self.gain_fn(**outputs)
 
         # objective_fn is optional, because adversaries may never reach their objective.
         if self.objective_fn is not None:
-            self.found = self.objective_fn(**self.outputs)
-            if self.gain.shape == torch.Size([]):
-                # A reduced gain value, not an input-wise gain vector.
-                self.total_gain = self.gain
-            else:
-                # No need to calculate new gradients if adversarial examples are already found.
-                self.total_gain = self.gain[~self.found].sum()
+            found = self.objective_fn(**outputs)
+
+            # No need to calculate new gradients if adversarial examples are already found.
+            if len(gain.shape) > 0:
+                gain = gain[~found]
+
+        if len(gain.shape) > 0:
+            gain = gain.sum()
+
+        return gain
+
+    def configure_gradient_clipping(
+        self, optimizer, optimizer_idx, gradient_clip_val=None, gradient_clip_algorithm=None
+    ):
+        # Configuring gradient clipping in pl.Trainer is still useful, so use it.
+        super().configure_gradient_clipping(
+            optimizer, optimizer_idx, gradient_clip_val, gradient_clip_algorithm
+        )
+
+        if self.gradient_modifier:
+            for group in optimizer.param_groups:
+                self.gradient_modifier(group["params"])
+
+    @silent()
+    def forward(self, *, model=None, sequence=None, **batch):
+        batch["model"] = model
+        batch["sequence"] = sequence
+
+        # Adversary lives within a sequence of model. To signal the adversary should attack, one
+        # must pass a model to attack when calling the adversary. Since we do not know where the
+        # Adversary lives inside the model, we also need the remaining sequence to be able to
+        # get a loss.
+        if model and sequence:
+            self._attack(**batch)
+
+        perturbation = self.perturber(**batch)
+        input_adv = self.composer(perturbation, **batch)
+
+        # Enforce constraints after the attack optimization ends.
+        if model and sequence:
+            self.enforcer(input_adv, **batch)
+
+        return input_adv
+
+    def _attack(self, *, input, **batch):
+        batch["input"] = input
+
+        # Configure and reset perturbation for current inputs
+        self.perturber.configure_perturbation(input)
+
+        # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
+        # We use Trainer.limit_train_batches to control the number of attack iterations.
+        self.attacker.fit_loop.max_epochs += 1
+        self.attacker.fit(self, train_dataloaders=cycle([batch]))
+
+    @property
+    def attacker(self):
+        if not isinstance(self._attacker, partial):
+            return self._attacker
+
+        # Convert torch.device to PL accelerator
+        if self.device.type == "cuda":
+            accelerator = "gpu"
+            devices = [self.device.index]
+
+        elif self.device.type == "cpu":
+            accelerator = "cpu"
+            devices = None
+
         else:
-            self.total_gain = self.gain.sum()
+            raise NotImplementedError
 
-    # Make sure we can do autograd.
-    @torch.enable_grad()
-    @torch.inference_mode(False)
-    def advance(
-        self,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module,
-        **kwargs,
-    ):
-        """Run one attack iteration."""
+        self._attacker = self._attacker(accelerator=accelerator, devices=devices)
 
-        self.opt.zero_grad()
+        return self._attacker
 
-        # Do not flip the gain value, because we set maximize=True in optimizer.
-        self.total_gain.backward()
-
-        self.opt.step()
-
-    def forward(
-        self,
-        *,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        **kwargs,
-    ):
-        perturbation = self.perturber(input, target)
-        output = self.composer(perturbation, input=input, target=target)
-
-        return output
-
-
-class Adversary(torch.nn.Module):
-    """An adversary module which generates and applies perturbation to input."""
-
-    def __init__(self, *, enforcer: Enforcer, attacker: Attacker | None = None, **kwargs):
-        """_summary_
-
-        Args:
-            enforcer (Enforcer): A module which checks if adversarial examples satisfy constraints.
-            attacker (Attacker): A trainer-like object that computes attacks.
-        """
-        super().__init__()
-
-        self.enforcer = enforcer
-        self.attacker = attacker or Attacker(**kwargs)
-
-    def forward(
-        self,
-        input: torch.Tensor | tuple,
-        target: torch.Tensor | dict[str, Any] | tuple,
-        model: torch.nn.Module | None = None,
-        **kwargs,
-    ):
-        # Generate a perturbation only if we have a model. This will update
-        # the parameters of self.perturber.
-        if model is not None:
-            self.attacker.fit(input=input, target=target, model=model, **kwargs)
-
-        # Get perturbation and apply threat model
-        # The mask projector in perturber may require information from target.
-        output = self.attacker(input=input, target=target)
-
-        if model is not None:
-            # We only enforce constraints after the attack optimization ends.
-            self.enforcer(output, input=input, target=target)
-
-        return output
+    def cpu(self):
+        # PL places the LightningModule back on the CPU after fitting:
+        #   https://github.com/Lightning-AI/lightning/blob/ff5361604b2fd508aa2432babed6844fbe268849/pytorch_lightning/strategies/single_device.py#L96
+        #   https://github.com/Lightning-AI/lightning/blob/ff5361604b2fd508aa2432babed6844fbe268849/pytorch_lightning/strategies/ddp.py#L482
+        # This is a problem when this LightningModule has parameters, so we stop this from
+        # happening by ignoring the call to cpu().
+        pass

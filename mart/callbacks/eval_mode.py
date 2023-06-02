@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-from .base import Callback
+from pytorch_lightning.callbacks import Callback
 
 __all__ = ["AttackInEvalMode"]
 
@@ -15,11 +15,11 @@ class AttackInEvalMode(Callback):
     def __init__(self):
         self.training_mode_status = None
 
-    def on_run_start(self, *, model, **kwargs):
+    def on_train_start(self, trainer, model):
         self.training_mode_status = model.training
         model.train(False)
 
-    def on_run_end(self, *, model, **kwargs):
+    def on_train_end(self, trainer, model):
         assert self.training_mode_status is not None
 
         # Resume the previous training status of the model.
