@@ -82,7 +82,8 @@ class Adversary(pl.LightningModule):
                 callbacks=list(kwargs.pop("callbacks", {}).values()),  # dict to list of values
                 enable_model_summary=False,
                 enable_checkpointing=False,
-                enable_progress_bar=False,
+                # We should disable progress bar in the progress_bar callback config if needed.
+                enable_progress_bar=True,
                 # detect_anomaly=True,
             )
 

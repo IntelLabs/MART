@@ -1,3 +1,6 @@
+defaults:
+  - /callbacks@callbacks: [progress_bar]
+
 _target_: mart.attack.Adversary
 perturber: ???
 composer: ???
