@@ -42,3 +42,9 @@ class ProgressBar(TQDMProgressBar):
         # So that it does not display Epoch n.
         rank_id = rank_zero_only.rank
         self.main_progress_bar.set_description(f"Attack@rank{rank_id}")
+
+    def get_metrics(self, *args, **kwargs):
+        metrics = super().get_metrics(*args, **kwargs)
+        # Display gain value in progress bar.
+        metrics["gain"] = metrics.pop("loss")
+        return metrics
