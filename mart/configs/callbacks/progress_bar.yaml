@@ -1,3 +1,5 @@
 progress_bar:
   _target_: mart.callbacks.ProgressBar
   process_position: 1
+  # Enable progress bar for adversary by default.
+  disable: false

@@ -15,6 +15,11 @@ __all__ = ["ProgressBar"]
 class ProgressBar(TQDMProgressBar):
     """Display progress bar of attack iterations with the gain value."""
 
+    def __init__(self, disable=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if disable:
+            self.disable()
+
     def init_train_tqdm(self):
         bar = super().init_train_tqdm()
         bar.leave = False
