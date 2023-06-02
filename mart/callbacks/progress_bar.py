@@ -16,7 +16,7 @@ __all__ = ["ProgressBar"]
 class ProgressBar(TQDMProgressBar):
     """Display progress bar of attack iterations with the gain value."""
 
-    def __init__(self, disable=False, *args, **kwargs):
+    def __init__(self, *args, disable=False, rename_metrics=None, **kwargs):
         if "process_position" not in kwargs:
             # Automatically place the progress bar by rank if position is not specified.
             # rank starts with 0
@@ -29,6 +29,9 @@ class ProgressBar(TQDMProgressBar):
 
         if disable:
             self.disable()
+
+        # E.g. rename loss as gain for adversary's progress bar.
+        self.rename_metrics = rename_metrics or {}
 
     def init_train_tqdm(self):
         bar = super().init_train_tqdm()
@@ -48,7 +51,8 @@ class ProgressBar(TQDMProgressBar):
         self.main_progress_bar.set_description(f"Attack@rank{rank_id}")
 
     def get_metrics(self, *args, **kwargs):
+        """Rename metrics on progress bar status."""
         metrics = super().get_metrics(*args, **kwargs)
-        # Display gain value in progress bar.
-        metrics["gain"] = metrics.pop("loss")
+        for old_name, new_name in self.rename_metrics.items():
+            metrics[new_name] = metrics.pop(old_name)
         return metrics
