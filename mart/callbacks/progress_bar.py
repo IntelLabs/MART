@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-import tqdm
+from typing import Any
+
+import pytorch_lightning as pl
 from pytorch_lightning.callbacks import TQDMProgressBar
 
 __all__ = ["ProgressBar"]
@@ -20,3 +22,11 @@ class ProgressBar(TQDMProgressBar):
         bar.unit = "iter"
 
         return bar
+
+    def on_train_epoch_start(self, trainer: pl.Trainer, *_: Any) -> None:
+        super().on_train_epoch_start(trainer)
+
+        # So that it does not display negative rate.
+        self.main_progress_bar.initial = 0
+        # So that it does not display Epoch n.
+        self.main_progress_bar.set_description("Attack")
