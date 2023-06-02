@@ -17,14 +17,18 @@ class ProgressBar(TQDMProgressBar):
     """Display progress bar of attack iterations with the gain value."""
 
     def __init__(self, disable=False, *args, **kwargs):
+        if "process_position" not in kwargs:
+            # Automatically place the progress bar by rank if position is not specified.
+            # rank starts with 0
+            rank_id = rank_zero_only.rank
+            # Adversary progress bars start at position 1, because the main progress bar takes position 0.
+            process_position = rank_id + 1
+            kwargs["process_position"] = process_position
+
         super().__init__(*args, **kwargs)
+
         if disable:
             self.disable()
-
-        # rank starts with 0
-        rank_id = rank_zero_only.rank
-        # Adversary progress bars start at position 1, because the main progress bar takes position 0.
-        self._process_position = rank_id + 1
 
     def init_train_tqdm(self):
         bar = super().init_train_tqdm()
