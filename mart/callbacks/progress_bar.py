@@ -8,6 +8,7 @@ from typing import Any
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import TQDMProgressBar
+from pytorch_lightning.utilities.rank_zero import rank_zero_only
 
 __all__ = ["ProgressBar"]
 
@@ -19,6 +20,11 @@ class ProgressBar(TQDMProgressBar):
         super().__init__(*args, **kwargs)
         if disable:
             self.disable()
+
+        # rank starts with 0
+        rank_id = rank_zero_only.rank
+        # Adversary progress bars start at position 1, because the main progress bar takes position 0.
+        self._process_position = rank_id + 1
 
     def init_train_tqdm(self):
         bar = super().init_train_tqdm()
@@ -34,4 +40,5 @@ class ProgressBar(TQDMProgressBar):
         # So that it does not display negative rate.
         self.main_progress_bar.initial = 0
         # So that it does not display Epoch n.
-        self.main_progress_bar.set_description("Attack")
+        rank_id = rank_zero_only.rank
+        self.main_progress_bar.set_description(f"Attack@rank{rank_id}")
