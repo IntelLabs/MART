@@ -1,15 +1,15 @@
 from typing import Any, Dict, List, Tuple
 
 import hydra
-from omegaconf import DictConfig
-from pytorch_lightning import (
+from lightning.pytorch import (
     Callback,
     LightningDataModule,
     LightningModule,
     Trainer,
     seed_everything,
 )
-from pytorch_lightning.loggers import LightningLoggerBase
+from lightning.pytorch.loggers import Logger
+from omegaconf import DictConfig
 
 from mart import utils
 
@@ -32,8 +32,8 @@ def lightning(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         seed_everything(cfg.seed, workers=True)
 
     # Init lightning datamodule
-    log.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
-    datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)
+    log.info(f"Instantiating datamodule <{cfg.data._target_}>")
+    datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
     # Init lightning model
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
@@ -42,7 +42,7 @@ def lightning(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     callbacks: List[Callback] = utils.instantiate_callbacks(cfg.get("callbacks"))
 
     # Init lightning loggers
-    logger: List[LightningLoggerBase] = utils.instantiate_loggers(cfg.get("logger"))
+    logger: List[Logger] = utils.instantiate_loggers(cfg.get("logger"))
 
     # Init lightning trainer
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
