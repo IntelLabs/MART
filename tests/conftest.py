@@ -31,7 +31,7 @@ experiments_names = [
 
 # Loads the configuration file from a given experiment
 def get_cfg(experiment):
-    with initialize(version_base="1.2", config_path="../mart/configs"):
+    with initialize(version_base="1.3", config_path="../mart/configs"):
         params = "experiment=" + experiment
         cfg = compose(config_name="lightning.yaml", return_hydra_config=True, overrides=[params])
     return cfg
