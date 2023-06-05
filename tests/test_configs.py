@@ -13,13 +13,13 @@ from omegaconf import DictConfig
 
 
 @patch("torchvision.datasets.imagenet.ImageNet.__init__")
-@patch("mart.datamodules.coco.CocoDetection_.__init__")
+@patch("mart.data.coco.CocoDetection_.__init__")
 @patch("torchvision.datasets.CIFAR10.__init__")
 def test_experiment_config(
     mock_cifar10: Mock, mock_coco: Mock, mock_imagenet: Mock, cfg_experiment: DictConfig
 ):
     assert cfg_experiment
-    assert cfg_experiment.datamodule
+    assert cfg_experiment.data
     assert cfg_experiment.model
     assert cfg_experiment.trainer
 
@@ -30,6 +30,6 @@ def test_experiment_config(
 
     HydraConfig().set_config(cfg_experiment)
 
-    hydra.utils.instantiate(cfg_experiment.datamodule)
+    hydra.utils.instantiate(cfg_experiment.data)
     hydra.utils.instantiate(cfg_experiment.model)
     hydra.utils.instantiate(cfg_experiment.trainer)

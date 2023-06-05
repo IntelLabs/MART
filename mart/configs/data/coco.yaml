@@ -2,7 +2,7 @@ defaults:
   - default.yaml
 
 train_dataset:
-  _target_: mart.datamodules.coco.CocoDetection
+  _target_: mart.data.coco.CocoDetection
   root: ${paths.data_dir}/coco/train2017
   annFile: ${paths.data_dir}/coco/annotations/instances_train2017.json
   transforms:
@@ -24,7 +24,7 @@ train_dataset:
         quant_max: 255
 
 val_dataset:
-  _target_: mart.datamodules.coco.CocoDetection
+  _target_: mart.data.coco.CocoDetection
   root: ${paths.data_dir}/coco/val2017
   annFile: ${paths.data_dir}/coco/annotations/instances_val2017.json
   transforms:
@@ -44,7 +44,7 @@ val_dataset:
         quant_max: 255
 
 test_dataset:
-  _target_: mart.datamodules.coco.CocoDetection
+  _target_: mart.data.coco.CocoDetection
   root: ${paths.data_dir}/coco/val2017
   annFile: ${paths.data_dir}/coco/annotations/instances_val2017.json
   transforms:
@@ -66,4 +66,4 @@ test_dataset:
 num_workers: 2
 collate_fn:
   _target_: hydra.utils.get_method
-  path: mart.datamodules.coco.collate_fn
+  path: mart.data.coco.collate_fn
