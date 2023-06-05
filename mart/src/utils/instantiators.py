@@ -4,7 +4,6 @@ import hydra
 from omegaconf import DictConfig
 from pytorch_lightning import Callback
 from pytorch_lightning.loggers import Logger
-
 from src.utils import pylogger
 
 log = pylogger.get_pylogger(__name__)

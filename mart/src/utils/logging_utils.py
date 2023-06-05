@@ -1,5 +1,4 @@
 from lightning.pytorch.utilities import rank_zero_only
-
 from src.utils import pylogger
 
 log = pylogger.get_pylogger(__name__)
