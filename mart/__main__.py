@@ -31,8 +31,7 @@ if not config_path.exists():
 
 @hydra.main(version_base="1.2", config_path=config_path, config_name="lightning.yaml")
 def main(cfg: DictConfig) -> float:
-
-    if cfg.resume is None and ("datamodule" not in cfg or "model" not in cfg):
+    if cfg.resume is None and ("data" not in cfg or "model" not in cfg):
         log.fatal("")
         log.fatal("Please specify an experiment to run, e.g.")
         log.fatal(

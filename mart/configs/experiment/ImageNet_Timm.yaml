@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - override /datamodule: imagenet
+  - override /data: imagenet
   - override /model: classifier_timm
   - override /metric: accuracy
   - override /optimization: super_convergence
@@ -20,7 +20,7 @@ trainer:
   max_steps: 140625
   precision: 16
 
-datamodule:
+data:
   ims_per_batch: 128
   world_size: 1
   num_workers: 8

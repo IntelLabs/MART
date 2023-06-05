@@ -3,7 +3,7 @@
 defaults:
   - COCO_TorchvisionFasterRCNN
   - /attack@model.modules.input_adv_test: object_detection_mask_adversary
-  - override /datamodule: coco_perturbable_mask
+  - override /data: coco_perturbable_mask
 
 task_name: "COCO_TorchvisionFasterRCNN_Adv"
 tags: ["adv"]

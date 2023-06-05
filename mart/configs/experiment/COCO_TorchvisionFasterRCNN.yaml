@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - override /datamodule: coco
+  - override /data: coco
   - override /model: torchvision_faster_rcnn
   - override /metric: average_precision
   - override /optimization: super_convergence
@@ -23,7 +23,7 @@ trainer:
   # FIXME: "nms_kernel" not implemented for 'BFloat16', torch.ops.torchvision.nms().
   precision: 32
 
-datamodule:
+data:
   ims_per_batch: 2
   world_size: 1
 
