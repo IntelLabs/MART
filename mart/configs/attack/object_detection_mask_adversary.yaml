@@ -3,7 +3,7 @@ defaults:
   - perturber: default
   - perturber/initializer: constant
   - perturber/projector: mask_range
-  - composer: overlay
+  - composer: composite
   - /optimizer@optimizer: sgd
   - gain: rcnn_training_loss
   - gradient_modifier: sign
