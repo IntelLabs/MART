@@ -10,8 +10,8 @@ from functools import partial
 from itertools import cycle
 from typing import TYPE_CHECKING, Any, Callable
 
-import pytorch_lightning as pl
 import torch
+from lightning import pytorch as pl
 
 from mart.utils import silent
 
@@ -126,15 +126,16 @@ class Adversary(pl.LightningModule):
         if len(gain.shape) > 0:
             gain = gain.sum()
 
+        # Display gain on progress bar.
+        self.log("gain", gain, prog_bar=True)
+
         return gain
 
     def configure_gradient_clipping(
-        self, optimizer, optimizer_idx, gradient_clip_val=None, gradient_clip_algorithm=None
+        self, optimizer, gradient_clip_val=None, gradient_clip_algorithm=None
     ):
         # Configuring gradient clipping in pl.Trainer is still useful, so use it.
-        super().configure_gradient_clipping(
-            optimizer, optimizer_idx, gradient_clip_val, gradient_clip_algorithm
-        )
+        super().configure_gradient_clipping(optimizer, gradient_clip_val, gradient_clip_algorithm)
 
         if self.gradient_modifier:
             for group in optimizer.param_groups:
@@ -184,7 +185,7 @@ class Adversary(pl.LightningModule):
 
         elif self.device.type == "cpu":
             accelerator = "cpu"
-            devices = None
+            devices = 1
 
         else:
             raise NotImplementedError

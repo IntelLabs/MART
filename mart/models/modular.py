@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import torch  # noqa: E402
-from pytorch_lightning import LightningModule  # noqa: E402
+from lightning.pytorch import LightningModule  # noqa: E402
 
 from ..nn import SequentialDict  # noqa: E402
 from ..optim import OptimizerFactory  # noqa: E402
@@ -108,12 +108,11 @@ class LitModular(LightningModule):
         output = self(input=input, target=target, model=self.model, step="training")
 
         for name in self.training_step_log:
-            self.log(f"training/{name}", output[name])
+            # Display loss on prog_bar.
+            self.log(f"training/{name}", output[name], prog_bar=True)
 
         assert "loss" in output
-        return output
 
-    def training_step_end(self, output):
         if self.training_metrics is not None:
             # Some models only return loss in the training mode.
             if "preds" not in output or "target" not in output:
@@ -124,7 +123,7 @@ class LitModular(LightningModule):
         loss = output.pop("loss")
         return loss
 
-    def training_epoch_end(self, outputs):
+    def on_train_epoch_end(self):
         if self.training_metrics is not None:
             # Some models only return loss in the training mode.
             metrics = self.training_metrics.compute()
@@ -144,15 +143,12 @@ class LitModular(LightningModule):
         for name in self.validation_step_log:
             self.log(f"validation/{name}", output[name])
 
-        return output
-
-    def validation_step_end(self, output):
         self.validation_metrics(output["preds"], output["target"])
 
         # I don't know why this is required to prevent CUDA memory leak in validaiton and test. (Not required in training.)
         output.clear()
 
-    def validation_epoch_end(self, outputs):
+    def on_validation_epoch_end(self):
         metrics = self.validation_metrics.compute()
         metrics = self.flatten_metrics(metrics)
         self.validation_metrics.reset()
@@ -170,15 +166,12 @@ class LitModular(LightningModule):
         for name in self.test_step_log:
             self.log(f"test/{name}", output[name])
 
-        return output
-
-    def test_step_end(self, output):
         self.test_metrics(output["preds"], output["target"])
 
         # I don't know why this is required to prevent CUDA memory leak in validaiton and test. (Not required in training.)
         output.clear()
 
-    def test_epoch_end(self, outputs):
+    def on_test_epoch_end(self):
         metrics = self.test_metrics.compute()
         metrics = self.flatten_metrics(metrics)
         self.test_metrics.reset()
@@ -224,4 +217,6 @@ class LitModular(LightningModule):
 
         enumerate_metric(metrics, prefix)
 
-        self.log_dict(metrics_dict, prog_bar=prog_bar)
+        # PyTorch Lightning: It is recommended to use `self.log('validation_metrics/acc', ..., sync_dist=True)`
+        # when logging on epoch level in distributed setting to accumulate the metric across devices.
+        self.log_dict(metrics_dict, prog_bar=prog_bar, sync_dist=True)
