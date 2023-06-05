@@ -29,6 +29,8 @@ class LitDataModule(pl.LightningDataModule):
         ims_per_batch=1,
         world_size=1,
         pin_memory=False,
+        # Classification metrics may require the value in config.
+        num_classes=None,
     ):
         super().__init__()
 

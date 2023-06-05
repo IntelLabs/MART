@@ -55,3 +55,6 @@ test_dataset: ${.val_dataset}
 
 num_workers: 4
 collate_fn: null
+
+# The accuracy metric may require this value.
+num_classes: 10

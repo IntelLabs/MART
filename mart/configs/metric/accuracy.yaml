@@ -5,7 +5,8 @@ training_metrics:
   _convert_: partial # metrics must be a dict
   metrics:
     acc:
-      _target_: torchmetrics.Accuracy
+      _target_: torchmetrics.classification.MulticlassAccuracy
+      num_classes: ${data.num_classes}
       compute_on_step: false
 
 validation_metrics: ${.training_metrics}
