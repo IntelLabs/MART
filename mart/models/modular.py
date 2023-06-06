@@ -8,6 +8,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from operator import attrgetter  # noqa: E402
+
 import torch  # noqa: E402
 from pytorch_lightning import LightningModule  # noqa: E402
 
@@ -79,8 +81,7 @@ class LitModular(LightningModule):
         # Load state dict for specified modules
         load_state_dict = load_state_dict or {}
         for name, path in load_state_dict.items():
-            # FIXME: Use DotDict?
-            module = getattr(self.model, name)
+            module = attrgetter(name)(self.model)
             logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
             module.load_state_dict(torch.load(path))
 
