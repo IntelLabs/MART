@@ -1,11 +1,11 @@
 # @package model
 
 training_metrics:
-  _target_: torchmetrics.detection.MAP
+  _target_: torchmetrics.detection.mean_ap.MeanAveragePrecision
   compute_on_step: false
 
 validation_metrics:
-  _target_: torchmetrics.detection.MAP
+  _target_: torchmetrics.detection.mean_ap.MeanAveragePrecision
   compute_on_step: false
 
 test_metrics:
@@ -13,7 +13,7 @@ test_metrics:
   _convert_: partial
   metrics:
     map:
-      _target_: torchmetrics.detection.MAP
+      _target_: torchmetrics.detection.mean_ap.MeanAveragePrecision
       compute_on_step: false
     json:
       _target_: mart.utils.export.CocoPredictionJSON
