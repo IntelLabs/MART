@@ -26,7 +26,7 @@ __all__ = [
     "log_hyperparameters",
     "save_file",
     "task_wrapper",
-    "get_dottedpath_and_value",
+    "get_dottedpath_items",
 ]
 
 log = pylogger.get_pylogger(__name__)
@@ -275,7 +275,7 @@ def get_resume_checkpoint(config: DictConfig) -> Tuple[DictConfig]:
     return config
 
 
-def get_dottedpath_and_value(d: dict, parent: Optional[str] = None):
+def get_dottedpath_items(d: dict, parent: Optional[str] = None):
     """Get pairs of the dotted path and the value from a nested dictionary."""
 
     for name, value in d.items():
@@ -283,6 +283,6 @@ def get_dottedpath_and_value(d: dict, parent: Optional[str] = None):
         if isinstance(value, str):
             yield path, value
         elif isinstance(value, dict):
-            yield from get_dottedpath_and_value(value, parent=path)
+            yield from get_dottedpath_items(value, parent=path)
         else:
             raise ValueError
