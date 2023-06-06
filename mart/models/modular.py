@@ -85,7 +85,7 @@ class LitModular(LightningModule):
         for name, path in get_dottedpath_items(load_state_dict):
             module = attrgetter(name)(self.model)
             logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
-            module.load_state_dict(torch.load(path))
+            module.load_state_dict(torch.load(path, map_location="cpu"))
 
     def configure_optimizers(self):
         config = {}
