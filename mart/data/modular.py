@@ -8,8 +8,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-import pytorch_lightning as pl  # noqa: E402
 from hydra.utils import instantiate  # noqa: E402
+from lightning import pytorch as pl  # noqa: E402
 from torch.utils.data import DataLoader, Dataset, Sampler  # noqa: E402
 
 __all__ = ["LitDataModule"]
