@@ -4,7 +4,7 @@ import warnings
 from glob import glob
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import hydra
 from hydra.core.hydra_config import HydraConfig
@@ -26,6 +26,7 @@ __all__ = [
     "log_hyperparameters",
     "save_file",
     "task_wrapper",
+    "get_dottedpath_and_value",
 ]
 
 log = pylogger.get_pylogger(__name__)
@@ -272,3 +273,16 @@ def get_resume_checkpoint(config: DictConfig) -> Tuple[DictConfig]:
         config = hydra.compose(config_name, overrides=overrides)
 
     return config
+
+
+def get_dottedpath_and_value(d: dict, parent: Optional[str] = None):
+    """Get pairs of the dotted path and the value from a nested dictionary."""
+
+    for name, value in d.items():
+        path = f"{parent}.{name}" if parent else name
+        if isinstance(value, str):
+            yield path, value
+        elif isinstance(value, dict):
+            yield from get_dottedpath_and_value(value, parent=path)
+        else:
+            raise ValueError
