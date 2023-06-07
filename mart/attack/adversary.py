@@ -34,7 +34,6 @@ class Adversary(pl.LightningModule):
     def __init__(
         self,
         *,
-        disable_loading_from_state_dict: bool = True,
         perturber: Perturber,
         composer: Composer,
         optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
@@ -48,7 +47,6 @@ class Adversary(pl.LightningModule):
         """_summary_
 
         Args:
-            disable_loading_from_state_dict (bool): Don't load state_dict if True.
             perturber (Perturber): A MART Perturber.
             composer (Composer): A MART Composer.
             optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A MART OptimizerFactory or partial that returns an Optimizer when given params.
@@ -60,11 +58,11 @@ class Adversary(pl.LightningModule):
         """
         super().__init__()
 
-        if disable_loading_from_state_dict:
+        # Avoid resuming perturbation from a saved checkpoint.
+        self._register_load_state_dict_pre_hook(
             # Appear to have consumed the state_dict.
-            self._register_load_state_dict_pre_hook(
-                lambda state_dict, *args, **kwargs: state_dict.clear()
-            )
+            lambda state_dict, *args, **kwargs: state_dict.clear()
+        )
 
         self.perturber = perturber
         self.composer = composer
