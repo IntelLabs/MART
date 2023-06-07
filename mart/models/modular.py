@@ -34,6 +34,7 @@ class LitModular(LightningModule):
         test_metrics=None,
         weights_fpath=None,
         strict=True,
+        hide_modules=None,
     ):
         super().__init__()
 
@@ -59,7 +60,7 @@ class LitModular(LightningModule):
             "validation": validation_sequence,
             "test": test_sequence,
         }
-        self.model = SequentialDict(modules, sequences)
+        self.model = SequentialDict(modules, sequences=sequences, hide_modules=hide_modules)
 
         if weights_fpath is not None:
             self.model.load_state_dict(torch.load(weights_fpath), strict=strict)
