@@ -61,11 +61,11 @@ class Adversary(pl.LightningModule):
         super().__init__()
 
         def _disable_loading_from_state_dict(state_dict, *args, **kwargs):
-            if disable_loading_from_state_dict:
-                # Appear to have consumed the state_dict.
-                state_dict.clear()
+            # Appear to have consumed the state_dict.
+            state_dict.clear()
 
-        self._register_load_state_dict_pre_hook(_disable_loading_from_state_dict)
+        if disable_loading_from_state_dict:
+            self._register_load_state_dict_pre_hook(_disable_loading_from_state_dict)
 
         self.perturber = perturber
         self.composer = composer
