@@ -34,7 +34,6 @@ class LitModular(LightningModule):
         test_metrics=None,
         weights_fpath=None,
         strict=True,
-        ignore_state_dict_contains=["input_adv_"],
     ):
         super().__init__()
 
@@ -80,8 +79,6 @@ class LitModular(LightningModule):
 
         self.test_step_log = test_step_log or []
         self.test_metrics = test_metrics
-
-        self.ignore_state_dict_contains = ignore_state_dict_contains
 
     def configure_optimizers(self):
         config = {}
@@ -228,13 +225,3 @@ class LitModular(LightningModule):
         enumerate_metric(metrics, prefix)
 
         self.log_dict(metrics_dict, prog_bar=prog_bar)
-
-    def on_load_checkpoint(self, ckpt):
-        """Remove some keys from state_dict before loading the checkpoint."""
-        state_dict = ckpt["state_dict"]
-
-        for keyword in self.ignore_state_dict_contains:
-            for key in state_dict.keys():
-                if keyword in key:
-                    logger.info(f"Delete checkpoint state_dict key: {key}")
-                    del state_dict[key]
