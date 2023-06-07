@@ -8,9 +8,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from typing import OrderedDict  # noqa: E402
+from typing import Dict, OrderedDict  # noqa: E402
 
 import torch  # noqa: E402
+from torch.nn import Module  # noqa: E402
+
+from ..utils import MonkeyPatch  # noqa: E402
 
 __all__ = ["GroupNorm32", "SequentialDict", "ReturnKwargs", "CallWith", "Sum", "load_state_dict"]
 
@@ -48,17 +51,49 @@ class SequentialDict(torch.nn.ModuleDict):
     Sequences should be represented as <step_key: sequence> in the sequences dictionary.
     """
 
-    def __init__(self, modules, sequences=None):
+    _hidden_modules: Dict[str, Module]  # type: ignore[assignment]
+
+    def __init__(self, modules, sequences=None, hide_modules=None):
+        super().__setattr__("_hidden_modules", OrderedDict())
 
         if "output" not in modules:
             raise ValueError("Modules must have an module named 'output'")
 
+        # Separate hidden modules from regular modules.
+        hide_modules = hide_modules or []
+        hidden_modules = {key: modules.pop(key) for key in hide_modules}
+
+        # Register regular modules to self._modules.
         super().__init__(modules)
+
+        # Register hidden modules to self._hidden_modules.
+        # So that Module.state_dict() and Module.named_parameters() won't see them.
+        with MonkeyPatch(self, "_modules", self._hidden_modules):
+            self.update(hidden_modules)
 
         self._sequences = {
             name: self.parse_sequence(sequence) for name, sequence in sequences.items()
         }
         self._sequences[None] = self
+
+    def __getitem__(self, key: str):
+        """Expose hidden modules with keys."""
+        if key in self._hidden_modules:
+            return self._hidden_modules[key]
+        else:
+            return super().__getitem__(key)
+
+    def apply(self, fn):
+        """Make LightningModule.to() propagates to hidden modules."""
+        super().apply(fn)
+        with MonkeyPatch(self, "_modules", self._hidden_modules):
+            super().apply(fn)
+
+    def _apply(self, fn):
+        """Make Module.to() propagates to hidden modules."""
+        super()._apply(fn)
+        with MonkeyPatch(self, "_modules", self._hidden_modules):
+            super()._apply(fn)
 
     def parse_sequence(self, sequence):
         if sequence is None:
