@@ -61,6 +61,7 @@ class Adversary(pl.LightningModule):
         super().__init__()
 
         if disable_loading_from_state_dict:
+            # Appear to have consumed the state_dict.
             self._register_load_state_dict_pre_hook(
                 lambda state_dict, *args, **kwargs: state_dict.clear()
             )
