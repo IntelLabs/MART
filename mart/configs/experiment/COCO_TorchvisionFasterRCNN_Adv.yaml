@@ -9,6 +9,9 @@ task_name: "COCO_TorchvisionFasterRCNN_Adv"
 tags: ["adv"]
 
 model:
+  # Hide Adversary modules from model state_dict, checkpoint and parameters.
+  hide_modules: ["input_adv_test"]
+
   test_sequence:
     seq005: input_adv_test
 
