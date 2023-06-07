@@ -34,6 +34,7 @@ class Adversary(pl.LightningModule):
     def __init__(
         self,
         *,
+        disable_loading_from_state_dict: bool = True,
         perturber: Perturber,
         composer: Composer,
         optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
@@ -47,6 +48,7 @@ class Adversary(pl.LightningModule):
         """_summary_
 
         Args:
+            disable_loading_from_state_dict (bool): Don't load state_dict if True.
             perturber (Perturber): A MART Perturber.
             composer (Composer): A MART Composer.
             optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A MART OptimizerFactory or partial that returns an Optimizer when given params.
@@ -57,6 +59,8 @@ class Adversary(pl.LightningModule):
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
         """
         super().__init__()
+
+        self.disable_loading_from_state_dict = disable_loading_from_state_dict
 
         # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
         self.perturber = perturber
@@ -195,3 +199,10 @@ class Adversary(pl.LightningModule):
         # This is a problem when this LightningModule has parameters, so we stop this from
         # happening by ignoring the call to cpu().
         pass
+
+    def _load_from_state_dict(self, state_dict, *args, **kwargs):
+        if self.disable_loading_from_state_dict:
+            # Appear to have consumed the state_dict.
+            state_dict.clear()
+        else:
+            super()._load_from_state_dict(state_dict, *args, **kwargs)
