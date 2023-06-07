@@ -60,7 +60,13 @@ class Adversary(pl.LightningModule):
         """
         super().__init__()
 
-        self.disable_loading_from_state_dict = disable_loading_from_state_dict
+        def _disable_loading_from_state_dict(state_dict, *args, **kwargs):
+            if disable_loading_from_state_dict:
+                # Appear to have consumed the state_dict.
+                state_dict.clear()
+
+        self._register_load_state_dict_pre_hook(_disable_loading_from_state_dict)
+
         self.perturber = perturber
         self.composer = composer
         self.optimizer = optimizer
@@ -197,10 +203,3 @@ class Adversary(pl.LightningModule):
         # This is a problem when this LightningModule has parameters, so we stop this from
         # happening by ignoring the call to cpu().
         pass
-
-    def _load_from_state_dict(self, state_dict, *args, **kwargs):
-        if self.disable_loading_from_state_dict:
-            # Appear to have consumed the state_dict.
-            state_dict.clear()
-        else:
-            super()._load_from_state_dict(state_dict, *args, **kwargs)
