@@ -144,6 +144,32 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
     assert len(state_dict) == 1
 
 
+def test_loading_perturbation_from_state_dict():
+    initializer = Mock()
+    composer = mart.attack.composer.Additive()
+    projector = Mock()
+
+    perturber = Perturber(initializer=initializer, projector=projector)
+
+    gain = Mock()
+    enforcer = Mock()
+    attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
+
+    adversary = Adversary(
+        perturber=perturber,
+        composer=composer,
+        optimizer=None,
+        gain=gain,
+        enforcer=enforcer,
+        attacker=attacker,
+    )
+
+    # We should be able to load arbitrary state_dict, because Adversary ignores state_dict.
+    # We want this behavior for Adversary because model checkpoints may include perturbation in state_dict
+    # that is not loadable before initialization of perturbation.
+    adversary.load_state_dict({"perturbation": None})
+
+
 def test_perturbation(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Additive()
