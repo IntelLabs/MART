@@ -61,8 +61,6 @@ class Adversary(pl.LightningModule):
         super().__init__()
 
         self.disable_loading_from_state_dict = disable_loading_from_state_dict
-
-        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
         self.perturber = perturber
         self.composer = composer
         self.optimizer = optimizer
