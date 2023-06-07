@@ -15,7 +15,7 @@ from pytorch_lightning import LightningModule  # noqa: E402
 
 from ..nn import SequentialDict  # noqa: E402
 from ..optim import OptimizerFactory  # noqa: E402
-from ..utils import get_dottedpath_items  # noqa: E402
+from ..utils import FlattenDict  # noqa: E402
 
 __all__ = ["LitModular"]
 
@@ -82,7 +82,7 @@ class LitModular(LightningModule):
         # Load state dict for specified modules
         load_state_dict = load_state_dict or {}
         # Hydra commandlines converts dotted path to nested dictionary.
-        for name, path in get_dottedpath_items(load_state_dict):
+        for name, path in FlattenDict(load_state_dict).items():
             module = attrgetter(name)(self.model)
             logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
             module.load_state_dict(torch.load(path, map_location="cpu"))
