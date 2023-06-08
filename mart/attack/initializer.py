@@ -12,6 +12,10 @@ import torch
 import torchvision
 import torchvision.transforms.functional as F
 
+from mart.utils import pylogger
+
+logger = pylogger.get_pylogger(__name__)
+
 
 class Initializer:
     """Initializer base class."""
@@ -71,7 +75,7 @@ class Image(Initializer):
         image = self.image
 
         if image.shape != parameter.shape:
-            print(f"Resizing image from {image.shape} to {parameter.shape}...")
+            logger.info(f"Resizing image from {image.shape} to {parameter.shape}...")
             image = F.resize(image, parameter.shape[1:])
 
         parameter.copy_(image)

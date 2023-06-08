@@ -8,11 +8,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from operator import attrgetter  # noqa: E402
+
 import torch  # noqa: E402
 from pytorch_lightning import LightningModule  # noqa: E402
 
 from ..nn import SequentialDict  # noqa: E402
 from ..optim import OptimizerFactory  # noqa: E402
+from ..utils import flatten_dict  # noqa: E402
 
 __all__ = ["LitModular"]
 
@@ -79,13 +82,14 @@ class LitModular(LightningModule):
 
         self.gradient_modifier = gradient_modifier
 
-        # Load state dict for specified modules
-        load_state_dict = load_state_dict or {}
+        # Load state dict for specified modules. We flatten it because Hydra
+        # commandlines converts dotted paths to nested dictionaries.
+        load_state_dict = flatten_dict(load_state_dict or {})
+
         for name, path in load_state_dict.items():
-            # FIXME: Use DotDict?
-            module = getattr(self.model, name)
+            module = attrgetter(name)(self.model)
             logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
-            module.load_state_dict(torch.load(path))
+            module.load_state_dict(torch.load(path, map_location="cpu"))
 
     def configure_optimizers(self):
         config = {}
