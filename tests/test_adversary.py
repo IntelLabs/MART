@@ -167,7 +167,7 @@ def test_loading_perturbation_from_state_dict():
     # We should be able to load arbitrary state_dict, because Adversary ignores state_dict.
     # We want this behavior for Adversary because model checkpoints may include perturbation in state_dict
     # that is not loadable before initialization of perturbation.
-    adversary.load_state_dict({"perturbation": None})
+    adversary.load_state_dict({"perturber.perturbation": torch.tensor([1.0, 2.0])})
 
 
 def test_perturbation(input_data, target_data, perturbation):
