@@ -9,6 +9,12 @@ from __future__ import annotations
 from typing import Iterable
 
 import torch
+import torchvision
+import torchvision.transforms.functional as F
+
+from mart.utils import pylogger
+
+logger = pylogger.get_pylogger(__name__)
 
 
 class Initializer:
@@ -58,3 +64,18 @@ class UniformLp(Initializer):
             # We don't do tensor.renorm_() because the first dim is not the batch dim.
             pert_norm = parameter.norm(p=self.p)
             parameter.mul_(self.eps / pert_norm)
+
+
+class Image(Initializer):
+    def __init__(self, path: str, scale: int = 1):
+        self.image = torchvision.io.read_image(path, torchvision.io.ImageReadMode.RGB) / scale
+
+    @torch.no_grad()
+    def initialize_(self, parameter: torch.Tensor) -> None:
+        image = self.image
+
+        if image.shape != parameter.shape:
+            logger.info(f"Resizing image from {image.shape} to {parameter.shape}...")
+            image = F.resize(image, parameter.shape[1:])
+
+        parameter.copy_(image)
