@@ -8,11 +8,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from operator import attrgetter  # noqa: E402
+
 import torch  # noqa: E402
 from pytorch_lightning import LightningModule  # noqa: E402
 
 from ..nn import SequentialDict  # noqa: E402
 from ..optim import OptimizerFactory  # noqa: E402
+from ..utils import flatten_dict  # noqa: E402
 
 __all__ = ["LitModular"]
 
@@ -32,8 +35,7 @@ class LitModular(LightningModule):
         test_sequence=None,
         test_step_log=None,
         test_metrics=None,
-        weights_fpath=None,
-        strict=True,
+        load_state_dict=None,
     ):
         super().__init__()
 
@@ -61,9 +63,6 @@ class LitModular(LightningModule):
         }
         self.model = SequentialDict(modules, sequences)
 
-        if weights_fpath is not None:
-            self.model.load_state_dict(torch.load(weights_fpath), strict=strict)
-
         self.optimizer_fn = optimizer
         if not isinstance(self.optimizer_fn, OptimizerFactory):
             # Set bias_decay and norm_decay to 0.
@@ -79,6 +78,15 @@ class LitModular(LightningModule):
 
         self.test_step_log = test_step_log or []
         self.test_metrics = test_metrics
+
+        # Load state dict for specified modules. We flatten it because Hydra
+        # commandlines converts dotted paths to nested dictionaries.
+        load_state_dict = flatten_dict(load_state_dict or {})
+
+        for name, path in load_state_dict.items():
+            module = attrgetter(name)(self.model)
+            logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
+            module.load_state_dict(torch.load(path, map_location="cpu"))
 
     def configure_optimizers(self):
         config = {}
