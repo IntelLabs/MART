@@ -31,4 +31,4 @@ perturber:
 # We can turn off progress bar for one-step attack.
 callbacks:
   progress_bar:
-    disable: true
+    enable: false

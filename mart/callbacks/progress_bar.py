@@ -16,7 +16,7 @@ __all__ = ["ProgressBar"]
 class ProgressBar(TQDMProgressBar):
     """Display progress bar of attack iterations with the gain value."""
 
-    def __init__(self, *args, disable=False, **kwargs):
+    def __init__(self, *args, enable=True, **kwargs):
         if "process_position" not in kwargs:
             # Automatically place the progress bar by rank if position is not specified.
             # rank starts with 0
@@ -27,7 +27,7 @@ class ProgressBar(TQDMProgressBar):
 
         super().__init__(*args, **kwargs)
 
-        if disable:
+        if not enable:
             self.disable()
 
     def init_train_tqdm(self):
