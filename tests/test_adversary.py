@@ -169,6 +169,9 @@ def test_loading_perturbation_from_state_dict():
     # that is not loadable before initialization of perturbation.
     adversary.load_state_dict({"perturber.perturbation": torch.tensor([1.0, 2.0])})
 
+    # Adversary ignores load_state_dict() quietly, so perturbation is still None.
+    assert adversary.perturber.perturbation is None
+
 
 def test_perturbation(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
