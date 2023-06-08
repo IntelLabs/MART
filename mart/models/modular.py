@@ -79,10 +79,11 @@ class LitModular(LightningModule):
         self.test_step_log = test_step_log or []
         self.test_metrics = test_metrics
 
-        # Load state dict for specified modules
-        load_state_dict = load_state_dict or {}
-        # Hydra commandlines converts dotted path to nested dictionary.
-        for name, path in flatten_dict(load_state_dict).items():
+        # Load state dict for specified modules. We flatten it because Hydra
+        # commandlines converts dotted paths to nested dictionaries.
+        load_state_dict = flatten_dict(load_state_dict or {})
+
+        for name, path in load_state_dict.items():
             module = attrgetter(name)(self.model)
             logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
             module.load_state_dict(torch.load(path, map_location="cpu"))
