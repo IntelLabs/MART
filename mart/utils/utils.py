@@ -26,7 +26,7 @@ __all__ = [
     "log_hyperparameters",
     "save_file",
     "task_wrapper",
-    "FlattenDict",
+    "flatten_dict",
 ]
 
 log = pylogger.get_pylogger(__name__)
@@ -275,22 +275,20 @@ def get_resume_checkpoint(config: DictConfig) -> Tuple[DictConfig]:
     return config
 
 
-class FlattenDict(dict):
-    def __init__(self, d, delimiter="."):
-        super().__init__()
-
-        self.delimiter = delimiter
-
-        for key, value in self.get_dottedpath_items(d):
-            if key in self:
-                raise KeyError(f"Key collision when flattening a dictionary: {key}")
-            self[key] = value
-
-    def get_dottedpath_items(self, d: dict, parent: Optional[str] = None):
+def flatten_dict(d, delimiter="."):
+    def get_dottedpath_items(d: dict, parent: Optional[str] = None):
         """Get pairs of the dotted path and the value from a nested dictionary."""
         for name, value in d.items():
-            path = f"{parent}{self.delimiter}{name}" if parent else name
+            path = f"{parent}{delimiter}{name}" if parent else name
             if isinstance(value, dict):
-                yield from self.get_dottedpath_items(value, parent=path)
+                yield from get_dottedpath_items(value, parent=path)
             else:
                 yield path, value
+
+    ret = {}
+    for key, value in get_dottedpath_items(d):
+        if key in ret:
+            raise KeyError(f"Key collision when flattening a dictionary: {key}")
+        ret[key] = value
+
+    return ret
