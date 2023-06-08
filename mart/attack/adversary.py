@@ -126,6 +126,9 @@ class Adversary(pl.LightningModule):
         if len(gain.shape) > 0:
             gain = gain.sum()
 
+        # Log gain as a metric for LR scheduler to monitor, and show gain on progress bar.
+        self.log("gain", gain, prog_bar=True)
+
         return gain
 
     def configure_gradient_clipping(
