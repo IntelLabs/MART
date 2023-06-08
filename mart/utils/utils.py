@@ -305,4 +305,3 @@ def flatten_dict(d, delimiter="."):
         ret[key] = value
 
     return ret
->>>>>>> better_composer
