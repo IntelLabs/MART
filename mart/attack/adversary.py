@@ -81,7 +81,7 @@ class Adversary(pl.LightningModule):
             self._attacker = partial(
                 pl.Trainer,
                 num_sanity_val_steps=0,
-                logger=False,
+                logger=list(kwargs.pop("logger", {}).values()),
                 max_epochs=0,
                 limit_train_batches=kwargs.pop("max_iters", 10),
                 callbacks=list(kwargs.pop("callbacks", {}).values()),  # dict to list of values
