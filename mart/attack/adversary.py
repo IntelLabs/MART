@@ -58,8 +58,13 @@ class Adversary(pl.LightningModule):
         """
         super().__init__()
 
-        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
-        self._perturber = [perturber]
+        # Avoid resuming perturbation from a saved checkpoint.
+        self._register_load_state_dict_pre_hook(
+            # Appear to have consumed the state_dict.
+            lambda state_dict, *args, **kwargs: state_dict.clear()
+        )
+
+        self.perturber = perturber
         self.composer = composer
         self.optimizer = optimizer
         if not isinstance(self.optimizer, OptimizerFactory):
@@ -93,11 +98,6 @@ class Adversary(pl.LightningModule):
             # the number of attack steps via limit_train_batches.
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
-
-    @property
-    def perturber(self) -> Perturber:
-        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
-        return self._perturber[0]
 
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
