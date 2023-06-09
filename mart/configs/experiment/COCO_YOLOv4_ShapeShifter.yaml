@@ -1,0 +1,145 @@
+# @package _global_
+
+defaults:
+  - /attack/perturber@model.modules.perturbation: default
+  - /attack/perturber/initializer@model.modules.perturbation.initializer: uniform
+  - /attack/perturber/projector@model.modules.perturbation.projector: range
+  - /attack/composer@model.modules.input_adv: warp_composite
+  - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
+  - override /optimization: super_convergence
+  - override /datamodule: coco_yolov3
+  - override /model: yolov4
+  - override /metric: average_precision
+  - override /callbacks:
+      [
+        model_checkpoint,
+        lr_monitor,
+        perturbation_visualizer,
+        gradient_monitor,
+        freeze,
+      ]
+
+task_name: "COCO_YOLOv4_ShapeShifter"
+tags: ["adv"]
+
+optimized_metric: "test_metrics/map"
+
+trainer:
+  # 64115 training images, batch_size=16, FLOOR(64115/16) = 4007
+  max_steps: 40070 # 10 epochs
+  # mAP can be slow to compute so limit number of images
+  limit_val_batches: 100
+  limit_test_batches: 100
+  precision: 32
+
+callbacks:
+  model_checkpoint:
+    monitor: "validation_metrics/map"
+    mode: "min"
+
+  freeze:
+    module: "yolov4"
+
+  perturbation_visualizer:
+    perturbation: "model.perturbation.perturbation"
+    frequency: 500
+
+datamodule:
+  num_workers: 32
+  ims_per_batch: 16
+
+  train_dataset:
+    annFile: ${paths.data_dir}/coco/annotations/person_instances_train2017.json
+  val_dataset:
+    annFile: ${paths.data_dir}/coco/annotations/person_instances_val2017.json
+  test_dataset:
+    annFile: ${paths.data_dir}/coco/annotations/person_instances_val2017.json
+
+model:
+  modules:
+    perturbation:
+      size: [3, 416, 234]
+
+      initializer:
+        min: 0.49
+        max: 0.51
+
+      projector:
+        min: 0.0
+        max: 1.0
+
+    input_adv:
+      warp:
+        _target_: torchvision.transforms.Compose
+        transforms:
+          - _target_: mart.transforms.ColorJitter
+            brightness: [0.5, 1.5]
+            contrast: [0.5, 1.5]
+            saturation: [0.5, 1.0]
+            hue: [-0.05, 0.05]
+          - _target_: torchvision.transforms.RandomAffine
+            degrees: [-5, 5]
+            translate: [0.1, 0.25]
+            scale: [0.4, 0.6]
+            shear: [-3, 3, -3, 3]
+            interpolation: 2 # BILINEAR
+      clamp: [0, 1]
+
+    loss:
+      weights: [1, 1]
+
+  optimizer:
+    lr: 0.01
+    momentum: 0.9
+
+  gradient_modifier: null
+
+  training_sequence:
+    seq005: perturbation
+    seq006: input_adv
+    seq010:
+      yolov4:
+        x: "input_adv"
+    seq030:
+      loss:
+        - losses.hide_target_objects_loss
+        - losses.correct_target_class_loss
+
+  training_step_log:
+    - loss
+    - total_loss
+    - coord_loss
+    - obj_loss
+    - noobj_loss
+    - class_loss
+    - hide_objects_loss
+    - target_class_loss
+    - hide_target_objects_loss
+    - correct_target_class_loss
+    - target_count
+    - score_count
+    - target_score_count
+
+  training_metrics: null
+
+  validation_sequence:
+    seq005: perturbation
+    seq006: input_adv
+    seq010:
+      yolov4:
+        x: "input_adv"
+    seq030:
+      loss:
+        - losses.hide_target_objects_loss
+        - losses.correct_target_class_loss
+
+  test_sequence:
+    seq005: perturbation
+    seq006: input_adv
+    seq010:
+      yolov4:
+        x: "input_adv"
+    seq030:
+      loss:
+        - losses.hide_target_objects_loss
+        - losses.correct_target_class_loss
