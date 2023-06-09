@@ -28,6 +28,7 @@ class AttackInEvalMode(Callback):
 
     def on_train_epoch_start(self, trainer, pl_module):
         # We must use on_train_epoch_start because PL will set pl_module to train mode right before this callback.
+        # See: https://lightning.ai/docs/pytorch/stable/common/lightning_module.html#hooks
         for name, module in pl_module.named_modules():
             module_kind = module.__class__.__name__
             if module_kind in self.module_kinds:
