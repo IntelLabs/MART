@@ -10,6 +10,10 @@ import torch
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
+from mart import utils
+
+logger = utils.get_pylogger(__name__)
+
 __all__ = ["ModelParamsNoGrad"]
 
 
@@ -37,7 +41,8 @@ class ModelParamsNoGrad(Callback):
     def setup(self, trainer, pl_module, stage):
         module = self.get_module(pl_module)
 
-        for param in module.parameters():
+        for name, param in module.named_parameters():
+            logger.debug(f"Disabling gradient for {name}")
             param.requires_grad_(False)
 
     def teardown(self, trainer, pl_module, stage):
