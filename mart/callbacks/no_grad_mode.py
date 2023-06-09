@@ -4,11 +4,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-from operator import attrgetter
+from __future__ import annotations
 
 import torch
 from pytorch_lightning.callbacks import Callback
-from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from mart import utils
 
@@ -23,33 +22,22 @@ class ModelParamsNoGrad(Callback):
     This callback should not change the result. Don't use unless an attack runs faster.
     """
 
-    def __init__(self, pl_module_attr: str = None):
-        self._attr = pl_module_attr
+    def __init__(self, module_names: str | list[str] = None):
+        if isinstance(module_names, str):
+            module_names = [module_names]
 
-    def get_module(self, pl_module):
-        module = pl_module
-        if self._attr is not None:
-            module = attrgetter(self._attr)(module)
-
-        if not isinstance(module, torch.nn.Module):
-            raise MisconfigurationException(
-                f"The LightningModule should have a nn.Module `{self._attr}` attribute"
-            )
-
-        return module
+        self.module_names = module_names
 
     def setup(self, trainer, pl_module, stage):
         # We use setup, and not on_train_start, so that mart.optim.OptimizerFactory can ignore parameters with no gradients.
         # See: https://lightning.ai/docs/pytorch/stable/common/lightning_module.html#hooks
-        module = self.get_module(pl_module)
-
-        for name, param in module.named_parameters():
-            logger.debug(f"Disabling gradient for {name}")
-            param.requires_grad_(False)
+        for name, param in pl_module.named_parameters():
+            if any(name.startswith(module_name) for module_name in self.module_names):
+                logger.info(f"Disabling gradient for {name}")
+                param.requires_grad_(False)
 
     def teardown(self, trainer, pl_module, stage):
-        # FIXME: Why is this necessary?
-        module = self.get_module(pl_module)
-
-        for param in module.parameters():
-            param.requires_grad_(True)
+        for name, param in pl_module.named_parameters():
+            if any(name.startswith(module_name) for module_name in self.module_names):
+                # FIXME: Why is this necessary?
+                param.requires_grad_(True)

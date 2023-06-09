@@ -1,2 +1,3 @@
-attack_in_eval_mode:
+no_grad_mode:
   _target_: mart.callbacks.ModelParamsNoGrad
+  module_names: ???
