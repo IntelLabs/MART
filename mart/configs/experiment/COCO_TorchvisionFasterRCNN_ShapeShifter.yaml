@@ -11,13 +11,7 @@ defaults:
   - override /metric: average_precision
   - override /optimization: super_convergence
   - override /callbacks:
-      [
-        model_checkpoint,
-        lr_monitor,
-        perturbation_visualizer,
-        gradient_monitor,
-        freeze,
-      ]
+      [model_checkpoint, lr_monitor, perturbation_visualizer, gradient_monitor]
 
 task_name: "COCO_TorchvisionFasterRCNN_ShapeShifter"
 tags: ["adv"]
@@ -28,9 +22,6 @@ callbacks:
   model_checkpoint:
     monitor: "validation_metrics/map"
     mode: "min"
-
-  freeze:
-    module: "losses_and_detections"
 
   perturbation_visualizer:
     perturbation: "model.perturbation.perturbation"
