@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from operator import attrgetter
+
 import torch
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
@@ -25,10 +27,9 @@ class FreezeModule(Callback):
         self.name = module
 
     def setup(self, trainer, pl_module, stage):
-        # FIXME: Use DotDict?
-        module = getattr(pl_module.model, self.name, None)
+        module = attrgetter(self.name)(pl_module.model)
 
-        if module is None or not isinstance(module, torch.nn.Module):
+        if not isinstance(module, torch.nn.Module):
             raise MisconfigurationException(
                 f"The LightningModule should have a nn.Module `{self.name}` attribute"
             )
@@ -43,10 +44,9 @@ class FreezeModule(Callback):
                 logger.info(f"Setting eval mode for {name} ({module_kind})")
 
     def on_train_epoch_start(self, trainer, pl_module):
-        # FIXME: Use DotDict?
-        module = getattr(pl_module.model, self.name, None)
+        module = attrgetter(self.name)(pl_module.model)
 
-        if module is None or not isinstance(module, torch.nn.Module):
+        if not isinstance(module, torch.nn.Module):
             raise MisconfigurationException(
                 f"The LightningModule should have a nn.Module `{self.name}` attribute"
             )
