@@ -18,8 +18,11 @@ __all__ = ["AttackInEvalMode"]
 class AttackInEvalMode(Callback):
     """Switch the model into eval mode during attack."""
 
-    def __init__(self, module_classes: list[type]):
+    def __init__(self, module_classes: type | list[type]):
         # FIXME: convert strings to classes using hydra.utils.get_class? This will clean up some verbosity in configuration but will require importing hydra in this callback.
+        if isinstance(module_classes, type):
+            module_classes = [module_classes]
+
         self.module_classes = tuple(module_classes)
 
     def setup(self, trainer, pl_module, stage):
