@@ -34,7 +34,7 @@ class AttackInEvalMode(Callback):
                 module.eval()
 
     def on_train_epoch_end(self, trainer, pl_module):
-        # FIXME: Why this is necessary?
+        # FIXME: Why is this necessary?
         for name, module in pl_module.named_modules():
             module_kind = module.__class__.__name__
             if module_kind in self.module_kinds:
