@@ -20,7 +20,7 @@ class AttackInEvalMode(Callback):
         self.module_kinds = module_kinds
 
     def setup(self, trainer, pl_module, stage):
-        # This just logs to the console so the user can see visually see which modules will be in eval mode during training.
+        # Log to the console so the user can see visually see which modules will be in eval mode during training.
         for name, module in pl_module.named_modules():
             module_kind = module.__class__.__name__
             if module_kind in self.module_kinds:

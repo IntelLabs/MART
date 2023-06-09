@@ -39,7 +39,7 @@ class ModelParamsNoGrad(Callback):
         return module
 
     def setup(self, trainer, pl_module, stage):
-        # We use setup, and not on_train_start, so that optimizers can ignore parameters with no gradients.
+        # We use setup, and not on_train_start, so that mart.optim.OptimizerFactory can ignore parameters with no gradients.
         module = self.get_module(pl_module)
 
         for name, param in module.named_parameters():
@@ -47,6 +47,7 @@ class ModelParamsNoGrad(Callback):
             param.requires_grad_(False)
 
     def teardown(self, trainer, pl_module, stage):
+        # FIXME: Why is this necessary?
         module = self.get_module(pl_module)
 
         for param in module.parameters():
