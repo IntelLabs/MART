@@ -15,7 +15,6 @@ from torch.optim import SGD
 import mart
 from mart.attack import Adversary, Composer, Perturber
 from mart.attack.gradient_modifier import Sign
-from mart.optim import OptimizerFactory
 
 
 def test_adversary(input_data, target_data, perturbation):
@@ -136,13 +135,42 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
 
     output_data = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
 
-    # Adversarial perturbation will not have parameter even after forward is called.
+    # Adversarial perturbation will have one parameter after forward is called.
     params = [p for p in adversary.parameters()]
-    assert len(params) == 0
+    assert len(params) == 1
 
-    # Adversarial perturbation should not have any state dict items being exported to the model checkpoint.
+    # Adversarial perturbation should have one state dict item being exported to the model checkpoint.
     state_dict = adversary.state_dict()
-    assert len(state_dict) == 0
+    assert len(state_dict) == 1
+
+
+def test_loading_perturbation_from_state_dict():
+    initializer = Mock()
+    composer = mart.attack.composer.Additive()
+    projector = Mock()
+
+    perturber = Perturber(initializer=initializer, projector=projector)
+
+    gain = Mock()
+    enforcer = Mock()
+    attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
+
+    adversary = Adversary(
+        perturber=perturber,
+        composer=composer,
+        optimizer=None,
+        gain=gain,
+        enforcer=enforcer,
+        attacker=attacker,
+    )
+
+    # We should be able to load arbitrary state_dict, because Adversary ignores state_dict.
+    # We want this behavior for Adversary because model checkpoints may include perturbation in state_dict
+    # that is not loadable before initialization of perturbation.
+    adversary.load_state_dict({"perturber.perturbation": torch.tensor([1.0, 2.0])})
+
+    # Adversary ignores load_state_dict() quietly, so perturbation is still None.
+    assert adversary.perturber.perturbation is None
 
 
 def test_perturbation(input_data, target_data, perturbation):
@@ -179,7 +207,7 @@ def test_perturbation(input_data, target_data, perturbation):
 def test_forward_with_model(input_data, target_data):
     composer = mart.attack.composer.Additive()
     enforcer = Mock()
-    optimizer = OptimizerFactory(SGD, lr=1.0, maximize=True)
+    optimizer = partial(SGD, lr=1.0, maximize=True)
 
     # Force zeros, positive and negative gradients
     def gain(logits):

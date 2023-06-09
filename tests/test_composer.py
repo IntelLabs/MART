@@ -17,7 +17,7 @@ def test_additive_composer_forward(input_data, target_data, perturbation):
     torch.testing.assert_close(output, expected_output, equal_nan=True)
 
 
-def test_overlay_composer_forward(input_data, target_data, perturbation):
+def test_composite_composer_forward(input_data, target_data, perturbation):
     composer = Composite()
 
     output = composer(perturbation, input=input_data, target=target_data)
