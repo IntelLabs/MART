@@ -4,11 +4,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-import os
+from operator import attrgetter
 
 from pytorch_lightning.callbacks import Callback
-
-import mart
 
 __all__ = ["ImageVisualizer"]
 
@@ -29,7 +27,7 @@ class ImageVisualizer(Callback):
 
     def log_images(self, trainer, pl_module):
         for tag, path in self.tag_paths.items():
-            image = mart.utils.get_object(pl_module, path)
+            image = attrgetter(path)(pl_module)
             self.log_image(trainer, tag, image)
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
