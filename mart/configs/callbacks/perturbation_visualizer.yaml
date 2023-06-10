@@ -1,4 +1,0 @@
-perturbation_visualizer:
-  _target_: mart.callbacks.ImageVisualizer
-  frequency: 100
-  perturbation: ???
