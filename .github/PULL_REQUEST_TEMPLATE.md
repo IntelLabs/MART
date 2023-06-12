@@ -23,8 +23,9 @@ Please check all relevant options.
 
 Please describe the tests that you ran to verify your changes. Consider listing any relevant details of your test configuration.
 
-- [ ] Test A
-- [ ] Test B
+- [ ] `pytest`
+- [ ] `CUDA_VISIBLE_DEVICES=0 python -m mart experiment=CIFAR10_CNN_Adv trainer=gpu trainer.precision=16` reports 70% (21 sec/epoch).
+- [ ] `CUDA_VISIBLE_DEVICES=0,1 python -m mart experiment=CIFAR10_CNN_Adv trainer=ddp trainer.precision=16 trainer.devices=2 model.optimizer.lr=0.2 trainer.max_steps=2925 datamodule.ims_per_batch=256 datamodule.world_size=2` reports 70% (14 sec/epoch).
 
 ## Before submitting
 
