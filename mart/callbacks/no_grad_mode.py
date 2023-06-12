@@ -29,6 +29,9 @@ class ModelParamsNoGrad(Callback):
         self.module_names = module_names
 
     def setup(self, trainer, pl_module, stage):
+        if stage != "fit":
+            return
+
         # We use setup, and not on_train_start, so that mart.optim.OptimizerFactory can ignore parameters with no gradients.
         # See: https://lightning.ai/docs/pytorch/stable/common/lightning_module.html#hooks
         for name, param in pl_module.named_parameters():

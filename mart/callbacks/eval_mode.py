@@ -26,6 +26,9 @@ class AttackInEvalMode(Callback):
         self.module_classes = tuple(module_classes)
 
     def setup(self, trainer, pl_module, stage):
+        if stage != "fit":
+            return
+
         # Log to the console so the user can see visually see which modules will be in eval mode during training.
         for name, module in pl_module.named_modules():
             if isinstance(module, self.module_classes):
