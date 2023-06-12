@@ -98,7 +98,12 @@ class Mask(Constraint):
 
 class Enforcer:
     def __init__(self, **modality_constraints: dict[str, dict[str, Constraint]]) -> None:
-        self.modality_constraints = modality_constraints
+        self.modality_constraints = {}
+
+        for modality, constraints in modality_constraints.items():
+            # Intentionally ignore keys after modality.
+            # The keys are there for combining constraints easily in Hydra.
+            self.modality_constraints[modality] = constraints.values()
 
     @torch.no_grad()
     def __call__(
@@ -123,6 +128,6 @@ class Enforcer:
         target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         modality: str,
     ):
-        # intentionally ignore keys after modality.
-        for constraint in self.modality_constraints[modality].values():
+
+        for constraint in self.modality_constraints[modality]:
             constraint(input_adv, input=input, target=target)
