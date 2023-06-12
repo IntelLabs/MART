@@ -117,10 +117,10 @@ class Enforcer:
     @torch.no_grad()
     def _enforce(
         self,
-        input_adv: torch.Tensor,
+        input_adv: torch.Tensor | Iterable[torch.Tensor],
         *,
-        input: torch.Tensor,
-        target: torch.Tensor | dict[str, Any],
+        input: torch.Tensor | Iterable[torch.Tensor],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         modality: str,
     ):
         # intentionally ignore keys after modality.

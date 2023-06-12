@@ -1,0 +1,4 @@
+progress_bar:
+  _target_: mart.callbacks.ProgressBar
+  # Enable progress bar for adversary by default.
+  enable: true
