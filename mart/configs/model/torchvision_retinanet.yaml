@@ -3,7 +3,9 @@ defaults:
   - torchvision_object_detection
 
 # log all losses separately in training.
-training_step_log: ["loss_classifier", "loss_box_reg"]
+training_step_log:
+  loss_classifier: "loss_classifier"
+  loss_box_reg: "loss_box_reg"
 
 training_sequence:
   - preprocessor: ["input"]
