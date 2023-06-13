@@ -3,8 +3,7 @@ defaults:
   - modular
   - /model/modules@modules.preprocessor: tuple_normalizer
 
-training_step_log:
-  loss: "loss"
+training_step_log: ???
 
 training_sequence: ???
 

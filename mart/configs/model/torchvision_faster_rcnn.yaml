@@ -4,10 +4,13 @@ defaults:
 
 # log all losses separately in training.
 training_step_log:
-  rpn_loss_objectness: "rpn_loss.loss_objectness"
-  rpn_loss_rpn_box_reg: "rpn_loss.loss_rpn_box_reg"
-  box_loss_classifier: "box_loss.loss_classifier"
-  box_loss_box_reg: "box_loss.loss_box_reg"
+  [
+    "rpn_loss.loss_objectness",
+    "rpn_loss.loss_rpn_box_reg",
+    "box_loss.loss_classifier",
+    "box_loss.loss_box_reg",
+    "loss",
+  ]
 
 training_sequence:
   seq010:
