@@ -70,12 +70,21 @@ class LitModular(LightningModule):
 
         self.lr_scheduler = lr_scheduler
 
+        # Be backwards compatible by turning list into dict where each item is its own key-value
+        if isinstance(training_step_log, (list, tuple)):
+            training_step_log = { item: item for item in training_step_log}
         self.training_step_log = training_step_log or {}
         self.training_metrics = training_metrics
 
+        # Be backwards compatible by turning list into dict where each item is its own key-value
+        if isinstance(validation_step_log, (list, tuple)):
+            validation_step_log = { item: item for item in validation_step_log}
         self.validation_step_log = validation_step_log or {}
         self.validation_metrics = validation_metrics
 
+        # Be backwards compatible by turning list into dict where each item is its own key-value
+        if isinstance(test_step_log, (list, tuple)):
+            test_step_log = { item: item for item in test_step_log}
         self.test_step_log = test_step_log or {}
         self.test_metrics = test_metrics
 
