@@ -3,22 +3,17 @@ defaults:
   - modular
   - /model/modules@modules.preprocessor: tuple_normalizer
 
-training_step_log: ???
+training_step_log:
+  loss: "loss"
 
 training_sequence: ???
-
 validation_sequence: ???
-
 test_sequence: ???
 
 modules:
-  losses_and_detections:
-    # Return losses in the training mode and predictions in the eval mode in one pass.
-    _target_: mart.models.DualMode
-    model: ???
+  detector:
+    _target_: mart.nn.Module
+    path: ???
 
   loss:
     _target_: mart.nn.Sum
-
-  output:
-    _target_: mart.nn.ReturnKwargs

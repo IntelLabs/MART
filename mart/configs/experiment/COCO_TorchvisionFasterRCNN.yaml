@@ -29,11 +29,9 @@ datamodule:
 
 model:
   modules:
-    losses_and_detections:
-      model:
-        # Inferred by torchvision.
-        num_classes: null
-        weights: COCO_V1
+    detector:
+      num_classes: null  # inferred by torchvision
+      weights: COCO_V1
 
   optimizer:
     lr: 0.0125

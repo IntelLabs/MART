@@ -2,8 +2,8 @@ _target_: mart.nn.CallWith
 module:
   _target_: mart.nn.Sum
 arg_keys:
-  - rpn_loss.loss_objectness
-  - rpn_loss.loss_rpn_box_reg
-  - box_loss.loss_classifier
-  - box_loss.loss_box_reg
+  - losses.loss_objectness
+  - losses.loss_rpn_box_reg
+  - losses.loss_classifier
+  - losses.loss_box_reg
 kwarg_keys: null

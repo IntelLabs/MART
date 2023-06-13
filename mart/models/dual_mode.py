@@ -13,37 +13,7 @@ from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 
 from mart.utils.monkey_patch import MonkeyPatch
 
-__all__ = ["DualMode", "DualModeGeneralizedRCNN"]
-
-
-class DualMode(torch.nn.Module):
-    """Run model.forward() in both the training mode and the eval mode, then aggregate results in a
-    dictionary {"training": ..., "eval": ...}.
-
-    Some object detection models are implemented to return losses in the training mode and
-    predictions in the eval mode, but we want both the losses and the predictions when attacking a
-    model in the test mode.
-    """
-
-    def __init__(self, model):
-        super().__init__()
-
-        self.model = model
-
-    def forward(self, *args, **kwargs):
-        original_training_status = self.model.training
-        ret = {}
-
-        # TODO: Reuse the feature map in dual mode to improve efficiency
-        self.model.train(True)
-        ret["training"] = self.model(*args, **kwargs)
-
-        self.model.train(False)
-        with torch.no_grad():
-            ret["eval"] = self.model(*args, **kwargs)
-
-        self.model.train(original_training_status)
-        return ret
+__all__ = ["DualModeGeneralizedRCNN"]
 
 
 class DualModeGeneralizedRCNN(torch.nn.Module):

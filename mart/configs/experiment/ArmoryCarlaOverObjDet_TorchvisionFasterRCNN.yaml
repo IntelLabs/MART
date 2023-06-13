@@ -12,10 +12,9 @@ optimized_metric: "test_metrics/map"
 
 model:
   modules:
-    losses_and_detections:
-      model:
-        num_classes: 3
-        weights: null
+    detector:
+      num_classes: 3
+      weights: null
 
   optimizer:
     lr: 0.0125
