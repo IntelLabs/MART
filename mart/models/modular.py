@@ -116,7 +116,7 @@ class LitModular(LightningModule):
         output = self(input=input, target=target, model=self.model, step="training")
 
         for log_name, output_key in self.training_step_log.items():
-            self.log(f"training/{log_name}", output[output_key], sync_dist=True)
+            self.log(f"training/{log_name}", output[output_key])
 
         assert "loss" in output
         return output
@@ -150,7 +150,7 @@ class LitModular(LightningModule):
         output = self(input=input, target=target, model=self.model, step="validation")
 
         for log_name, output_key in self.validation_step_log.items():
-            self.log(f"validation/{log_name}", output[output_key], sync_dist=True)
+            self.log(f"validation/{log_name}", output[output_key])
 
         return output
 
@@ -176,7 +176,7 @@ class LitModular(LightningModule):
         output = self(input=input, target=target, model=self.model, step="test")
 
         for log_name, output_key in self.test_step_log.items():
-            self.log(f"test/{log_name}", output[output_key], sync_dist=True)
+            self.log(f"test/{log_name}", output[output_key])
 
         return output
 
