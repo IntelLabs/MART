@@ -6,7 +6,9 @@ defaults:
 training_step_log:
   loss: "loss"
 
-training_sequence: ???
+training_sequence:
+  seq100:
+    loss: ???
 validation_sequence: ???
 test_sequence: ???
 

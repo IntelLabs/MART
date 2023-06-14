@@ -28,7 +28,7 @@ training_sequence:
       train_mode: False
       inference_mode: True
 
-  seq040:
+  seq100:
     loss:
       # Sum up the losses.
       [
