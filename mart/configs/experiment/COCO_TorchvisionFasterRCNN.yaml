@@ -28,11 +28,6 @@ datamodule:
   world_size: 1
 
 model:
-  modules:
-    detector:
-      num_classes: null # inferred by torchvision
-      weights: COCO_V1
-
   optimizer:
     lr: 0.0125
     momentum: 0.9

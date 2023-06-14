@@ -1,0 +1,83 @@
+# We simply wrap a torchvision object detection model for validation.
+defaults:
+  - torchvision_object_detection
+
+# log all losses separately in losses.
+training_step_log:
+  loss_objectness: "losses.loss_objectness"
+  loss_rpn_box_reg: "losses.loss_rpn_box_reg"
+  loss_classifier: "losses.loss_classifier"
+  loss_box_reg: "losses.loss_box_reg"
+
+training_sequence:
+  seq010:
+    preprocessor: ["input"]
+
+  seq020:
+    detector:
+      _name_: losses
+      images: preprocessor
+      targets: target
+      train_mode: True
+
+  seq030:
+    detector:
+      _name_: preds
+      images: preprocessor
+      targets: target
+      train_mode: False
+      inference_mode: True
+
+  seq100:
+    loss:
+      # Sum up the losses.
+      [
+        "losses.loss_objectness",
+        "losses.loss_rpn_box_reg",
+        "losses.loss_classifier",
+        "losses.loss_box_reg",
+      ]
+
+validation_sequence:
+  seq010:
+    preprocessor: ["input"]
+
+  seq020:
+    detector:
+      _name_: losses
+      images: preprocessor
+      targets: target
+      train_mode: True
+
+  seq030:
+    detector:
+      _name_: preds
+      images: preprocessor
+      targets: target
+      train_mode: False
+      inference_mode: True
+
+test_sequence:
+  seq010:
+    preprocessor: ["input"]
+
+  seq020:
+    detector:
+      _name_: losses
+      images: preprocessor
+      targets: target
+      train_mode: True
+
+  seq030:
+    detector:
+      _name_: preds
+      images: preprocessor
+      targets: target
+      train_mode: False
+      inference_mode: True
+
+modules:
+  detector:
+    _target_: mart.nn.Module
+    _path_: torchvision.models.detection.fasterrcnn_resnet50_fpn
+    num_classes: ???
