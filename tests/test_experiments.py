@@ -209,7 +209,7 @@ def test_coco_fasterrcnn_experiment(coco_cfg, tmp_path):
         "-m",
         "experiment=COCO_TorchvisionFasterRCNN",
         "hydra.sweep.dir=" + str(tmp_path),
-        "optimized_metric=training/rpn_loss.loss_objectness",
+        "optimized_metric=training/loss_objectness",
     ] + overrides
     run_sh_command(command)
 
@@ -224,7 +224,7 @@ def test_coco_fasterrcnn_adv_experiment(coco_cfg, tmp_path):
         "-m",
         "experiment=COCO_TorchvisionFasterRCNN_Adv",
         "hydra.sweep.dir=" + str(tmp_path),
-        "optimized_metric=training/rpn_loss.loss_objectness",
+        "optimized_metric=training/loss_objectness",
     ] + overrides
     run_sh_command(command)
 
@@ -256,7 +256,7 @@ def test_armory_carla_fasterrcnn_experiment(carla_cfg, tmp_path):
         "experiment=ArmoryCarlaOverObjDet_TorchvisionFasterRCNN",
         "+attack@model.modules.input_adv_test=object_detection_mask_adversary",
         "hydra.sweep.dir=" + str(tmp_path),
-        "optimized_metric=training/rpn_loss.loss_objectness",
+        "optimized_metric=training/loss_objectness",
     ] + overrides
     run_sh_command(command)
 

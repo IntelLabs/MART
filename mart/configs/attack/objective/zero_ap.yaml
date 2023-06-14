@@ -4,6 +4,6 @@ module:
   iou_threshold: 0.5
   confidence_threshold: 0.0
 arg_keys:
-  - preds
-  - target
+  - ${model.output_preds_key}
+  - ${model.output_target_key}
 kwarg_keys: null
