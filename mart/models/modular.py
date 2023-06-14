@@ -125,10 +125,6 @@ class LitModular(LightningModule):
         for name in self.training_step_log:
             self.log(f"training/{name}", output[name])
 
-        assert "loss" in output
-        return output
-
-    def training_step_end(self, output):
         if self.training_metrics is not None:
             # Some models only return loss in the training mode.
             if self.output_preds_key not in output or self.output_target_key not in output:
@@ -136,8 +132,8 @@ class LitModular(LightningModule):
                     f"You have specified training_metrics, but the model does not return {self.output_preds_key} or {self.output_target_key} during training. You can either nullify training_metrics or configure the model to return {self.output_preds_key} and {self.output_target_key} in the training output."
                 )
             self.training_metrics(output[self.output_preds_key], output[self.output_target_key])
-        loss = output.pop(self.output_loss_key)
-        return loss
+
+        return output[self.output_loss_key]
 
     def training_epoch_end(self, outputs):
         if self.training_metrics is not None:
@@ -159,13 +155,9 @@ class LitModular(LightningModule):
         for name in self.validation_step_log:
             self.log(f"validation/{name}", output[name])
 
-        return output
-
-    def validation_step_end(self, output):
         self.validation_metrics(output[self.output_preds_key], output[self.output_target_key])
 
-        # I don't know why this is required to prevent CUDA memory leak in validaiton and test. (Not required in training.)
-        output.clear()
+        return None
 
     def validation_epoch_end(self, outputs):
         metrics = self.validation_metrics.compute()
@@ -185,13 +177,9 @@ class LitModular(LightningModule):
         for name in self.test_step_log:
             self.log(f"test/{name}", output[name])
 
-        return output
-
-    def test_step_end(self, output):
         self.test_metrics(output[self.output_preds_key], output[self.output_target_key])
 
-        # I don't know why this is required to prevent CUDA memory leak in validaiton and test. (Not required in training.)
-        output.clear()
+        return None
 
     def test_epoch_end(self, outputs):
         metrics = self.test_metrics.compute()
