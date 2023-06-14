@@ -12,9 +12,9 @@ optimized_metric: "test_metrics/map"
 
 model:
   modules:
-    detector:
-      num_classes: 3
-      weights: null
+    roi_heads:
+      box_predictor:
+        num_classes: 3
 
   optimizer:
     lr: 0.0125
