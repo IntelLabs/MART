@@ -71,5 +71,6 @@ test_sequence:
 
 modules:
   detector:
+    _target_: mart.nn.Module
     _path_: torchvision.models.detection.retinanet_resnet50_fpn
     num_classes: ???
