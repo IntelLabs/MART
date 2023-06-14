@@ -10,8 +10,6 @@ training_sequence: ???
 validation_sequence: ???
 test_sequence: ???
 
-output_preds_key: "losses_and_detections.eval"
-
 modules:
   detector:
     _target_: mart.nn.Module
