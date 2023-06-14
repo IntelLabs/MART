@@ -13,7 +13,7 @@ test_sequence: ???
 modules:
   detector:
     _target_: mart.nn.Module
-    path: ???
+    _path_: ???
 
   loss:
     _target_: mart.nn.Sum

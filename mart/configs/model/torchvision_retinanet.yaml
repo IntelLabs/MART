@@ -71,5 +71,5 @@ test_sequence:
 
 modules:
   detector:
-    path: torchvision.models.detection.retinanet_resnet50_fpn
+    _path_: torchvision.models.detection.retinanet_resnet50_fpn
     num_classes: ???
