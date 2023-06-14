@@ -11,13 +11,13 @@ __all__ = ["Module"]
 
 
 class Module(torch.nn.Module):
-    def __init__(self, path: str, *args, **kwargs):
+    def __init__(self, _path_: str, *args, **kwargs):
         super().__init__()
 
         # TODO: Add _load_state_dict_
         # TODO: Add _freeze_
 
-        cfg = {"_target_": path}
+        cfg = {"_target_": _path_}
         self.module = instantiate(cfg, *args, **kwargs)
 
     def forward(
