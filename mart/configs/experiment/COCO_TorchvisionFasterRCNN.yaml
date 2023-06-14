@@ -30,7 +30,7 @@ datamodule:
 model:
   modules:
     detector:
-      num_classes: null  # inferred by torchvision
+      num_classes: null # inferred by torchvision
       weights: COCO_V1
 
   optimizer:

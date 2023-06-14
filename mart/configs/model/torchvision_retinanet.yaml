@@ -29,10 +29,7 @@ training_sequence:
   seq040:
     loss:
       # Sum up the losses.
-      [
-        "losses.classification",
-        "losses.bbox_regression",
-      ]
+      ["losses.classification", "losses.bbox_regression"]
 
 validation_sequence:
   seq010:

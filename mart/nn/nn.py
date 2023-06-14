@@ -158,8 +158,12 @@ class CallWith(torch.nn.Module):
                     f"Module {orig_class} wants arg named '{key}' but only received kwargs: {', '.join(kwargs.keys())}."
                 )
 
-        selected_args = [kwargs[key] if isinstance(key, str) else key for key in arg_keys[len(args) :]]
-        selected_kwargs = {key: kwargs[val] if isinstance(val, str) else val for key, val in kwarg_keys.items()}
+        selected_args = [
+            kwargs[key] if isinstance(key, str) else key for key in arg_keys[len(args) :]
+        ]
+        selected_kwargs = {
+            key: kwargs[val] if isinstance(val, str) else val for key, val in kwarg_keys.items()
+        }
 
         # FIXME: Add better error message
         ret = self.module(*args, *selected_args, **selected_kwargs)
