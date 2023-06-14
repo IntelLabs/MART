@@ -27,6 +27,8 @@ training_sequence:
 
   seq040:
     rpn:
+      train_mode: True
+      inference_mode: False
       images: "transform.images"
       features: "backbone"
       targets: "transform.targets"
@@ -34,8 +36,31 @@ training_sequence:
 
   seq050:
     roi_heads:
+      train_mode: True
+      inference_mode: False
       features: "backbone"
       proposals: "rpn.proposals"
+      image_shapes: "transform.images.image_sizes"
+      targets: "transform.targets"
+      _return_as_dict_: ["detections", "losses"]
+
+  seq060:
+    rpn:
+      _name_: "rpn_eval"
+      train_mode: False
+      inference_mode: True
+      images: "transform.images"
+      features: "backbone"
+      targets: "transform.targets"
+      _return_as_dict_: ["proposals", "losses"]
+
+  seq070:
+    roi_heads:
+      _name_: "roi_heads_eval"
+      train_mode: False
+      inference_mode: True
+      features: "backbone"
+      proposals: "rpn_eval.proposals"
       image_shapes: "transform.images.image_sizes"
       targets: "transform.targets"
       _return_as_dict_: ["detections", "losses"]
@@ -66,6 +91,8 @@ validation_sequence:
 
   seq040:
     rpn:
+      train_mode: True
+      inference_mode: False
       images: "transform.images"
       features: "backbone"
       targets: "transform.targets"
@@ -73,8 +100,31 @@ validation_sequence:
 
   seq050:
     roi_heads:
+      train_mode: True
+      inference_mode: False
       features: "backbone"
       proposals: "rpn.proposals"
+      image_shapes: "transform.images.image_sizes"
+      targets: "transform.targets"
+      _return_as_dict_: ["detections", "losses"]
+
+  seq060:
+    rpn:
+      _name_: "rpn_eval"
+      train_mode: False
+      inference_mode: True
+      images: "transform.images"
+      features: "backbone"
+      targets: "transform.targets"
+      _return_as_dict_: ["proposals", "losses"]
+
+  seq070:
+    roi_heads:
+      _name_: "roi_heads_eval"
+      train_mode: False
+      inference_mode: True
+      features: "backbone"
+      proposals: "rpn_eval.proposals"
       image_shapes: "transform.images.image_sizes"
       targets: "transform.targets"
       _return_as_dict_: ["detections", "losses"]
@@ -95,6 +145,8 @@ test_sequence:
 
   seq040:
     rpn:
+      train_mode: True
+      inference_mode: False
       images: "transform.images"
       features: "backbone"
       targets: "transform.targets"
@@ -102,6 +154,8 @@ test_sequence:
 
   seq050:
     roi_heads:
+      train_mode: True
+      inference_mode: False
       features: "backbone"
       proposals: "rpn.proposals"
       image_shapes: "transform.images.image_sizes"
