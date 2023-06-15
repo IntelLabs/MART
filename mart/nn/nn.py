@@ -249,8 +249,8 @@ class Sum(torch.nn.Module):
 
         self.weights = weights
 
-    def forward(self, *values):
-        weights = self.weights
+    def forward(self, *values, weights=None):
+        weights = weights or self.weights
 
         if weights is None:
             weights = [1 for _ in values]
