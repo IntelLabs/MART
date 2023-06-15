@@ -4,7 +4,7 @@ defaults:
 
 load_state_dict:
   detector:
-    _target_: hydra.utils._locate  # FIXME: Use hydra.utils.get_object when available
+    _target_: hydra.utils._locate # FIXME: Use hydra.utils.get_object when available
     path: "torchvision.models.detection.RetinaNet_ResNet50_FPN_Weights.COCO_V1"
 
 # log all losses separately in training.

@@ -106,7 +106,9 @@ class LitModular(LightningModule):
                 state_dict = torch.load(state_dict, map_location="cpu")
 
             elif hasattr(state_dict, "get_state_dict"):
-                logger.info(f"Loading {state_dict.__class__.__name__} for {module.__class__.__name__}...")
+                logger.info(
+                    f"Loading {state_dict.__class__.__name__} for {module.__class__.__name__}..."
+                )
                 state_dict = state_dict.get_state_dict(progress=True)
 
             else:
