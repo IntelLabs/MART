@@ -3,7 +3,6 @@ module:
   _target_: mart.attack.objective.ZeroAP
   iou_threshold: 0.5
   confidence_threshold: 0.0
-arg_keys:
+_call_with_args_:
   - preds
   - target
-kwarg_keys: null
