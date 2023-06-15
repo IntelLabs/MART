@@ -188,21 +188,23 @@ class CallWith(torch.nn.Module):
                 ) from ex
 
         # Apply train mode and inference mode, if necessary, and call module with args and kwargs
-        old_train_mode = self.module.training
-
-        if _train_mode_ is not None:
-            self.module.train(_train_mode_)
-
         context = nullcontext()
-        if _inference_mode_ is not None:
-            context = torch.inference_mode(mode=_inference_mode_)
+        if isinstance(self.module, torch.nn.Module)
+            old_train_mode = self.module.training
+
+            if _train_mode_ is not None:
+                self.module.train(_train_mode_)
+
+            if _inference_mode_ is not None:
+                context = torch.inference_mode(mode=_inference_mode_)
 
         with context:
             # FIXME: Add better error message
             ret = self.module(*args, **kwargs)
 
-        if _train_mode_ is not None:
-            self.module.train(old_train_mode)
+        if isinstance(self.module, torch.nn.Module):
+            if _train_mode_ is not None:
+                self.module.train(old_train_mode)
 
         # Change returned values into dictionary, if necessary
         return_keys = _return_as_dict_ or self.return_keys
