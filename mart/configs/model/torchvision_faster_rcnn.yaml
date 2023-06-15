@@ -7,8 +7,6 @@ load_state_dict:
     _target_: hydra.utils._locate  # FIXME: Use hydra.utils.get_object when available
     path: "torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights.COCO_V1"
 
-output_preds_key: "roi_heads_eval.detections"
-
 # log all losses separately in losses.
 training_step_log:
   loss_objectness: "rpn.losses.loss_objectness"
@@ -69,6 +67,12 @@ training_sequence:
       image_shapes: "transform.images.image_sizes"
       targets: "transform.targets"
       _return_as_dict_: ["detections", "losses"]
+
+  seq080:
+    preds:
+      result: "roi_heads_eval.detections"
+      image_shapes: "transform.images.image_sizes"
+      original_images: "preprocessor"
 
   seq100:
     loss:
@@ -134,6 +138,12 @@ validation_sequence:
       targets: "transform.targets"
       _return_as_dict_: ["detections", "losses"]
 
+  seq080:
+    preds:
+      result: "roi_heads_eval.detections"
+      image_shapes: "transform.images.image_sizes"
+      original_images: "preprocessor"
+
 test_sequence:
   seq010:
     preprocessor: ["input"]
@@ -187,6 +197,12 @@ test_sequence:
       image_shapes: "transform.images.image_sizes"
       targets: "transform.targets"
       _return_as_dict_: ["detections", "losses"]
+
+  seq080:
+    preds:
+      result: "roi_heads_eval.detections"
+      image_shapes: "transform.images.image_sizes"
+      original_images: "preprocessor"
 
 modules:
   transform:
@@ -272,3 +288,6 @@ modules:
     score_thresh: 0.05
     nms_thresh: 0.5
     detections_per_img: 100
+
+  preds:
+    _target_: mart.models.detection.GeneralizedRCNNPostProcessor
