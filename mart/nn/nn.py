@@ -112,6 +112,7 @@ class SequentialDict(torch.nn.ModuleDict):
             # Don't pop the first element yet, because it may be used to re-evaluate the model.
             key, module = next(iter(sequence.items()))
 
+            # FIXME: Add better error message
             output = module(step=step, sequence=sequence, **kwargs)
 
             if key in kwargs:
@@ -152,14 +153,20 @@ class CallWith(torch.nn.Module):
         # as it and assume these consume the first len(args) of arg_keys.
         remaining_arg_keys = arg_keys[len(args) :]
 
-        for key in remaining_arg_keys + list(kwarg_keys.values()):
+        # Check to make sure each str exists within kwargs
+        str_kwarg_keys = filter(lambda k: isinstance(k, str), kwarg_keys.values())
+        for key in remaining_arg_keys + list(str_kwarg_keys):
             if key not in kwargs:
                 raise Exception(
                     f"Module {orig_class} wants arg named '{key}' but only received kwargs: {', '.join(kwargs.keys())}."
                 )
 
-        selected_args = [kwargs[key] for key in arg_keys[len(args) :]]
-        selected_kwargs = {key: kwargs[val] for key, val in kwarg_keys.items()}
+        selected_args = [
+            kwargs[key] if isinstance(key, str) else key for key in arg_keys[len(args) :]
+        ]
+        selected_kwargs = {
+            key: kwargs[val] if isinstance(val, str) else val for key, val in kwarg_keys.items()
+        }
 
         # FIXME: Add better error message
         ret = self.module(*args, *selected_args, **selected_kwargs)
