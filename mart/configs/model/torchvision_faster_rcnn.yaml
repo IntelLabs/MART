@@ -2,6 +2,11 @@
 defaults:
   - torchvision_object_detection
 
+load_state_dict:
+  _model_:
+    _target_: hydra.utils._locate  # FIXME: Use hydra.utils.get_object when available
+    path: "torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights.COCO_V1"
+
 output_preds_key: "roi_heads_eval.detections"
 
 # log all losses separately in losses.
