@@ -7,9 +7,7 @@
 from __future__ import annotations
 
 import logging
-from collections import OrderedDict
-from contextlib import nullcontext
-from typing import Iterable
+from typing import Callable, Iterable, OrderedDict
 
 import torch
 
@@ -127,11 +125,9 @@ class ReturnKwargs(torch.nn.Module):
 class CallWith(torch.nn.Module):
     def __init__(
         self,
-        module: torch.nn.Module,
+        module: Callable,
         _call_with_args_: Iterable[str] | None = None,
         _return_as_dict_: Iterable[str] | None = None,
-        _train_mode_: bool | None = None,
-        _inference_mode_: bool | None = None,
         **kwarg_keys,
     ) -> None:
         super().__init__()
@@ -140,26 +136,18 @@ class CallWith(torch.nn.Module):
         self.arg_keys = _call_with_args_ or []
         self.kwarg_keys = kwarg_keys or {}
         self.return_keys = _return_as_dict_
-        self.train_mode = _train_mode_
-        self.inference_mode = _inference_mode_
 
     def forward(
         self,
         *args,
         _call_with_args_: Iterable[str] | None = None,
         _return_as_dict_: Iterable[str] | None = None,
-        _train_mode_: bool | None = None,
-        _inference_mode_: bool | None = None,
         **kwargs,
     ):
         orig_class = self.module.__class__
-
         arg_keys = _call_with_args_ or self.arg_keys
         kwarg_keys = self.kwarg_keys
         return_keys = _return_as_dict_ or self.return_keys
-        _train_mode_ = _train_mode_ or self.train_mode
-        _inference_mode_ = _inference_mode_ or self.inference_mode
-
         kwargs = DotDict(kwargs)
 
         # Sometimes we receive positional arguments because some modules use nn.Sequential
@@ -176,21 +164,8 @@ class CallWith(torch.nn.Module):
         selected_args = [kwargs[key] for key in arg_keys[len(args) :]]
         selected_kwargs = {key: kwargs[val] for key, val in kwarg_keys.items()}
 
-        old_train_mode = self.module.training
-
-        if _train_mode_ is not None:
-            self.module.train(_train_mode_)
-
-        context = nullcontext()
-        if _inference_mode_ is not None:
-            context = torch.inference_mode(mode=_inference_mode_)
-
-        with context:
-            # FIXME: Add better error message
-            ret = self.module(*args, *selected_args, **selected_kwargs)
-
-        if _train_mode_ is not None:
-            self.module.train(old_train_mode)
+        # FIXME: Add better error message
+        ret = self.module(*args, *selected_args, **selected_kwargs)
 
         if return_keys:
             if not isinstance(ret, tuple):
