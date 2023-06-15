@@ -1,5 +1,4 @@
 _target_: mart.nn.CallWith
 module:
   _target_: mart.nn.Sum
-arg_keys: ${model.training_sequence.seq100.loss}
-kwarg_keys: null
+_call_with_args_: ${model.training_sequence.seq100.loss}
