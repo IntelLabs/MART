@@ -148,7 +148,6 @@ class CallWith(torch.nn.Module):
         orig_class = self.module.__class__
         arg_keys = _call_with_args_ or self.arg_keys
         kwarg_keys = self.kwarg_keys
-        return_keys = _return_as_dict_ or self.return_keys
         kwargs = DotDict(kwargs)
 
         # Sometimes we receive positional arguments because some modules use nn.Sequential
@@ -168,6 +167,7 @@ class CallWith(torch.nn.Module):
         # FIXME: Add better error message
         ret = self.module(*args, *selected_args, **selected_kwargs)
 
+        return_keys = _return_as_dict_ or self.return_keys
         if return_keys:
             if not isinstance(ret, tuple):
                 raise Exception(
