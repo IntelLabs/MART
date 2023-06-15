@@ -189,7 +189,7 @@ class CallWith(torch.nn.Module):
 
         # Apply train mode and inference mode, if necessary, and call module with args and kwargs
         context = nullcontext()
-        if isinstance(self.module, torch.nn.Module)
+        if isinstance(self.module, torch.nn.Module):
             old_train_mode = self.module.training
 
             if _train_mode_ is not None:
