@@ -228,9 +228,7 @@ modules:
     out_channels: 256
 
   rpn:
-    _target_: mart.nn.Module
-    _path_: torchvision.models.detection.rpn.RegionProposalNetwork
-    #_target_: torchvision.models.detection.rpn.RegionProposalNetwork
+    _target_: torchvision.models.detection.rpn.RegionProposalNetwork
     anchor_generator:
       _target_: torchvision.models.detection.anchor_utils.AnchorGenerator
       sizes:
@@ -259,8 +257,7 @@ modules:
     score_thresh: 0.0
 
   roi_heads:
-    _target_: mart.nn.Module
-    _path_: torchvision.models.detection.roi_heads.RoIHeads
+    _target_: torchvision.models.detection.roi_heads.RoIHeads
     box_roi_pool:
       _target_: torchvision.ops.MultiScaleRoIAlign
       featmap_names: ["0", "1", "2", "3"] # backbone.return_layers

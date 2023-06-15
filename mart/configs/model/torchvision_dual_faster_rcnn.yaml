@@ -78,6 +78,5 @@ test_sequence:
 
 modules:
   detector:
-    _target_: mart.nn.Module
-    _path_: torchvision.models.detection.fasterrcnn_resnet50_fpn
+    _target_: torchvision.models.detection.fasterrcnn_resnet50_fpn
     weights: "COCO_V1"
