@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections import OrderedDict
-from typing import Iterable
+from typing import Callable, Iterable
 
 import torch
 
@@ -123,10 +123,10 @@ class ReturnKwargs(torch.nn.Module):
         return kwargs
 
 
-class CallWith(torch.nn.Module):
+class CallWith:
     def __init__(
         self,
-        module: torch.nn.Module,
+        module: Callable,
         _call_with_args_: Iterable[str] | None = None,
         _return_as_dict_: Iterable[str] | None = None,
         **kwarg_keys,
@@ -138,7 +138,7 @@ class CallWith(torch.nn.Module):
         self.kwarg_keys = kwarg_keys
         self.return_keys = _return_as_dict_
 
-    def forward(
+    def __call__(
         self,
         *args,
         _call_with_args_: Iterable[str] | None = None,
