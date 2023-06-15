@@ -4,8 +4,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+from __future__ import annotations
+
 import logging
-from typing import OrderedDict
+from typing import Callable, Iterable, OrderedDict
 
 import torch
 
@@ -82,20 +84,9 @@ class SequentialDict(torch.nn.ModuleDict):
 
             # The return name could be different from module_name when a module is used more than once.
             return_name = module_cfg.pop("_name_", module_name)
-            # The module would be called with these *args.
-            arg_keys = module_cfg.pop("_call_with_args_", None)
-            # The module would return a dictionary with these keys instead of a tuple.
-            return_keys = module_cfg.pop("_return_as_dict", None)
-            # The module would be called with these **kwargs.
-            kwarg_keys = module_cfg
-
-            module = self[module_name]
-
-            # Add CallWith to module if we have enough parameters
-            if arg_keys is not None or len(kwarg_keys) > 0 or return_keys is not None:
-                module = CallWith(module, arg_keys, kwarg_keys, return_keys)
-
+            module = CallWith(self[module_name], **module_cfg)
             module_dict[return_name] = module
+
         return module_dict
 
     def forward(self, step=None, sequence=None, **kwargs):
@@ -132,13 +123,19 @@ class ReturnKwargs(torch.nn.Module):
 
 
 class CallWith(torch.nn.Module):
-    def __init__(self, module, arg_keys, kwarg_keys, return_keys=None) -> None:
+    def __init__(
+        self,
+        module: Callable,
+        _call_with_args_: Iterable[str] | None = None,
+        _return_as_dict_: Iterable[str] | None = None,
+        **kwarg_keys,
+    ) -> None:
         super().__init__()
 
         self.module = module
-        self.arg_keys = arg_keys or []
+        self.arg_keys = _call_with_args_ or []
         self.kwarg_keys = kwarg_keys or {}
-        self.return_keys = return_keys
+        self.return_keys = _return_as_dict_
 
     def forward(self, *args, **kwargs):
         orig_class = self.module.__class__
