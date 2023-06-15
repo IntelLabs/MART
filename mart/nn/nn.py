@@ -5,14 +5,13 @@
 #
 
 import logging
+from typing import OrderedDict
 
-logger = logging.getLogger(__name__)
-
-from typing import OrderedDict  # noqa: E402
-
-import torch  # noqa: E402
+import torch
 
 __all__ = ["GroupNorm32", "SequentialDict", "ReturnKwargs", "CallWith", "Sum"]
+
+logger = logging.getLogger(__name__)
 
 
 class SequentialDict(torch.nn.ModuleDict):
