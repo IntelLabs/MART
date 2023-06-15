@@ -111,8 +111,12 @@ model:
         x: "input_adv"
     seq030:
       loss:
-        - losses.hide_target_objects_loss
-        - losses.correct_target_class_loss
+        _call_with_args_:
+          - losses.hide_target_objects_loss
+          - losses.correct_target_class_loss
+        weights:
+          - 10
+          - 1
 
   training_step_log:
     - loss
@@ -139,8 +143,12 @@ model:
         x: "input_adv"
     seq030:
       loss:
-        - losses.hide_target_objects_loss
-        - losses.correct_target_class_loss
+        _call_with_args_:
+          - losses.hide_target_objects_loss
+          - losses.correct_target_class_loss
+        weights:
+          - 10
+          - 1
 
   test_sequence:
     seq005: perturbation
@@ -150,5 +158,9 @@ model:
         x: "input_adv"
     seq030:
       loss:
-        - losses.hide_target_objects_loss
-        - losses.correct_target_class_loss
+        _call_with_args_:
+          - losses.hide_target_objects_loss
+          - losses.correct_target_class_loss
+        weights:
+          - 10
+          - 1
