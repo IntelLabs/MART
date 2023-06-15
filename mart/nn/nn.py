@@ -137,8 +137,8 @@ class CallWith(torch.nn.Module):
         super().__init__()
 
         self.module = module
-        self.arg_keys = _call_with_args_ or []
-        self.kwarg_keys = kwarg_keys or {}
+        self.arg_keys = _call_with_args_
+        self.kwarg_keys = kwarg_keys
         self.return_keys = _return_as_dict_
         self.train_mode = _train_mode_
         self.inference_mode = _inference_mode_
@@ -152,30 +152,42 @@ class CallWith(torch.nn.Module):
         _inference_mode_: bool | None = None,
         **kwargs,
     ):
-        orig_class = self.module.__class__
+        module_name = self.module.__class__.__name__
 
         arg_keys = _call_with_args_ or self.arg_keys
         kwarg_keys = self.kwarg_keys
-        return_keys = _return_as_dict_ or self.return_keys
         _train_mode_ = _train_mode_ or self.train_mode
         _inference_mode_ = _inference_mode_ or self.inference_mode
 
+        args = list(args)
         kwargs = DotDict(kwargs)
 
-        # Sometimes we receive positional arguments because some modules use nn.Sequential
-        # which has a __call__ function that passes positional args. So we pass along args
-        # as it and assume these consume the first len(args) of arg_keys.
-        remaining_arg_keys = arg_keys[len(args) :]
+        # Change and replaces args and kwargs that we call module with
+        if arg_keys is not None or len(kwarg_keys) > 0:
+            arg_keys = arg_keys or []
 
-        for key in remaining_arg_keys + list(kwarg_keys.values()):
-            if key not in kwargs:
+            # Sometimes we receive positional arguments because some modules use nn.Sequential
+            # which has a __call__ function that passes positional args. So we pass along args
+            # as it and assume these consume the first len(args) of arg_keys.
+            arg_keys = arg_keys[len(args) :]
+
+            # Append kwargs to args using arg_keys
+            try:
+                [args.append(kwargs[kwargs_key]) for kwargs_key in arg_keys]
+            except KeyError as ex:
                 raise Exception(
-                    f"Module {orig_class} wants arg named '{key}' but only received kwargs: {', '.join(kwargs.keys())}."
-                )
+                    f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
+                ) from ex
 
-        selected_args = [kwargs[key] for key in arg_keys[len(args) :]]
-        selected_kwargs = {key: kwargs[val] for key, val in kwarg_keys.items()}
+            # Replace kwargs with selected kwargs
+            try:
+                kwargs = {name: kwargs[kwargs_key] for name, kwargs_key in kwarg_keys.items()}
+            except KeyError as ex:
+                raise Exception(
+                    f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
+                ) from ex
 
+        # Apply train mode and inference mode, if necessary, and call module with args and kwargs
         old_train_mode = self.module.training
 
         if _train_mode_ is not None:
@@ -187,19 +199,21 @@ class CallWith(torch.nn.Module):
 
         with context:
             # FIXME: Add better error message
-            ret = self.module(*args, *selected_args, **selected_kwargs)
+            ret = self.module(*args, **kwargs)
 
         if _train_mode_ is not None:
             self.module.train(old_train_mode)
 
+        # Change returned values into dictionary, if necessary
+        return_keys = _return_as_dict_ or self.return_keys
         if return_keys:
             if not isinstance(ret, tuple):
                 raise Exception(
-                    f"Module {orig_class} does not return multiple unnamed variables, so we can not dictionarize the return."
+                    f"{module_name} does not return multiple unnamed variables, so we can not dictionarize the return."
                 )
             if len(return_keys) != len(ret):
                 raise Exception(
-                    f"Module {orig_class} returns {len(ret)} items, but {len(return_keys)} return_keys were specified."
+                    f"Module {module_name} returns {len(ret)} items, but {len(return_keys)} return_keys were specified."
                 )
             ret = dict(zip(return_keys, ret))
 
