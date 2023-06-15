@@ -137,10 +137,17 @@ class CallWith(torch.nn.Module):
         self.kwarg_keys = kwarg_keys or {}
         self.return_keys = _return_as_dict_
 
-    def forward(self, *args, **kwargs):
+    def forward(
+        self,
+        *args,
+        _call_with_args_: Iterable[str] | None = None,
+        _return_as_dict_: Iterable[str] | None = None,
+        **kwargs,
+    ):
         orig_class = self.module.__class__
-        arg_keys = self.arg_keys
+        arg_keys = _call_with_args_ or self.arg_keys
         kwarg_keys = self.kwarg_keys
+        return_keys = _return_as_dict_ or self.return_keys
         kwargs = DotDict(kwargs)
 
         # Sometimes we receive positional arguments because some modules use nn.Sequential
@@ -160,16 +167,16 @@ class CallWith(torch.nn.Module):
         # FIXME: Add better error message
         ret = self.module(*args, *selected_args, **selected_kwargs)
 
-        if self.return_keys:
+        if return_keys:
             if not isinstance(ret, tuple):
                 raise Exception(
                     f"Module {orig_class} does not return multiple unnamed variables, so we can not dictionarize the return."
                 )
-            if len(self.return_keys) != len(ret):
+            if len(return_keys) != len(ret):
                 raise Exception(
-                    f"Module {orig_class} returns {len(ret)} items, but {len(self.return_keys)} return_keys were specified."
+                    f"Module {orig_class} returns {len(ret)} items, but {len(return_keys)} return_keys were specified."
                 )
-            ret = dict(zip(self.return_keys, ret))
+            ret = dict(zip(return_keys, ret))
 
         return ret
 
