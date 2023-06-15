@@ -6,6 +6,7 @@
 
 import types
 from collections import OrderedDict
+from contextlib import nullcontext
 
 import torch
 from hydra.utils import instantiate
@@ -23,7 +24,7 @@ class Module(torch.nn.Module):
         cfg = {"_target_": _path_}
         module = instantiate(cfg, *args, **kwargs)
 
-        module._forward = module.forward
+        module._forward_ = module.forward
         module.forward = types.MethodType(Module.forward, module)
 
         return module
@@ -32,16 +33,23 @@ class Module(torch.nn.Module):
     def forward(
         self,
         *args,
-        train_mode: bool = True,
-        inference_mode: bool = False,
+        _train_mode_: bool | None = None,
+        _inference_mode_: bool | None = None,
         **kwargs,
     ):
         old_train_mode = self.training
 
-        # FIXME: Would be nice if this was a context...
-        self.train(train_mode)
-        with torch.inference_mode(mode=inference_mode):
-            ret = self._forward(*args, **kwargs)
-        self.train(old_train_mode)
+        if _train_mode_ is not None:
+            self.train(_train_mode_)
+
+        inference_mode = nullcontext()
+        if _inference_mode_ is not None:
+            inference_mode = torch.inference_mode(mode=_inference_mode_)
+
+        with inference_mode:
+            ret = self._forward_(*args, **kwargs)
+
+        if _train_mode_ is not None:
+            self.train(old_train_mode)
 
         return ret

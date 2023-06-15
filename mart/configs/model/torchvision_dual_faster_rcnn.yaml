@@ -16,17 +16,17 @@ training_sequence:
   seq020:
     detector:
       _name_: losses
+      _train_mode_: True
       images: preprocessor
       targets: target
-      train_mode: True
 
   seq030:
     detector:
       _name_: preds
+      _train_mode_: False
+      _inference_mode_: True
       images: preprocessor
       targets: target
-      train_mode: False
-      inference_mode: True
 
   seq100:
     loss:
@@ -45,17 +45,17 @@ validation_sequence:
   seq020:
     detector:
       _name_: losses
+      _train_mode_: True
       images: preprocessor
       targets: target
-      train_mode: True
 
   seq030:
     detector:
       _name_: preds
+      _train_mode_: False
+      _inference_mode_: True
       images: preprocessor
       targets: target
-      train_mode: False
-      inference_mode: True
 
 test_sequence:
   seq010:
@@ -64,17 +64,17 @@ test_sequence:
   seq020:
     detector:
       _name_: losses
+      _train_mode_: True
       images: preprocessor
       targets: target
-      train_mode: True
 
   seq030:
     detector:
       _name_: preds
+      _train_mode_: False
+      _inference_mode_: True
       images: preprocessor
       targets: target
-      train_mode: False
-      inference_mode: True
 
 modules:
   detector:
