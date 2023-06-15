@@ -12,9 +12,9 @@ __all__ = ["ImageVisualizer"]
 
 
 class ImageVisualizer(Callback):
-    def __init__(self, frequency: int = 100, **tag_keys):
+    def __init__(self, frequency: int = 100, **tag_paths):
         self.frequency = frequency
-        self.tag_keys = tag_keys
+        self.tag_paths = tag_paths
 
     def log_image(self, trainer, tag, image):
         # Add image to each logger
@@ -23,17 +23,18 @@ class ImageVisualizer(Callback):
             if not hasattr(logger.experiment, "add_image"):
                 continue
 
-            if len(image.shape) == 4:
-                logger.experiment.add_images(tag, image, global_step=trainer.global_step)
-            elif len(image.shape) == 3:
-                logger.experiment.add_image(tag, image, global_step=trainer.global_step)
-            else:
-                raise ValueError(f"Unsupported image shape: {image.shape}")
+            logger.experiment.add_image(tag, image, global_step=trainer.global_step)
+
+    def log_images(self, trainer, pl_module):
+        for tag, path in self.tag_paths.items():
+            image = attrgetter(path)(pl_module)
+            self.log_image(trainer, tag, image)
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         if batch_idx % self.frequency != 0:
             return
 
-        for tag, output_key in self.tag_keys.items():
-            image = outputs[output_key]
-            self.log_image(trainer, tag, image)
+        self.log_images(trainer, pl_module)
+
+    def on_train_end(self, trainer, pl_module):
+        self.log_images(trainer, pl_module)
