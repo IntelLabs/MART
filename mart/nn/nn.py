@@ -167,7 +167,7 @@ class CallWith(torch.nn.Module):
                 [args.append(kwargs[kwargs_key]) for kwargs_key in arg_keys]
             except KeyError as ex:
                 raise Exception(
-                    f"{module_name} wants arg named '{key}' but only received kwargs: {', '.join(kwargs.keys())}."
+                    f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
                 ) from ex
 
             # Replace kwargs with selected kwargs
@@ -175,7 +175,7 @@ class CallWith(torch.nn.Module):
                 kwargs = {name: kwargs[kwargs_key] for name, kwargs_key in kwarg_keys.items()}
             except KeyError as ex:
                 raise Exception(
-                    f"{module_name} wants kwarg named '{key}' but only received kwargs: {', '.join(kwargs.keys())}."
+                    f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
                 ) from ex
 
         # FIXME: Add better error message
