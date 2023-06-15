@@ -64,7 +64,9 @@ class Adversary(pl.LightningModule):
             lambda state_dict, *args, **kwargs: state_dict.clear()
         )
 
-        self.perturber = perturber
+        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
+        # and DDP won't try to get the uninitialized parameters of perturbation.
+        self._perturber = [perturber]
         self.composer = composer
         self.optimizer = optimizer
         if not isinstance(self.optimizer, OptimizerFactory):
@@ -81,7 +83,7 @@ class Adversary(pl.LightningModule):
             self._attacker = partial(
                 pl.Trainer,
                 num_sanity_val_steps=0,
-                logger=False,
+                logger=list(kwargs.pop("logger", {}).values()),
                 max_epochs=0,
                 limit_train_batches=kwargs.pop("max_iters", 10),
                 callbacks=list(kwargs.pop("callbacks", {}).values()),  # dict to list of values
@@ -98,6 +100,12 @@ class Adversary(pl.LightningModule):
             # the number of attack steps via limit_train_batches.
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
+
+    @property
+    def perturber(self) -> Perturber:
+        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint,
+        # and DDP won't try to get the uninitialized parameters of perturbation.
+        return self._perturber[0]
 
     def configure_optimizers(self):
         return self.optimizer(self.perturber)

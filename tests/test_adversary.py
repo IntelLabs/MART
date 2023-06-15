@@ -15,7 +15,6 @@ from torch.optim import SGD
 import mart
 from mart.attack import Adversary, Composer, Perturber
 from mart.attack.gradient_modifier import Sign
-from mart.optim import OptimizerFactory
 
 
 def test_adversary(input_data, target_data, perturbation):
@@ -136,13 +135,13 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
 
     output_data = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
 
-    # Adversarial perturbation will have one parameter after forward is called.
+    # Adversary will have no parameter even after forward is called, because we hide Perturber in a list.
     params = [p for p in adversary.parameters()]
-    assert len(params) == 1
+    assert len(params) == 0
 
-    # Adversarial perturbation should have one state dict item being exported to the model checkpoint.
+    # Adversary should have no state dict item being exported to the model checkpoint, because we hide Perturber in a list.
     state_dict = adversary.state_dict()
-    assert len(state_dict) == 1
+    assert len(state_dict) == 0
 
 
 def test_loading_perturbation_from_state_dict():
@@ -208,7 +207,7 @@ def test_perturbation(input_data, target_data, perturbation):
 def test_forward_with_model(input_data, target_data):
     composer = mart.attack.composer.Additive()
     enforcer = Mock()
-    optimizer = OptimizerFactory(SGD, lr=1.0, maximize=True)
+    optimizer = partial(SGD, lr=1.0, maximize=True)
 
     # Force zeros, positive and negative gradients
     def gain(logits):
