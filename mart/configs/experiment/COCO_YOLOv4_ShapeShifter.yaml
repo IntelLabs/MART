@@ -51,8 +51,8 @@ callbacks:
     frequency: 500
 
 datamodule:
-  num_workers: 32
-  ims_per_batch: 16
+  num_workers: 4
+  ims_per_batch: 8
 
   train_dataset:
     annFile: ${paths.data_dir}/coco/annotations/person_instances_train2017.json
