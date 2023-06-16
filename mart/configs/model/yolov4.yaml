@@ -6,23 +6,12 @@ modules:
     # XXX: This is so sketchy...
     _target_: torch.hub.load
     repo_or_dir: "AlexeyAB/Yet-Another-YOLOv4-Pytorch"
+    trust_repo: False
     model: "yolov4"
     pretrained: True
-    trust_repo: False
-
-  losses:
-    _target_: mart.models.yolov3.Loss
-    image_size: 416 # FIXME: use ${training_data.transform.image_size}?
-    average: True
 
   loss:
     _target_: mart.nn.Sum
-
-  detections:
-    _target_: mart.models.yolov3.Detections
-    nms: true
-    conf_thres: 0.1
-    nms_thres: 0.4
 
   output:
     _target_: mart.nn.ReturnKwargs
@@ -35,157 +24,60 @@ training_sequence:
     yolov4:
       _return_as_dict_: ["logits", "loss"]
       x: "input"
-
-  seq020:
-    losses:
-      logits: yolov4.logits
-      target: target
+      y: "target.packed"
 
   seq030:
     loss:
       _call_with_args_:
-        - losses.total_loss
-
-  seq040:
-    detections:
-      preds: yolov4.logits
-      target: target
+        - yolov4.loss
 
   seq050:
     output:
       loss: loss
-      total_loss: losses.total_loss
-      coord_loss: losses.coord_loss
-      obj_loss: losses.obj_loss
-      noobj_loss: losses.noobj_loss
-      class_loss: losses.class_loss
-      hide_objects_loss: losses.hide_objects_loss
-      target_class_loss: losses.target_class_loss
-      hide_target_objects_loss: losses.hide_target_objects_loss
-      correct_target_class_loss: losses.correct_target_class_loss
-      target_count: losses.target_count
-      score_count: losses.score_count
-      target_score_count: losses.target_score_count
+
+# validation sequence does not produce preds/targets
+validation_metrics: null
 
 validation_sequence:
   seq010:
     yolov4:
       _return_as_dict_: ["logits", "loss"]
       x: "input"
-
-  seq020:
-    losses:
-      logits: yolov4.logits
-      target: target
+      y: "target.packed"
 
   seq030:
     loss:
       _call_with_args_:
-        - losses.total_loss
-
-  seq040:
-    detections:
-      preds: yolov4.logits
-      target: target
+        - yolov4.loss
 
   seq050:
     output:
-      preds: detections.preds
-      target: detections.targets
       loss: loss
-      total_loss: losses.total_loss
-      coord_loss: losses.coord_loss
-      obj_loss: losses.obj_loss
-      noobj_loss: losses.noobj_loss
-      class_loss: losses.class_loss
-      hide_objects_loss: losses.hide_objects_loss
-      target_class_loss: losses.target_class_loss
-      hide_target_objects_loss: losses.hide_target_objects_loss
-      correct_target_class_loss: losses.correct_target_class_loss
-      target_count: losses.target_count
-      score_count: losses.score_count
-      target_score_count: losses.target_score_count
+
+# test sequence does not produce preds/targets
+test_metrics: null
 
 test_sequence:
   seq010:
     yolov4:
       _return_as_dict_: ["logits", "loss"]
       x: "input"
-
-  seq020:
-    losses:
-      logits: yolov4.logits
-      target: target
+      y: "target.packed"
 
   seq030:
     loss:
       _call_with_args_:
-        - losses.total_loss
-
-  seq040:
-    detections:
-      preds: yolov4.logits
-      target: target
+        -  yolov4.loss
 
   seq050:
     output:
-      preds: detections.preds
-      target: detections.targets
       loss: loss
-      total_loss: losses.total_loss
-      coord_loss: losses.coord_loss
-      obj_loss: losses.obj_loss
-      noobj_loss: losses.noobj_loss
-      class_loss: losses.class_loss
-      hide_objects_loss: losses.hide_objects_loss
-      target_class_loss: losses.target_class_loss
-      hide_target_objects_loss: losses.hide_target_objects_loss
-      correct_target_class_loss: losses.correct_target_class_loss
-      target_count: losses.target_count
-      score_count: losses.score_count
-      target_score_count: losses.target_score_count
 
 training_step_log:
   - loss
-  - total_loss
-  - coord_loss
-  - obj_loss
-  - noobj_loss
-  - class_loss
-  - hide_objects_loss
-  - target_class_loss
-  - hide_target_objects_loss
-  - correct_target_class_loss
-  - target_count
-  - score_count
-  - target_score_count
 
 validation_step_log:
   - loss
-  - total_loss
-  - coord_loss
-  - obj_loss
-  - noobj_loss
-  - class_loss
-  - hide_objects_loss
-  - target_class_loss
-  - hide_target_objects_loss
-  - correct_target_class_loss
-  - target_count
-  - score_count
-  - target_score_count
 
 test_step_log:
   - loss
-  - total_loss
-  - coord_loss
-  - obj_loss
-  - noobj_loss
-  - class_loss
-  - hide_objects_loss
-  - target_class_loss
-  - hide_target_objects_loss
-  - correct_target_class_loss
-  - target_count
-  - score_count
-  - target_score_count

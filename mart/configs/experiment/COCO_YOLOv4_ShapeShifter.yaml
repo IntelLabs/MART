@@ -91,14 +91,16 @@ model:
             interpolation: 2 # BILINEAR
       clamp: [0, 1]
 
-    loss:
-      weights: [1, 1]
-
   optimizer:
     lr: 0.01
     momentum: 0.9
+    maximize: True
 
   gradient_modifier: null
+
+  training_metrics: null
+  validation_metrics: null
+  test_metrics: null
 
   training_sequence:
     seq005: perturbation
@@ -106,28 +108,6 @@ model:
     seq010:
       yolov4:
         x: "input_adv"
-    seq030:
-      loss:
-        _call_with_args_:
-          - losses.hide_target_objects_loss
-          - losses.correct_target_class_loss
-
-  training_step_log:
-    - loss
-    - total_loss
-    - coord_loss
-    - obj_loss
-    - noobj_loss
-    - class_loss
-    - hide_objects_loss
-    - target_class_loss
-    - hide_target_objects_loss
-    - correct_target_class_loss
-    - target_count
-    - score_count
-    - target_score_count
-
-  training_metrics: null
 
   validation_sequence:
     seq005: perturbation
@@ -135,11 +115,6 @@ model:
     seq010:
       yolov4:
         x: "input_adv"
-    seq030:
-      loss:
-        _call_with_args_:
-          - losses.hide_target_objects_loss
-          - losses.correct_target_class_loss
 
   test_sequence:
     seq005: perturbation
@@ -147,8 +122,3 @@ model:
     seq010:
       yolov4:
         x: "input_adv"
-    seq030:
-      loss:
-        _call_with_args_:
-          - losses.hide_target_objects_loss
-          - losses.correct_target_class_loss
