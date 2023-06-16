@@ -37,7 +37,8 @@ training_sequence:
 
   seq030:
     loss:
-      - losses.total_loss
+      _call_with_args_:
+        - losses.total_loss
 
   seq040:
     detections:
@@ -72,7 +73,8 @@ validation_sequence:
 
   seq030:
     loss:
-      - losses.total_loss
+      _call_with_args_:
+        - losses.total_loss
 
   seq040:
     detections:
@@ -109,7 +111,8 @@ test_sequence:
 
   seq030:
     loss:
-      - losses.total_loss
+      _call_with_args_:
+        - losses.total_loss
 
   seq040:
     detections:

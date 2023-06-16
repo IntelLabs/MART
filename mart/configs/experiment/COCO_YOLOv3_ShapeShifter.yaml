@@ -16,7 +16,8 @@ defaults:
         lr_monitor,
         perturbation_visualizer,
         gradient_monitor,
-        freeze,
+        attack_in_eval_mode,
+        no_grad_mode,
       ]
 
 task_name: "COCO_YOLOv3_ShapeShifter"
@@ -37,8 +38,13 @@ callbacks:
     monitor: "validation_metrics/map"
     mode: "min"
 
-  freeze:
-    module: "yolov3"
+  attack_in_eval_mode:
+    module_classes:
+      - _target_: hydra.utils.get_class
+        path: torch.nn.BatchNorm2d
+
+  no_grad_mode:
+    module_names: "model.yolov3"
 
   perturbation_visualizer:
     perturbation: "model.perturbation.perturbation"
@@ -105,8 +111,12 @@ model:
         x: "input_adv"
     seq030:
       loss:
-        - losses.hide_target_objects_loss
-        - losses.correct_target_class_loss
+        _call_with_args_:
+          - losses.hide_target_objects_loss
+          - losses.correct_target_class_loss
+        weights:
+          - 10
+          - 1
 
   training_step_log:
     - loss
@@ -133,8 +143,12 @@ model:
         x: "input_adv"
     seq030:
       loss:
-        - losses.hide_target_objects_loss
-        - losses.correct_target_class_loss
+        _call_with_args_:
+          - losses.hide_target_objects_loss
+          - losses.correct_target_class_loss
+        weights:
+          - 10
+          - 1
 
   test_sequence:
     seq005: perturbation
@@ -144,5 +158,9 @@ model:
         x: "input_adv"
     seq030:
       loss:
-        - losses.hide_target_objects_loss
-        - losses.correct_target_class_loss
+        _call_with_args_:
+          - losses.hide_target_objects_loss
+          - losses.correct_target_class_loss
+        weights:
+          - 10
+          - 1
