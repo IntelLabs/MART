@@ -48,7 +48,7 @@ training_sequence:
 
   seq040:
     detections:
-      preds: yolov4.preds
+      preds: yolov4.logits
       target: target
 
   seq050:
@@ -85,7 +85,7 @@ validation_sequence:
 
   seq040:
     detections:
-      preds: yolov4.preds
+      preds: yolov4.logits
       target: target
 
   seq050:
@@ -124,7 +124,7 @@ test_sequence:
 
   seq040:
     detections:
-      preds: yolov4.preds
+      preds: yolov4.logits
       target: target
 
   seq050:
