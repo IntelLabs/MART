@@ -7,7 +7,7 @@ defaults:
   - /attack/composer@model.modules.input_adv: warp_composite
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
   - override /optimization: super_convergence
-  - override /datamodule: coco_yolov4
+  - override /datamodule: coco_yolov3
   - override /model: yolov4
   - override /metric: average_precision
   - override /callbacks:
@@ -56,6 +56,10 @@ datamodule:
   test_dataset:
     annFile: ${paths.data_dir}/coco/annotations/person_instances_val2017.json
 
+  collate_fn:
+    path: mart.datamodules.coco.yolov4_collate_fn
+
+
 model:
   modules:
     perturbation:
@@ -87,7 +91,7 @@ model:
       clamp: [0, 1]
 
   optimizer:
-    lr: 0.01
+    lr: 0.1
     momentum: 0.9
     maximize: True
 

@@ -10,6 +10,11 @@ modules:
     model: "yolov4"
     pretrained: True
 
+  losses:
+    _target_: mart.models.yolov3.Loss
+    image_size: 416 # FIXME: use ${training_data.transform.image_size}?
+    average: True
+
   loss:
     _target_: mart.nn.Sum
 
@@ -24,16 +29,21 @@ training_sequence:
     yolov4:
       _return_as_dict_: ["logits", "loss"]
       x: "input"
-      y: "target.packed"
+      y: "target.packedv4"
+
+  seq020:
+    losses:
+      logits: "yolov4.logits"
+      target: "target"
 
   seq030:
     loss:
       _call_with_args_:
-        - yolov4.loss
+        - "yolov4.loss"
 
   seq050:
     output:
-      loss: loss
+      loss: "loss"
 
 # validation sequence does not produce preds/targets
 validation_metrics: null
@@ -43,7 +53,12 @@ validation_sequence:
     yolov4:
       _return_as_dict_: ["logits", "loss"]
       x: "input"
-      y: "target.packed"
+      y: "target.packedv4"
+
+  seq020:
+    losses:
+      logits: "yolov4.logits"
+      target: "target"
 
   seq030:
     loss:
@@ -62,7 +77,12 @@ test_sequence:
     yolov4:
       _return_as_dict_: ["logits", "loss"]
       x: "input"
-      y: "target.packed"
+      y: "target.packedv4"
+
+  seq020:
+    losses:
+      logits: "yolov4.logits"
+      target: "target"
 
   seq030:
     loss:

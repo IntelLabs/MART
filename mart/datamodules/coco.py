@@ -113,7 +113,7 @@ def to_padded_tensor(tensors, dim=0, fill=0.0):
 
 
 def yolo_collate_fn(batch):
-    images, targets = tuple(zip(*batch))
+    images, targets = collate_fn(batch)
 
     images = default_collate(images)
 
@@ -132,28 +132,26 @@ def yolo_collate_fn(batch):
 
     return images, target
 
+# FIXME: Turn this into a class with options
 def yolov4_collate_fn(batch):
-    images, targets = collate_fn(batch)
-
-    images = default_collate(images)
-
-    # Turn tuple of dicts into dict of tuples
-    keys = targets[0].keys()
-    target = {k: tuple(t[k] for t in targets) for k in keys}
-
-    # Concatenate labels together along batch axis
-    packed = target["packed"]
-    packed = torch.cat(packed, dim=0)
+    images, target = yolo_collate_fn(batch)
 
     # Generate image indexs for labels along batch axis
     packed_length = target["packed_length"]
     indices = [i + torch.zeros((length,)) for i, length in enumerate(packed_length)]
     indices = torch.cat(indices, dim=0)[..., None]
 
-    # Concatenate indices with labels
-    target["packed"] = torch.cat([indices, packed], dim=-1)
+    # Concatenate labels together along batch axis
+    packed = [target["packed"][i][:length] for i, length in enumerate(packed_length)]
+    packed = torch.cat(packed, dim=0)
 
-    # Collate perturbable_mask
-    target["perturbable_mask"] = default_collate(target["perturbable_mask"])
+    # boxes, scores, labels -> labels, boxes
+    boxes = packed[:, 0:4]
+    scores = packed[:, 4:5]
+    labels = torch.argmax(packed[:, 5:], dim=-1, keepdim=True)
+
+    # concatenate in correct order
+    packed = torch.cat([indices, labels, boxes], dim=-1)
+    target["packedv4"] = packed
 
     return images, target
