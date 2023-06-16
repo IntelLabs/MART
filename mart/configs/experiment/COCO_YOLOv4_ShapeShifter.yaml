@@ -7,7 +7,7 @@ defaults:
   - /attack/composer@model.modules.input_adv: warp_composite
   - /attack/gradient_modifier@model.gradient_modifier: lp_normalizer
   - override /optimization: super_convergence
-  - override /datamodule: coco_yolov3
+  - override /datamodule: coco_yolov4
   - override /model: yolov4
   - override /metric: average_precision
   - override /callbacks:

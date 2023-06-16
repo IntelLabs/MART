@@ -1,0 +1,31 @@
+defaults:
+  - coco
+
+num_workers: 1
+
+train_dataset:
+  transforms:
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.ConvertCocoPolysToMask
+      - _target_: mart.transforms.PadToSquare
+        fill: 0.5
+      - _target_: mart.transforms.Resize
+        size: [416, 416]
+      - _target_: mart.transforms.ConvertBoxesToCXCYWH
+        normalize: True
+      - _target_: mart.transforms.RemapLabels
+      - _target_: mart.transforms.PackBoxesAndLabels
+        num_classes: null  # don't one-hot encode labels
+        order: ["labels", "boxes"]  # abuse scores for indexes
+      - _target_: mart.transforms.ConvertInstanceSegmentationToPerturbable
+
+val_dataset:
+  transforms: ${..train_dataset.transforms}
+
+test_dataset:
+  transforms: ${..val_dataset.transforms}
+
+collate_fn:
+  _target_: hydra.utils.get_method
+  path: mart.datamodules.coco.yolov4_collate_fn
