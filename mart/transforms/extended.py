@@ -485,8 +485,13 @@ class RemapLabels(ExTransform):
 
 
 class PackBoxesAndLabels(ExTransform):
-    def __init__(self, num_classes: int):
-        self.num_classes = num_classes
+    def __init__(
+        self,
+        num_classes: int | None,
+        order: list[str] = None,
+    ):
+        self.num_classes = num_classes or 0
+        self.order = order or ["boxes", "scores", "labels"]
 
     def __call__(
         self,
@@ -497,10 +502,17 @@ class PackBoxesAndLabels(ExTransform):
         labels = target["labels"]
         scores = torch.ones_like(labels)[..., None]
 
-        labels = torch.nn.functional.one_hot(labels, num_classes=self.num_classes)
+        if self.num_classes > 0:
+            labels = torch.nn.functional.one_hot(labels, num_classes=self.num_classes)
+        else:
+            labels = labels[..., None]
 
-        target["packed"] = torch.cat([boxes, scores, labels], dim=-1)
-        target["packed_length"] = target["packed"].shape[0]
+        # Concatenate/pack boxes, scores, and labels using given order.
+        values = { "boxes": boxes, "scores": scores, "labels": labels }
+        packed = torch.cat([values[key] for key in self.order], dim=-1)
+
+        target["packed"] = packed
+        target["packed_length"] = packed.shape[0]
 
         return image, target
 
