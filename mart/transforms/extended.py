@@ -341,6 +341,11 @@ class Resize(ExTransform):
 
 
 class ConvertBoxesToCXCYWH(ExTransform):
+    def __init__(self, normalize: bool = False):
+        super().__init__()
+
+        self.normalize = normalize
+
     def __call__(
         self,
         image: Tensor,
@@ -356,6 +361,14 @@ class ConvertBoxesToCXCYWH(ExTransform):
         # X1Y1 -> CXCY
         boxes[:, 0] += boxes[:, 2] / 2
         boxes[:, 1] += boxes[:, 3] / 2
+
+        if self.normalize:
+            # image.shape = CHW
+            C, H, W = image.shape
+            boxes[:, 0] /= W # x
+            boxes[:, 1] /= H # y
+            boxes[:, 2] /= W # w
+            boxes[:, 3] /= H # h
 
         target["boxes"] = boxes
 
