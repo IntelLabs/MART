@@ -170,12 +170,16 @@ class LitModular(LightningModule):
         return output
 
     def validation_step_end(self, output):
-        self.validation_metrics(output["preds"], output["target"])
+        if self.validation_metrics is not None:
+            self.validation_metrics(output["preds"], output["target"])
 
         # I don't know why this is required to prevent CUDA memory leak in validaiton and test. (Not required in training.)
         output.clear()
 
     def validation_epoch_end(self, outputs):
+        if self.validation_metrics is None:
+            return
+
         metrics = self.validation_metrics.compute()
         metrics = self.flatten_metrics(metrics)
         self.validation_metrics.reset()
@@ -196,12 +200,16 @@ class LitModular(LightningModule):
         return output
 
     def test_step_end(self, output):
-        self.test_metrics(output["preds"], output["target"])
+        if self.test_metrics is not None:
+            self.test_metrics(output["preds"], output["target"])
 
         # I don't know why this is required to prevent CUDA memory leak in validaiton and test. (Not required in training.)
         output.clear()
 
     def test_epoch_end(self, outputs):
+        if self.test_metrics is None:
+            return
+
         metrics = self.test_metrics.compute()
         metrics = self.flatten_metrics(metrics)
         self.test_metrics.reset()
