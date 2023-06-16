@@ -131,3 +131,29 @@ def yolo_collate_fn(batch):
             target[key] = default_collate(target[key])
 
     return images, target
+
+def yolov4_collate_fn(batch):
+    images, targets = collate_fn(batch)
+
+    images = default_collate(images)
+
+    # Turn tuple of dicts into dict of tuples
+    keys = targets[0].keys()
+    target = {k: tuple(t[k] for t in targets) for k in keys}
+
+    # Concatenate labels together along batch axis
+    packed = target["packed"]
+    packed = torch.cat(packed, dim=0)
+
+    # Generate image indexs for labels along batch axis
+    packed_length = target["packed_length"]
+    indices = [i + torch.zeros((length,)) for i, length in enumerate(packed_length)]
+    indices = torch.cat(indices, dim=0)[..., None]
+
+    # Concatenate indices with labels
+    target["packed"] = torch.cat([indices, packed], dim=-1)
+
+    # Collate perturbable_mask
+    target["perturbable_mask"] = default_collate(target["perturbable_mask"])
+
+    return images, target
