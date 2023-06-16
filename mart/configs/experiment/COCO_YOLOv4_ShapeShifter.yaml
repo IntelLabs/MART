@@ -12,7 +12,6 @@ defaults:
   - override /metric: average_precision
   - override /callbacks:
       [
-        model_checkpoint,
         lr_monitor,
         perturbation_visualizer,
         gradient_monitor,
@@ -34,10 +33,6 @@ trainer:
   precision: 32
 
 callbacks:
-  model_checkpoint:
-    monitor: "validation_metrics/map"
-    mode: "min"
-
   attack_in_eval_mode:
     module_classes:
       - _target_: hydra.utils.get_class
