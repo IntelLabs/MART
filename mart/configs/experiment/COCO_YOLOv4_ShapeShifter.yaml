@@ -16,7 +16,8 @@ defaults:
         lr_monitor,
         perturbation_visualizer,
         gradient_monitor,
-        freeze,
+        attack_in_eval_mode,
+        no_grad_mode,
       ]
 
 task_name: "COCO_YOLOv4_ShapeShifter"
@@ -37,8 +38,13 @@ callbacks:
     monitor: "validation_metrics/map"
     mode: "min"
 
-  freeze:
-    module: "yolov4"
+  attack_in_eval_mode:
+    module_classes:
+      - _target_: hydra.utils.get_class
+        path: torch.nn.BatchNorm2d
+
+  no_grad_mode:
+    module_names: "model.yolov4"
 
   perturbation_visualizer:
     perturbation: "model.perturbation.perturbation"
