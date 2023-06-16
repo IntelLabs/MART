@@ -34,7 +34,7 @@ __all__ = [
     "ConvertCocoPolysToMask",
     "PadToSquare",
     "Resize",
-    "ConvertBoxesToCXCYHW",
+    "ConvertBoxesToCXCYWH",
     "RemapLabels",
     "PackBoxesAndLabels",
     "CreatePerturbableMaskFromImage",
@@ -340,7 +340,7 @@ class Resize(ExTransform):
         return coordinates
 
 
-class ConvertBoxesToCXCYHW(ExTransform):
+class ConvertBoxesToCXCYWH(ExTransform):
     def __call__(
         self,
         image: Tensor,
@@ -349,7 +349,7 @@ class ConvertBoxesToCXCYHW(ExTransform):
         # X1Y1X2Y2
         boxes = target["boxes"]
 
-        # X2Y2 -> HW
+        # X2Y2 -> WH
         boxes[:, 2] -= boxes[:, 0]
         boxes[:, 3] -= boxes[:, 1]
 
