@@ -33,6 +33,7 @@ training_metrics: null
 training_sequence:
   seq010:
     yolov4:
+      _return_as_dict_: ["logits", "loss"]
       x: "input"
 
   seq020:
@@ -68,6 +69,7 @@ training_sequence:
 validation_sequence:
   seq010:
     yolov4:
+      _return_as_dict_: ["logits", "loss"]
       x: "input"
 
   seq020:
@@ -105,6 +107,7 @@ validation_sequence:
 test_sequence:
   seq010:
     yolov4:
+      _return_as_dict_: ["logits", "loss"]
       x: "input"
 
   seq020:
