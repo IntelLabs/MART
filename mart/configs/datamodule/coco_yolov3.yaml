@@ -12,8 +12,7 @@ train_dataset:
         fill: 0.5
       - _target_: mart.transforms.Resize
         size: [416, 416]
-      - _target_: mart.transforms.ConvertBoxesToCXCYWH
-        normalize: True
+      - _target_: mart.transforms.ConvertBoxesToCXCYHW
       - _target_: mart.transforms.RemapLabels
       - _target_: mart.transforms.PackBoxesAndLabels
         num_classes: 80
