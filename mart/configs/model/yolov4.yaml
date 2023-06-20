@@ -144,9 +144,47 @@ test_sequence:
 
 training_step_log:
   - loss
+  - total_loss
+  - coord_loss
+  - obj_loss
+  - noobj_loss
+  - class_loss
+  - hide_objects_loss
+  - target_class_loss
+  - hide_target_objects_loss
+  - correct_target_class_loss
+  - target_count
+  - score_count
+  - target_score_count
+
 
 validation_step_log:
   - loss
+  - total_loss
+  - coord_loss
+  - obj_loss
+  - noobj_loss
+  - class_loss
+  - hide_objects_loss
+  - target_class_loss
+  - hide_target_objects_loss
+  - correct_target_class_loss
+  - target_count
+  - score_count
+  - target_score_count
+
 
 test_step_log:
   - loss
+  - total_loss
+  - coord_loss
+  - obj_loss
+  - noobj_loss
+  - class_loss
+  - hide_objects_loss
+  - target_class_loss
+  - hide_target_objects_loss
+  - correct_target_class_loss
+  - target_count
+  - score_count
+  - target_score_count

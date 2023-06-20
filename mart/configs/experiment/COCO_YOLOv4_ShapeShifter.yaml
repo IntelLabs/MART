@@ -12,6 +12,7 @@ defaults:
   - override /metric: average_precision
   - override /callbacks:
       [
+        model_checkpoint,
         lr_monitor,
         perturbation_visualizer,
         gradient_monitor,
@@ -33,6 +34,10 @@ trainer:
   precision: 32
 
 callbacks:
+  model_checkpoint:
+    monitor: "validation_metrics/map"
+    mode: "min"
+
   attack_in_eval_mode:
     module_classes:
       - _target_: hydra.utils.get_class
@@ -46,7 +51,7 @@ callbacks:
     frequency: 500
 
 datamodule:
-  num_workers: 4
+  num_workers: 16
   ims_per_batch: 8
 
   train_dataset:
@@ -58,7 +63,6 @@ datamodule:
 
   collate_fn:
     path: mart.datamodules.coco.yolov4_collate_fn
-
 
 model:
   modules:
@@ -91,15 +95,10 @@ model:
       clamp: [0, 1]
 
   optimizer:
-    lr: 0.1
+    lr: 0.02
     momentum: 0.9
-    maximize: True
 
   gradient_modifier: null
-
-  training_metrics: null
-  validation_metrics: null
-  test_metrics: null
 
   training_sequence:
     seq005: perturbation
@@ -107,6 +106,16 @@ model:
     seq010:
       yolov4:
         x: "input_adv"
+    seq030:
+      loss:
+        _call_with_args_:
+          - losses.hide_target_objects_loss
+          - losses.correct_target_class_loss
+        weights:
+          - 1
+          - 1
+
+  training_metrics: null
 
   validation_sequence:
     seq005: perturbation
@@ -114,6 +123,14 @@ model:
     seq010:
       yolov4:
         x: "input_adv"
+    seq030:
+      loss:
+        _call_with_args_:
+          - losses.hide_target_objects_loss
+          - losses.correct_target_class_loss
+        weights:
+          - 1
+          - 1
 
   test_sequence:
     seq005: perturbation
@@ -121,3 +138,11 @@ model:
     seq010:
       yolov4:
         x: "input_adv"
+    seq030:
+      loss:
+        _call_with_args_:
+          - losses.hide_target_objects_loss
+          - losses.correct_target_class_loss
+        weights:
+          - 1
+          - 1
