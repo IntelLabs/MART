@@ -17,7 +17,6 @@ __all__ = ["modality_dispatch"]
 DEFAULT_MODALITY = "default"
 
 
-# We make input the first non-keyword argument for singledispatch to work.
 @functools.singledispatch
 def modality_dispatch(
     input: torch.Tensor | dict[str, torch.Tensor] | Iterable[Any],
@@ -29,7 +28,8 @@ def modality_dispatch(
 ):
     """Recursively dispatch data and input/target to functions of the same modality.
 
-    The function returns an object that is homomorphic to input.
+    The function returns an object that is homomorphic to input. We make input the first non-
+    keyword argument for singledispatch to work.
     """
 
     raise ValueError(f"Unsupported data type of input: type(input)={type(input)}.")
@@ -37,6 +37,7 @@ def modality_dispatch(
 
 @modality_dispatch.register
 def _(input: torch.Tensor, *, data, target, modality, modality_func):
+    # Take action when input is a tensor.
     if isinstance(modality_func, dict):
         # A dictionary of Callable indexed by modality.
         return modality_func[modality](data, input=input, target=target)
