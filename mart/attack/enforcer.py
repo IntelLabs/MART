@@ -116,7 +116,11 @@ class Enforcer:
     ):
         # The default modality is set to "constraints", so that it is backward compatible with existing configs.
         modality_dispatch(
-            self._enforce, input_adv, input=input, target=target, modality="constraints"
+            input,
+            data=input_adv,
+            target=target,
+            modality_func=self._enforce,
+            modality="constraints",
         )
 
     @torch.no_grad()
