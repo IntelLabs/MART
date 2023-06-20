@@ -119,12 +119,12 @@ class Enforcer:
             input,
             data=input_adv,
             target=target,
-            modality_func=self._enforce,
+            modality_func=self.enforce,
             modality="constraints",
         )
 
     @torch.no_grad()
-    def _enforce(
+    def enforce(
         self,
         input_adv: torch.Tensor | Iterable[torch.Tensor],
         *,
