@@ -35,8 +35,17 @@ class Perturber(torch.nn.Module):
         """
         super().__init__()
 
+        projector = projector or Projector()
+
+        # Modality-specific objects.
+        # Backward compatibility, in case modality is unknown, and not given in input.
+        if not isinstance(initializer, dict):
+            initializer = {DEFAULT_MODALITY: initializer}
+        if not isinstance(projector, dict):
+            projector = {DEFAULT_MODALITY: projector}
+
         self.initializer_ = initializer
-        self.projector_ = projector or Projector()
+        self.projector_ = projector
 
         self.perturbation = None
 
