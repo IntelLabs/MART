@@ -111,7 +111,7 @@ class Enforcer:
         input_adv: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, torch.Tensor]],
         *,
         input: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, torch.Tensor]],
-        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, torch.Tensor | str]],
+        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         **kwargs,
     ):
         # The default modality is set to "constraints", so that it is backward compatible with existing configs.
