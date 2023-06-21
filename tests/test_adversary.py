@@ -218,7 +218,8 @@ def test_forward_with_model(input_data, target_data):
         )
 
     # Perturbation initialized as zero.
-    def initializer(x):
+    # Initializer needs to absorb **kwargs from modality_dispatch().
+    def initializer(x, **kwargs):
         torch.nn.init.constant_(x, 0)
 
     perturber = Perturber(
