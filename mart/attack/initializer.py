@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Any
 
 import torch
 import torchvision
@@ -21,8 +21,14 @@ class Initializer:
     """Initializer base class."""
 
     @torch.no_grad()
-    def __call__(self, parameter: torch.Tensor, **kwargs) -> None:
-        # Allow **kwargs to work with modality_dispatch().
+    def __call__(
+        self,
+        parameter: torch.Tensor,
+        *,
+        input: torch.Tensor | None = None,
+        target: torch.Tensor | dict[str, Any] | None = None,
+    ) -> None:
+        # Accept input and target from modality_dispatch().
         self.initialize_(parameter)
 
     @torch.no_grad()
