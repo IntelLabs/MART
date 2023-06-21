@@ -64,11 +64,12 @@ def _(input: dict, *, data, target, modality, modality_func):
 @modality_dispatch.register
 def _(input: list, *, data, target, modality, modality_func):
     # The list input implies a collection of sub-input and sub-target.
-    if not isinstance(target, (list, tuple)):
+    if not isinstance(target, Iterable):
         # Make target zip well with input.
         target = cycle([target])
-    if not isinstance(data, (list, tuple)):
+    if not isinstance(data, Iterable):
         # Make data zip well with input.
+        # Besides list and tuple, data could be ParameterList too.
         # Data is shared for all input, e.g. universal perturbation.
         data = cycle([data])
 
