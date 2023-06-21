@@ -95,54 +95,85 @@ model:
       clamp: [0, 1]
 
   optimizer:
-    lr: 0.02
+    lr: 0.05  # ims_per_batch / orig_ims_per_batch * orig_lr = (8 / 16) * 0.1
     momentum: 0.9
+
+  lr_scheduler:
+    scheduler:
+      three_phase: true
 
   gradient_modifier: null
 
   training_sequence:
-    seq005: perturbation
-    seq006: input_adv
+    seq005: "perturbation"
+    seq006: "input_adv"
     seq010:
       yolov4:
         x: "input_adv"
+    seq020:
+      losses:
+        perturbation: "perturbation"
     seq030:
       loss:
         _call_with_args_:
-          - losses.hide_target_objects_loss
-          - losses.correct_target_class_loss
+          - "losses.hide_objects_loss"
+          - "losses.total_variation"
         weights:
           - 1
-          - 1
+          - 0.0001
+    seq050:
+      output:
+        total_variation: "losses.total_variation"
 
   training_metrics: null
+  training_step_log:
+    - loss
+    - total_loss
+    - coord_loss
+    - obj_loss
+    - noobj_loss
+    - class_loss
+    - hide_objects_loss
+    - target_class_loss
+    - hide_target_objects_loss
+    - correct_target_class_loss
+    - target_count
+    - score_count
+    - target_score_count
+    - total_variation
 
   validation_sequence:
-    seq005: perturbation
-    seq006: input_adv
+    seq005: "perturbation"
+    seq006: "input_adv"
     seq010:
       yolov4:
         x: "input_adv"
+    seq020:
+      losses:
+        perturbation: "perturbation"
     seq030:
       loss:
         _call_with_args_:
-          - losses.hide_target_objects_loss
-          - losses.correct_target_class_loss
+          - "losses.hide_objects_loss"
+          - "losses.total_variation"
         weights:
           - 1
-          - 1
+          - 0.0001
 
   test_sequence:
-    seq005: perturbation
-    seq006: input_adv
+    seq005: "perturbation"
+    seq006: "input_adv"
     seq010:
       yolov4:
         x: "input_adv"
+    seq020:
+      losses:
+        perturbation: "perturbation"
     seq030:
       loss:
         _call_with_args_:
-          - losses.hide_target_objects_loss
-          - losses.correct_target_class_loss
+          - "losses.hide_objects_loss"
+          - "losses.total_variation"
         weights:
           - 1
-          - 1
+          - 0.0001
