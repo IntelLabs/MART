@@ -101,7 +101,7 @@ class Loss(torch.nn.Module):
         self.score_thresh = score_thresh
         self.target_idx = target_idx
 
-    def forward(self, logits, target, **kwargs):
+    def forward(self, logits, target, perturbation=None, **kwargs):
         targets = target["packed"]
         lengths = target["packed_length"]
 
@@ -149,6 +149,19 @@ class Loss(torch.nn.Module):
         target_count = target_mask.sum() / logits.shape[0]
         target_score_count = (target_mask & score_mask).sum() / logits.shape[0]
 
+        total_variation = None
+        if perturbation is not None:
+            # FIXME: This is a hack
+            total_variation = torch.mean(
+                torch.sum(
+                    torch.square(perturbation[:, 1:, :] - perturbation[:, :-1, :])
+                )
+                + torch.sum(  # noqa: W503
+                    torch.square(perturbation[:, :, 1:] - perturbation[:, :, :-1])
+                )
+            )
+
+
         return {
             "total_loss": total_loss,
             "coord_loss": coord_loss,
@@ -162,6 +175,7 @@ class Loss(torch.nn.Module):
             "score_count": score_count,
             "target_count": target_count,
             "target_score_count": target_score_count,
+            "total_variation": total_variation,
         }
 
 
