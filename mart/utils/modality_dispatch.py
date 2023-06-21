@@ -20,7 +20,7 @@ def modality_dispatch(
     input: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, torch.Tensor]],
     *,
     data: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, torch.Tensor]],
-    target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
+    target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, torch.Tensor | str]],
     modality_func: Callable | dict[str, Callable],
     modality: str = DEFAULT_MODALITY,
 ):
