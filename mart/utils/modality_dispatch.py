@@ -34,7 +34,7 @@ def modality_dispatch(
 
 
 @modality_dispatch.register
-def _(input: torch.Tensor, *, data, target, modality_func, modality):
+def _(input: torch.Tensor, *, data, target, modality_func, modality=DEFAULT_MODALITY):
     # Take action when input is a tensor.
     if isinstance(modality_func, dict):
         # A dictionary of Callable indexed by modality.
@@ -45,7 +45,7 @@ def _(input: torch.Tensor, *, data, target, modality_func, modality):
 
 
 @modality_dispatch.register
-def _(input: dict, *, data, target, modality_func, modality):
+def _(input: dict, *, data, target, modality_func, modality=DEFAULT_MODALITY):
     # The dict input has modalities specified in keys, passing them recursively.
     output = {}
     for modality in input.keys():
@@ -60,7 +60,7 @@ def _(input: dict, *, data, target, modality_func, modality):
 
 
 @modality_dispatch.register
-def _(input: list, *, data, target, modality_func, modality):
+def _(input: list, *, data, target, modality_func, modality=DEFAULT_MODALITY):
     # The list input implies a collection of sub-input and sub-target.
     if not isinstance(target, Iterable):
         # Make target zip well with input.
@@ -86,7 +86,7 @@ def _(input: list, *, data, target, modality_func, modality):
 
 
 @modality_dispatch.register
-def _(input: tuple, *, data, target, modality_func, modality):
+def _(input: tuple, *, data, target, modality_func, modality=DEFAULT_MODALITY):
     # The tuple input is similar with the list input.
     output = modality_dispatch(
         list(input),
