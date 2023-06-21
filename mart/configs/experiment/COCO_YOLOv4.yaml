@@ -1,0 +1,33 @@
+# @package _global_
+
+defaults:
+  - override /datamodule: coco_yolov3
+  - override /model: yolov4
+  - override /optimization: super_convergence
+  - override /metric: average_precision
+
+task_name: "COCO_YOLOv4"
+tags: ["evaluation"]
+
+optimized_metric: "test_metrics/map"
+
+trainer:
+  # 117,266 training images, 6 epochs, batch_size=16, 43,974.75
+  max_steps: 43975
+  # FIXME: "nms_kernel" not implemented for 'BFloat16', torch.ops.torchvision.nms().
+  precision: 32
+
+datamodule:
+  num_workers: 32
+  ims_per_batch: 16
+
+  collate_fn:
+    path: mart.datamodules.coco.yolov4_collate_fn
+
+model:
+  optimizer:
+    lr: 0.001
+    momentum: 0.9
+    weight_decay: 0.0005
+
+  training_metrics: null
