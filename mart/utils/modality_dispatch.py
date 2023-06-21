@@ -17,10 +17,10 @@ DEFAULT_MODALITY = "default"
 
 @functools.singledispatch
 def modality_dispatch(
-    input: torch.Tensor | dict[str, torch.Tensor] | Iterable[Any],
+    input: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, torch.Tensor]],
     *,
-    data: torch.Tensor | dict[str, torch.Tensor] | Iterable[Any],
-    target: torch.Tensor | Iterable[Any] | None,
+    data: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, torch.Tensor]],
+    target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]] | None,
     modality_func: Callable | dict[str, Callable],
     modality: str = DEFAULT_MODALITY,
 ):
@@ -34,7 +34,7 @@ def modality_dispatch(
 
 
 @modality_dispatch.register
-def _(input: torch.Tensor, *, data, target, modality, modality_func):
+def _(input: torch.Tensor, *, data, target, modality_func, modality):
     # Take action when input is a tensor.
     if isinstance(modality_func, dict):
         # A dictionary of Callable indexed by modality.
@@ -45,7 +45,7 @@ def _(input: torch.Tensor, *, data, target, modality, modality_func):
 
 
 @modality_dispatch.register
-def _(input: dict, *, data, target, modality, modality_func):
+def _(input: dict, *, data, target, modality_func, modality):
     # The dict input has modalities specified in keys, passing them recursively.
     output = {}
     for modality in input.keys():
@@ -53,14 +53,14 @@ def _(input: dict, *, data, target, modality, modality_func):
             input[modality],
             data=data[modality],
             target=target,
-            modality=modality,
             modality_func=modality_func,
+            modality=modality,
         )
     return output
 
 
 @modality_dispatch.register
-def _(input: list, *, data, target, modality, modality_func):
+def _(input: list, *, data, target, modality_func, modality):
     # The list input implies a collection of sub-input and sub-target.
     if not isinstance(target, Iterable):
         # Make target zip well with input.
@@ -77,8 +77,8 @@ def _(input: list, *, data, target, modality, modality_func):
             input_i,
             data=data_i,
             target=target_i,
-            modality=modality,
             modality_func=modality_func,
+            modality=modality,
         )
         output.append(output_i)
 
@@ -86,14 +86,14 @@ def _(input: list, *, data, target, modality, modality_func):
 
 
 @modality_dispatch.register
-def _(input: tuple, *, data, target, modality, modality_func):
+def _(input: tuple, *, data, target, modality_func, modality):
     # The tuple input is similar with the list input.
     output = modality_dispatch(
         list(input),
         data=data,
         target=target,
-        modality=modality,
         modality_func=modality_func,
+        modality=modality,
     )
     # Make the output a tuple, the same as input.
     output = tuple(output)
