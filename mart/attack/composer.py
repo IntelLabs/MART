@@ -15,28 +15,13 @@ import torch
 class Composer(abc.ABC):
     def __call__(
         self,
-        perturbation: torch.Tensor | Iterable[torch.Tensor],
+        perturbation: torch.Tensor,
         *,
-        input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
+        input: torch.Tensor,
+        target: torch.Tensor | dict[str, Any],
         **kwargs,
     ) -> torch.Tensor | Iterable[torch.Tensor]:
-        if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
-            return self.compose(perturbation, input=input, target=target)
-
-        elif (
-            isinstance(perturbation, Iterable)
-            and isinstance(input, Iterable)  # noqa: W503
-            and isinstance(target, Iterable)  # noqa: W503
-        ):
-            # FIXME: replace tuple with whatever input's type is
-            return tuple(
-                self.compose(perturbation_i, input=input_i, target=target_i)
-                for perturbation_i, input_i, target_i in zip(perturbation, input, target)
-            )
-
-        else:
-            raise NotImplementedError
+        return self.compose(perturbation, input=input, target=target)
 
     @abc.abstractmethod
     def compose(

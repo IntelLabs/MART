@@ -17,25 +17,13 @@ class Projector:
     @torch.no_grad()
     def __call__(
         self,
-        perturbation: torch.Tensor | Iterable[torch.Tensor],
+        perturbation: torch.Tensor,
         *,
-        input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
+        input: torch.Tensor,
+        target: torch.Tensor | dict[str, Any],
         **kwargs,
     ) -> None:
-        if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
-            self.project_(perturbation, input=input, target=target)
-
-        elif (
-            isinstance(perturbation, Iterable)
-            and isinstance(input, Iterable)  # noqa: W503
-            and isinstance(target, Iterable)  # noqa: W503
-        ):
-            for perturbation_i, input_i, target_i in zip(perturbation, input, target):
-                self.project_(perturbation_i, input=input_i, target=target_i)
-
-        else:
-            raise NotImplementedError
+        self.project_(perturbation, input=input, target=target)
 
     @torch.no_grad()
     def project_(
