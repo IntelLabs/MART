@@ -44,8 +44,7 @@ class OptimizerFactory:
             _, param_module = next(filter(lambda nm: nm[0] == module_name, module.named_modules()))
             module_kind = param_module.__class__.__name__
 
-            # FIXME: Other modules may also use ParameterDict.
-            if module_kind == "ParameterDict":
+            if module_kind == "ModalityParameterDict":
                 # Identify modality-aware parameters for adversary.
                 modality = param_name.split(".")[-1]
                 modality_params[modality].append(param)

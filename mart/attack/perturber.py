@@ -11,7 +11,11 @@ from typing import TYPE_CHECKING, Iterable
 import torch
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
-from ..utils.modality_dispatch import DEFAULT_MODALITY, modality_dispatch
+from ..utils.modality_dispatch import (
+    DEFAULT_MODALITY,
+    ModalityParameterDict,
+    modality_dispatch,
+)
 from .projector import Projector
 
 if TYPE_CHECKING:
@@ -76,7 +80,7 @@ class Perturber(torch.nn.Module):
                     torch.empty_like(tensor, dtype=torch.float, requires_grad=True)
                 )
             elif isinstance(tensor, dict):
-                return torch.nn.ParameterDict(
+                return ModalityParameterDict(
                     {modality: create_from_tensor(t) for modality, t in tensor.items()}
                 )
             elif isinstance(tensor, Iterable):

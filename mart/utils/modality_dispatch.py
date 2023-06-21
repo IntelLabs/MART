@@ -12,8 +12,6 @@ from typing import Any, Callable, Iterable
 
 import torch
 
-__all__ = ["modality_dispatch"]
-
 DEFAULT_MODALITY = "default"
 
 
@@ -100,3 +98,9 @@ def _(input: tuple, *, data, target, modality, modality_func):
     # Make the output a tuple, the same as input.
     output = tuple(output)
     return output
+
+
+class ModalityParameterDict(torch.nn.ParameterDict):
+    """Get a new name so we know when parameters are associated with modality."""
+
+    pass
