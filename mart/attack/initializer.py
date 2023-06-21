@@ -21,7 +21,8 @@ class Initializer:
     """Initializer base class."""
 
     @torch.no_grad()
-    def __call__(self, parameters: torch.Tensor | Iterable[torch.Tensor]) -> None:
+    def __call__(self, parameters: torch.Tensor | Iterable[torch.Tensor], **kwargs) -> None:
+        # Allow **kwargs to work with modality_dispatch().
         if isinstance(parameters, torch.Tensor):
             parameters = [parameters]
 

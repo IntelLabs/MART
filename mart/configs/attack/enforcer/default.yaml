@@ -1,2 +1,3 @@
 _target_: mart.attack.Enforcer
-constraints: ???
+# FIXME: Hydra does not detect modality-aware constraints defined as sub-components.
+# constraints: ???

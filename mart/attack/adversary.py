@@ -16,6 +16,7 @@ import torch
 from mart.utils import silent
 
 from ..optim import OptimizerFactory
+from ..utils.modality_dispatch import DEFAULT_MODALITY, modality_dispatch
 
 if TYPE_CHECKING:
     from .composer import Composer
@@ -149,10 +150,11 @@ class Adversary(pl.LightningModule):
 
         if self.gradient_modifier:
             for group in optimizer.param_groups:
-                self.gradient_modifier(group["params"])
+                modality = group["modality"] if "modality" in group else DEFAULT_MODALITY
+                self.gradient_modifier[modality](group["params"])
 
     @silent()
-    def forward(self, *, model=None, sequence=None, **batch):
+    def forward(self, *, model=None, sequence=None, input, target, **batch):
         batch["model"] = model
         batch["sequence"] = sequence
 
@@ -161,14 +163,20 @@ class Adversary(pl.LightningModule):
         # Adversary lives inside the model, we also need the remaining sequence to be able to
         # get a loss.
         if model and sequence:
-            self._attack(**batch)
+            self._attack(input=input, target=target, **batch)
 
-        perturbation = self.perturber(**batch)
-        input_adv = self.composer(perturbation, **batch)
+        perturbation = self.perturber(input=input, target=target, **batch)
+        input_adv = modality_dispatch(
+            input,
+            data=perturbation,
+            target=target,
+            modality_func=self.composer,
+            modality=DEFAULT_MODALITY,
+        )
 
         # Enforce constraints after the attack optimization ends.
         if model and sequence:
-            self.enforcer(input_adv, **batch)
+            self.enforcer(input_adv, input=input, target=target, **batch)
 
         return input_adv
 

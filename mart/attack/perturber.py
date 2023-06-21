@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Iterable
 import torch
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
+from ..utils.modality_dispatch import DEFAULT_MODALITY, modality_dispatch
 from .projector import Projector
 
 if TYPE_CHECKING:
@@ -65,6 +66,10 @@ class Perturber(torch.nn.Module):
                 return torch.nn.Parameter(
                     torch.empty_like(tensor, dtype=torch.float, requires_grad=True)
                 )
+            elif isinstance(tensor, dict):
+                return torch.nn.ParameterDict(
+                    {modality: create_from_tensor(t) for modality, t in tensor.items()}
+                )
             elif isinstance(tensor, Iterable):
                 return torch.nn.ParameterList([create_from_tensor(t) for t in tensor])
             else:
@@ -76,7 +81,13 @@ class Perturber(torch.nn.Module):
             self.perturbation = create_from_tensor(input)
 
         # Always (re)initialize perturbation.
-        self.initializer_(self.perturbation)
+        modality_dispatch(
+            input,
+            data=self.perturbation,
+            target=None,
+            modality_func=self.initializer_,
+            modality=DEFAULT_MODALITY,
+        )
 
     def named_parameters(self, *args, **kwargs):
         if self.perturbation is None:
@@ -90,12 +101,18 @@ class Perturber(torch.nn.Module):
 
         return super().parameters(*args, **kwargs)
 
-    def forward(self, **batch):
+    def forward(self, *, input, target, **batch):
         if self.perturbation is None:
             raise MisconfigurationException(
                 "You need to call the configure_perturbation before forward."
             )
 
-        self.projector_(self.perturbation, **batch)
+        modality_dispatch(
+            input,
+            data=self.perturbation,
+            target=target,
+            modality_func=self.projector_,
+            modality=DEFAULT_MODALITY,
+        )
 
         return self.perturbation
