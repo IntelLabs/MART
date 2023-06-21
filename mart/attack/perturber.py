@@ -24,8 +24,8 @@ class Perturber(torch.nn.Module):
     def __init__(
         self,
         *,
-        initializer: Initializer,
-        projector: Projector | None = None,
+        initializer: Initializer | dict[str, Initializer],
+        projector: Projector | dict[str, Projector] | None = None,
     ):
         """_summary_
 
