@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable
+from typing import Any
 
 import torch
 
@@ -28,10 +28,10 @@ class Projector:
     @torch.no_grad()
     def project_(
         self,
-        perturbation: torch.Tensor | Iterable[torch.Tensor],
+        perturbation: torch.Tensor,
         *,
-        input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
+        input: torch.Tensor,
+        target: torch.Tensor | dict[str, Any],
     ) -> None:
         pass
 
@@ -45,10 +45,10 @@ class Compose(Projector):
     @torch.no_grad()
     def __call__(
         self,
-        perturbation: torch.Tensor | Iterable[torch.Tensor],
+        perturbation: torch.Tensor,
         *,
-        input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
+        input: torch.Tensor,
+        target: torch.Tensor | dict[str, Any],
         **kwargs,
     ) -> None:
         for projector in self.projectors:
