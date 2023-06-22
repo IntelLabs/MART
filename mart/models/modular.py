@@ -70,13 +70,22 @@ class LitModular(LightningModule):
 
         self.lr_scheduler = lr_scheduler
 
-        self.training_step_log = training_step_log or ["loss"]
+        # Be backwards compatible by turning list into dict where each item is its own key-value
+        if isinstance(training_step_log, (list, tuple)):
+            training_step_log = {item: item for item in training_step_log}
+        self.training_step_log = training_step_log or {}
         self.training_metrics = training_metrics
 
-        self.validation_step_log = validation_step_log or []
+        # Be backwards compatible by turning list into dict where each item is its own key-value
+        if isinstance(validation_step_log, (list, tuple)):
+            validation_step_log = {item: item for item in validation_step_log}
+        self.validation_step_log = validation_step_log or {}
         self.validation_metrics = validation_metrics
 
-        self.test_step_log = test_step_log or []
+        # Be backwards compatible by turning list into dict where each item is its own key-value
+        if isinstance(test_step_log, (list, tuple)):
+            test_step_log = {item: item for item in test_step_log}
+        self.test_step_log = test_step_log or {}
         self.test_metrics = test_metrics
 
         # Load state dict for specified modules. We flatten it because Hydra
@@ -115,8 +124,8 @@ class LitModular(LightningModule):
         input, target = batch
         output = self(input=input, target=target, model=self.model, step="training")
 
-        for name in self.training_step_log:
-            self.log(f"training/{name}", output[name])
+        for log_name, output_key in self.training_step_log.items():
+            self.log(f"training/{log_name}", output[output_key])
 
         assert "loss" in output
         return output
@@ -149,8 +158,8 @@ class LitModular(LightningModule):
         input, target = batch
         output = self(input=input, target=target, model=self.model, step="validation")
 
-        for name in self.validation_step_log:
-            self.log(f"validation/{name}", output[name])
+        for log_name, output_key in self.validation_step_log.items():
+            self.log(f"validation/{log_name}", output[output_key])
 
         return output
 
@@ -175,8 +184,8 @@ class LitModular(LightningModule):
         input, target = batch
         output = self(input=input, target=target, model=self.model, step="test")
 
-        for name in self.test_step_log:
-            self.log(f"test/{name}", output[name])
+        for log_name, output_key in self.test_step_log.items():
+            self.log(f"test/{log_name}", output[output_key])
 
         return output
 
