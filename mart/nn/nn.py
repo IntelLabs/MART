@@ -139,13 +139,13 @@ class CallWith:
     def __call__(
         self,
         *args,
-        _call_with_args_: Iterable[str] | None = None,
-        _return_as_dict_: Iterable[str] | None = None,
+        _args_: Iterable[str] | None = None,
+        _return_keys_: Iterable[str] | None = None,
         **kwargs,
     ):
         module_name = self.module.__class__.__name__
 
-        arg_keys = _call_with_args_ or self.arg_keys
+        arg_keys = _args_ or self.arg_keys
         kwarg_keys = self.kwarg_keys
 
         args = list(args)
@@ -180,7 +180,7 @@ class CallWith:
         ret = self.module(*args, **kwargs)
 
         # Change returned values into dictionary, if necessary
-        return_keys = _return_as_dict_ or self.return_keys
+        return_keys = _return_keys_ or self.return_keys
         if return_keys:
             if not isinstance(ret, tuple):
                 raise Exception(
