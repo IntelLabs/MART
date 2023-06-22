@@ -36,6 +36,9 @@ class LitModular(LightningModule):
         test_step_log=None,
         test_metrics=None,
         load_state_dict=None,
+        output_loss_key="loss",
+        output_preds_key="preds",
+        output_target_key="target",
     ):
         super().__init__()
 
@@ -97,6 +100,10 @@ class LitModular(LightningModule):
             logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
             module.load_state_dict(torch.load(path, map_location="cpu"))
 
+        self.output_loss_key = output_loss_key
+        self.output_preds_key = output_preds_key
+        self.output_target_key = output_target_key
+
     def configure_optimizers(self):
         config = {}
         config["optimizer"] = self.optimizer_fn(self.model)
@@ -133,12 +140,12 @@ class LitModular(LightningModule):
     def training_step_end(self, output):
         if self.training_metrics is not None:
             # Some models only return loss in the training mode.
-            if "preds" not in output or "target" not in output:
+            if self.output_preds_key not in output or self.output_target_key not in output:
                 raise ValueError(
-                    "You have specified training_metrics, but the model does not return preds and target during training. You can either nullify training_metrics or configure the model to return preds and target in the training output."
+                    f"You have specified training_metrics, but the model does not return {self.output_preds_key} or {self.output_target_key} during training. You can either nullify training_metrics or configure the model to return {self.output_preds_key} and {self.output_target_key} in the training output."
                 )
-            self.training_metrics(output["preds"], output["target"])
-        loss = output.pop("loss")
+            self.training_metrics(output[self.output_preds_key], output[self.output_target_key])
+        loss = output.pop(self.output_loss_key)
         return loss
 
     def training_epoch_end(self, outputs):
@@ -164,7 +171,7 @@ class LitModular(LightningModule):
         return output
 
     def validation_step_end(self, output):
-        self.validation_metrics(output["preds"], output["target"])
+        self.validation_metrics(output[self.output_preds_key], output[self.output_target_key])
 
         # I don't know why this is required to prevent CUDA memory leak in validaiton and test. (Not required in training.)
         output.clear()
@@ -190,7 +197,7 @@ class LitModular(LightningModule):
         return output
 
     def test_step_end(self, output):
-        self.test_metrics(output["preds"], output["target"])
+        self.test_metrics(output[self.output_preds_key], output[self.output_target_key])
 
         # I don't know why this is required to prevent CUDA memory leak in validaiton and test. (Not required in training.)
         output.clear()
