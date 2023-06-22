@@ -155,22 +155,26 @@ class CallWith:
         if arg_keys is not None or len(kwarg_keys) > 0:
             arg_keys = arg_keys or []
 
-        # Check to make sure each str exists within kwargs
-        str_kwarg_keys = filter(lambda k: isinstance(k, str), kwarg_keys.values())
-        for key in remaining_arg_keys + list(str_kwarg_keys):
-            if key not in kwargs:
+            # Sometimes we receive positional arguments because some modules use nn.Sequential
+            # which has a __call__ function that passes positional args. So we pass along args
+            # as it and assume these consume the first len(args) of arg_keys.
+            arg_keys = arg_keys[len(args) :]
+
+            # Append kwargs to args using arg_keys
+            try:
+                [args.append(kwargs[kwargs_key]) for kwargs_key in arg_keys]
+            except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
                 ) from ex
 
-        # For each specified args/kwargs key, lookup its corresponding value in kwargs only if the key is a string.
-        # Otherwise, we just treat the key as a value.
-        selected_args = [
-            kwargs[key] if isinstance(key, str) else key for key in arg_keys[len(args) :]
-        ]
-        selected_kwargs = {
-            key: kwargs[val] if isinstance(val, str) else val for key, val in kwarg_keys.items()
-        }
+            # Replace kwargs with selected kwargs
+            try:
+                kwargs = {name: kwargs[kwargs_key] for name, kwargs_key in kwarg_keys.items()}
+            except KeyError as ex:
+                raise Exception(
+                    f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
+                ) from ex
 
         # FIXME: Add better error message
         ret = self.module(*args, **kwargs)
