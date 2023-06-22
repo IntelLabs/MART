@@ -158,6 +158,8 @@ class CallWith(torch.nn.Module):
                     f"Module {orig_class} wants arg named '{key}' but only received kwargs: {', '.join(kwargs.keys())}."
                 )
 
+        # For each specified args/kwargs key, lookup its corresponding value in kwargs only if the key is a string.
+        # Otherwise, we just treat the key as a value.
         selected_args = [
             kwargs[key] if isinstance(key, str) else key for key in arg_keys[len(args) :]
         ]
