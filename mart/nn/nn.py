@@ -236,7 +236,7 @@ class DotDict(dict):
             elif isinstance(value, dict) and subkey in value:
                 value = value[subkey]
             else:
-                raise KeyError("No {subkey} in " + ".".join([key, *subkeys]))
+                raise KeyError(f"No {subkey} in " + ".".join([key, *subkeys]))
 
         return value
 
