@@ -3,5 +3,5 @@ module:
   _target_: mart.attack.objective.Missed
   confidence_threshold: 0.0
 arg_keys:
-  - preds
+  - ${model.output_preds_key}
 kwarg_keys: null
