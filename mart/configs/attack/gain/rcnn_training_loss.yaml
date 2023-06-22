@@ -2,7 +2,7 @@ _target_: mart.nn.CallWith
 module:
   _target_: mart.nn.Sum
 _call_with_args_:
-  - rpn_loss.loss_objectness
-  - rpn_loss.loss_rpn_box_reg
-  - box_loss.loss_classifier
-  - box_loss.loss_box_reg
+  - "losses_and_detections.training.loss_objectness"
+  - "losses_and_detections.training.loss_rpn_box_reg"
+  - "losses_and_detections.training.loss_classifier"
+  - "losses_and_detections.training.loss_box_reg"
