@@ -29,7 +29,7 @@ class SequentialDict(torch.nn.ModuleDict):
     <module name>:
         _name_: <return key>
         _call_with_args_: <a list of *args>
-        _return_as_dict: <a list of keys to wrap the returned tuple as a dictionary>
+        _return_as_dict_: <a list of keys to wrap the returned tuple as a dictionary>
         **kwargs
 
     All intermediate output from each module are stored in the dictionary `kwargs` in `forward()`
@@ -51,10 +51,6 @@ class SequentialDict(torch.nn.ModuleDict):
     """
 
     def __init__(self, modules, sequences=None):
-
-        if "output" not in modules:
-            raise ValueError("Modules must have an module named 'output'")
-
         super().__init__(modules)
 
         self._sequences = {
@@ -113,7 +109,8 @@ class SequentialDict(torch.nn.ModuleDict):
             # Pop the executed module to proceed with the sequence
             sequence.popitem(last=False)
 
-        return kwargs["output"]
+        # return kwargs as DotDict
+        return DotDict(kwargs)
 
 
 class ReturnKwargs(torch.nn.Module):
