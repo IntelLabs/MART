@@ -17,14 +17,6 @@ training_sequence:
   seq040:
     preds:
       _call_with_args_: ["logits"]
-  seq050:
-    output:
-      {
-        "preds": "preds",
-        "target": "target",
-        "logits": "logits",
-        "loss": "loss",
-      }
 
 # The kwargs-centric version.
 # We may use *args as **kwargs to avoid the lengthy _call_with_args_.
@@ -36,10 +28,6 @@ validation_sequence:
   - logits: ["preprocessor"]
   - preds:
       input: logits
-  - output:
-      preds: preds
-      target: target
-      logits: logits
 
 # The simplified version.
 #   We treat a list as the `_call_with_args_` parameter.
@@ -50,8 +38,6 @@ test_sequence:
     logits: ["preprocessor"]
   seq030:
     preds: ["logits"]
-  seq040:
-    output: { preds: preds, target: target, logits: logits }
 
 modules:
   preprocessor: ???
@@ -64,6 +50,3 @@ modules:
   preds:
     _target_: torch.nn.Softmax
     dim: 1
-
-  output:
-    _target_: mart.nn.ReturnKwargs
