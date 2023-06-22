@@ -132,11 +132,12 @@ def yolo_collate_fn(batch):
 
     return images, target
 
+
 # FIXME: Turn this into a class with options
 def yolov4_collate_fn(batch):
     images, target = yolo_collate_fn(batch)
 
-    # Generate image indexs for labels along batch axis
+    # Generate image indexes for labels along batch axis
     packed_length = target["packed_length"]
     indices = [i + torch.zeros((length,)) for i, length in enumerate(packed_length)]
     indices = torch.cat(indices, dim=0)[..., None]

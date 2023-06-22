@@ -165,7 +165,10 @@ class CallWith:
 
             # Append kwargs to args using arg_keys
             try:
-                [args.append(kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key) for kwargs_key in arg_keys]
+                [
+                    args.append(kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key)
+                    for kwargs_key in arg_keys
+                ]
             except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
@@ -173,7 +176,10 @@ class CallWith:
 
             # Replace kwargs with selected kwargs
             try:
-                kwargs = {name: kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key for name, kwargs_key in kwarg_keys.items()}
+                kwargs = {
+                    name: kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key
+                    for name, kwargs_key in kwarg_keys.items()
+                }
             except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
@@ -240,7 +246,7 @@ class DotDict(dict):
             elif isinstance(value, dict) and subkey in value:
                 value = value[subkey]
             else:
-                raise KeyError("No {subkey} in " + ".".join([key, *subkeys]))
+                raise KeyError(f"No {subkey} in " + ".".join([key, *subkeys]))
 
         return value
 

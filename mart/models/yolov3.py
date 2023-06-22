@@ -151,16 +151,12 @@ class Loss(torch.nn.Module):
 
         total_variation = None
         if perturbation is not None:
-            # FIXME: This is a hack
             total_variation = torch.mean(
-                torch.sum(
-                    torch.square(perturbation[:, 1:, :] - perturbation[:, :-1, :])
-                )
+                torch.sum(torch.square(perturbation[:, 1:, :] - perturbation[:, :-1, :]))
                 + torch.sum(  # noqa: W503
                     torch.square(perturbation[:, :, 1:] - perturbation[:, :, :-1])
                 )
             )
-
 
         return {
             "total_loss": total_loss,

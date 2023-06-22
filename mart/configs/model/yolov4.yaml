@@ -157,7 +157,6 @@ training_step_log:
   - score_count
   - target_score_count
 
-
 validation_step_log:
   - loss
   - total_loss
@@ -172,7 +171,6 @@ validation_step_log:
   - target_count
   - score_count
   - target_score_count
-
 
 test_step_log:
   - loss

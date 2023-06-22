@@ -365,10 +365,10 @@ class ConvertBoxesToCXCYWH(ExTransform):
         if self.normalize:
             # image.shape = CHW
             C, H, W = image.shape
-            boxes[:, 0] /= W # x
-            boxes[:, 1] /= H # y
-            boxes[:, 2] /= W # w
-            boxes[:, 3] /= H # h
+            boxes[:, 0] /= W  # x
+            boxes[:, 1] /= H  # y
+            boxes[:, 2] /= W  # w
+            boxes[:, 3] /= H  # h
 
         target["boxes"] = boxes
 
@@ -508,7 +508,7 @@ class PackBoxesAndLabels(ExTransform):
             labels = labels[..., None]
 
         # Concatenate/pack boxes, scores, and labels using given order.
-        values = { "boxes": boxes, "scores": scores, "labels": labels }
+        values = {"boxes": boxes, "scores": scores, "labels": labels}
         packed = torch.cat([values[key] for key in self.order], dim=-1)
 
         target["packed"] = packed
