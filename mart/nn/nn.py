@@ -30,7 +30,7 @@ class SequentialDict(torch.nn.ModuleDict):
     <module name>:
         _name_: <return key>
         _call_with_args_: <a list of *args>
-        _return_as_dict: <a list of keys to wrap the returned tuple as a dictionary>
+        _return_as_dict_: <a list of keys to wrap the returned tuple as a dictionary>
         **kwargs
 
     All intermediate output from each module are stored in the dictionary `kwargs` in `forward()`
@@ -52,10 +52,6 @@ class SequentialDict(torch.nn.ModuleDict):
     """
 
     def __init__(self, modules, sequences=None):
-
-        if "output" not in modules:
-            raise ValueError("Modules must have an module named 'output'")
-
         super().__init__(modules)
 
         self._sequences = {
@@ -104,6 +100,7 @@ class SequentialDict(torch.nn.ModuleDict):
             # Don't pop the first element yet, because it may be used to re-evaluate the model.
             key, module = next(iter(sequence.items()))
 
+            # FIXME: Add better error message
             output = module(step=step, sequence=sequence, **kwargs)
 
             if key in kwargs:
@@ -113,7 +110,8 @@ class SequentialDict(torch.nn.ModuleDict):
             # Pop the executed module to proceed with the sequence
             sequence.popitem(last=False)
 
-        return kwargs["output"]
+        # return kwargs as DotDict
+        return DotDict(kwargs)
 
 
 class ReturnKwargs(torch.nn.Module):
@@ -146,15 +144,15 @@ class CallWith:
     def __call__(
         self,
         *args,
-        _call_with_args_: Iterable[str] | None = None,
-        _return_as_dict_: Iterable[str] | None = None,
+        _args_: Iterable[str] | None = None,
+        _return_keys_: Iterable[str] | None = None,
         _train_mode_: bool | None = None,
         _inference_mode_: bool | None = None,
         **kwargs,
     ):
         module_name = self.module.__class__.__name__
 
-        arg_keys = _call_with_args_ or self.arg_keys
+        arg_keys = _args_ or self.arg_keys
         kwarg_keys = self.kwarg_keys
         _train_mode_ = _train_mode_ or self.train_mode
         _inference_mode_ = _inference_mode_ or self.inference_mode
@@ -207,7 +205,7 @@ class CallWith:
                 self.module.train(old_train_mode)
 
         # Change returned values into dictionary, if necessary
-        return_keys = _return_as_dict_ or self.return_keys
+        return_keys = _return_keys_ or self.return_keys
         if return_keys:
             if not isinstance(ret, tuple):
                 raise Exception(
@@ -264,7 +262,7 @@ class DotDict(dict):
             elif isinstance(value, dict) and subkey in value:
                 value = value[subkey]
             else:
-                raise KeyError("No {subkey} in " + ".".join([key, *subkeys]))
+                raise KeyError(f"No {subkey} in " + ".".join([key, *subkeys]))
 
         return value
 

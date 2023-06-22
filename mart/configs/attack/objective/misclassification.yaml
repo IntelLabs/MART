@@ -2,5 +2,5 @@ _target_: mart.nn.CallWith
 module:
   _target_: mart.attack.objective.Mispredict
 _call_with_args_:
-  - preds
-  - target
+  - ${model.output_preds_key}
+  - ${model.output_target_key}
