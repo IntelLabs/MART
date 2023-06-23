@@ -16,7 +16,6 @@ import torch
 from mart.utils import silent
 
 from ..optim import OptimizerFactory
-from ..utils.modality_dispatch import DEFAULT_MODALITY, modality_dispatch
 
 if TYPE_CHECKING:
     from .composer import Composer
@@ -39,7 +38,7 @@ class Adversary(pl.LightningModule):
         composer: Composer,
         optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
         gain: Gain,
-        gradient_modifier: GradientModifier | dict[str, GradientModifier] | None = None,
+        gradient_modifier: GradientModifier | None = None,
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
@@ -68,11 +67,6 @@ class Adversary(pl.LightningModule):
         # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
         # and DDP won't try to get the uninitialized parameters of perturbation.
         self._perturber = [perturber]
-
-        # Modality-specific objects.
-        # Backward compatibility, in case modality is unknown, and not given in input.
-        if not isinstance(gradient_modifier, dict):
-            gradient_modifier = {DEFAULT_MODALITY: gradient_modifier}
 
         self.composer = composer
         self.optimizer = optimizer
@@ -156,8 +150,7 @@ class Adversary(pl.LightningModule):
 
         if self.gradient_modifier:
             for group in optimizer.param_groups:
-                modality = group["modality"] if "modality" in group else DEFAULT_MODALITY
-                self.gradient_modifier[modality](group["params"])
+                self.gradient_modifier(group)
 
     @silent()
     def forward(self, *, model=None, sequence=None, **batch):
