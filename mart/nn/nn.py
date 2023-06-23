@@ -170,7 +170,12 @@ class CallWith:
 
             # Extend args with selected kwargs using arg_keys
             try:
-                args.extend([kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key for kwargs_key in arg_keys])
+                args.extend(
+                    [
+                        kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key
+                        for kwargs_key in arg_keys
+                    ]
+                )
             except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
@@ -178,7 +183,10 @@ class CallWith:
 
             # Replace kwargs with selected kwargs using kwarg_keys
             try:
-                kwargs = {name: kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key for name, kwargs_key in kwarg_keys.items()}
+                kwargs = {
+                    name: kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key
+                    for name, kwargs_key in kwarg_keys.items()
+                }
             except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
