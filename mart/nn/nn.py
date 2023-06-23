@@ -30,7 +30,7 @@ class SequentialDict(torch.nn.ModuleDict):
     <module name>:
         _name_: <return key>
         _call_with_args_: <a list of *args>
-        _return_as_dict_: <a list of keys to wrap the returned tuple as a dictionary>
+        _return_as_dict: <a list of keys to wrap the returned tuple as a dictionary>
         **kwargs
 
     All intermediate output from each module are stored in the dictionary `kwargs` in `forward()`
