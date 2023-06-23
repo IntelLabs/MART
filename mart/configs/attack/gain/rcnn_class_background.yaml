@@ -6,7 +6,6 @@ module:
   # Try to classify as background.
   class_index: 0
   targeted: true
-arg_keys:
+_call_with_args_:
   - box_head.class_logits
   - rpn_predictor.boxes
-kwarg_keys: null

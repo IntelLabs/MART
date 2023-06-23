@@ -83,7 +83,6 @@ class SequentialDict(torch.nn.ModuleDict):
             return_name = module_cfg.pop("_name_", module_name)
             module = CallWith(self[module_name], **module_cfg)
             module_dict[return_name] = module
-
         return module_dict
 
     def forward(self, step=None, sequence=None, **kwargs):
@@ -148,29 +147,29 @@ class CallWith:
         arg_keys = _args_ or self.arg_keys
         kwarg_keys = self.kwarg_keys
 
-        args = list(args)
-        kwargs = DotDict(kwargs)
-
-        # Change and replaces args and kwargs that we call module with
+        # Change and replace args and kwargs that we call module with
         if arg_keys is not None or len(kwarg_keys) > 0:
             arg_keys = arg_keys or []
+
+            kwargs = DotDict(kwargs)  # we need to lookup values using dot strings
+            args = list(args)  # tuple -> list
 
             # Sometimes we receive positional arguments because some modules use nn.Sequential
             # which has a __call__ function that passes positional args. So we pass along args
             # as it and assume these consume the first len(args) of arg_keys.
             arg_keys = arg_keys[len(args) :]
 
-            # Append kwargs to args using arg_keys
+            # Extend args with selected kwargs using arg_keys
             try:
-                [args.append(kwargs[kwargs_key]) for kwargs_key in arg_keys]
+                args.extend([kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key for kwargs_key in arg_keys])
             except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
                 ) from ex
 
-            # Replace kwargs with selected kwargs
+            # Replace kwargs with selected kwargs using kwarg_keys
             try:
-                kwargs = {name: kwargs[kwargs_key] for name, kwargs_key in kwarg_keys.items()}
+                kwargs = {name: kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key for name, kwargs_key in kwarg_keys.items()}
             except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
