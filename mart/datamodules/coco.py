@@ -96,9 +96,22 @@ class CocoDetection(CocoDetection_):
 def collate_fn(batch):
     return tuple(zip(*batch))
 
+
 def yolo_collate_fn(batch):
     images, targets = collate_fn(batch)
 
+    # Collate images
     images = default_collate(images)
 
-    return images, targets
+    # Turn tuple of dicts into dict of tuples
+    new_targets = {k: tuple(t[k] for t in targets) for k in targets[0].keys()}
+    new_targets["list_of_targets"] = targets
+
+    # Collate targets
+    COLLATABLE_KEYS = ["perturbable_mask"]
+
+    for key in new_targets.keys():
+        if key in COLLATABLE_KEYS:
+            new_targets[key] = default_collate(new_targets[key])
+
+    return images, new_targets

@@ -1,6 +1,9 @@
 defaults:
   - modular
 
+# FIXME: it would be nice to not do this...
+output_target_key: "target.list_of_targets"
+
 modules:
   yolo:
     _target_: mart.models.detection.yolo.yolo_darknet
@@ -32,7 +35,7 @@ training_sequence:
     yolo:
       _name_: "losses"
       images: "input"
-      targets: "target"
+      targets: "target.list_of_targets"
 
   seq100:
     loss:
@@ -48,7 +51,7 @@ validation_sequence:
     yolo:
       _name_: "losses"
       images: "input"
-      targets: "target"
+      targets: "target.list_of_targets"
       _train_mode_: False
   seq100: ${..training_sequence.seq100}
 
