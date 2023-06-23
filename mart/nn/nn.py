@@ -83,7 +83,6 @@ class SequentialDict(torch.nn.ModuleDict):
             return_name = module_cfg.pop("_name_", module_name)
             module = CallWith(self[module_name], **module_cfg)
             module_dict[return_name] = module
-
         return module_dict
 
     def forward(self, step=None, sequence=None, **kwargs):
