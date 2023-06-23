@@ -36,7 +36,7 @@ class Adversary(pl.LightningModule):
         self,
         *,
         perturber: Perturber,
-        composer: Composer | dict[str, Composer],
+        composer: Composer,
         optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
         gain: Gain,
         gradient_modifier: GradientModifier | dict[str, GradientModifier] | None = None,
@@ -73,8 +73,6 @@ class Adversary(pl.LightningModule):
         # Backward compatibility, in case modality is unknown, and not given in input.
         if not isinstance(gradient_modifier, dict):
             gradient_modifier = {DEFAULT_MODALITY: gradient_modifier}
-        if not isinstance(composer, dict):
-            composer = {DEFAULT_MODALITY: composer}
 
         self.composer = composer
         self.optimizer = optimizer
@@ -162,7 +160,7 @@ class Adversary(pl.LightningModule):
                 self.gradient_modifier[modality](group["params"])
 
     @silent()
-    def forward(self, *, model=None, sequence=None, input, target, **batch):
+    def forward(self, *, model=None, sequence=None, **batch):
         batch["model"] = model
         batch["sequence"] = sequence
 
@@ -171,20 +169,14 @@ class Adversary(pl.LightningModule):
         # Adversary lives inside the model, we also need the remaining sequence to be able to
         # get a loss.
         if model and sequence:
-            self._attack(input=input, target=target, **batch)
+            self._attack(**batch)
 
-        perturbation = self.perturber(input=input, target=target, **batch)
-        input_adv = modality_dispatch(
-            input,
-            data=perturbation,
-            target=target,
-            modality_func=self.composer,
-            modality=DEFAULT_MODALITY,
-        )
+        perturbation = self.perturber(**batch)
+        input_adv = self.composer(perturbation, **batch)
 
         # Enforce constraints after the attack optimization ends.
         if model and sequence:
-            self.enforcer(input_adv, input=input, target=target, **batch)
+            self.enforcer(input_adv, **batch)
 
         return input_adv
 

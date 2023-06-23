@@ -3,11 +3,12 @@ defaults:
   - perturber: default
   - perturber/initializer@perturber.initializer.rgb: constant
   - perturber/projector@perturber.projector.rgb: mask_range
-  - composer@composer.rgb: overlay
   - /optimizer@optimizer: sgd
   - gain: rcnn_training_loss
   - gradient_modifier@gradient_modifier.rgb: sign
   - objective: zero_ap
+  - composer: modality
+  - composer@composer.rgb: overlay
   - enforcer: default
   - enforcer/constraints@enforcer.rgb: [mask, pixel_range]
 
