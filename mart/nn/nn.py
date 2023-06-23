@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections import OrderedDict
+from contextlib import nullcontext
 from typing import Callable, Iterable
 
 import torch
@@ -83,7 +84,6 @@ class SequentialDict(torch.nn.ModuleDict):
             return_name = module_cfg.pop("_name_", module_name)
             module = CallWith(self[module_name], **module_cfg)
             module_dict[return_name] = module
-
         return module_dict
 
     def forward(self, step=None, sequence=None, **kwargs):
@@ -127,6 +127,8 @@ class CallWith:
         module: Callable,
         _call_with_args_: Iterable[str] | None = None,
         _return_as_dict_: Iterable[str] | None = None,
+        _train_mode_: bool | None = None,
+        _inference_mode_: bool | None = None,
         **kwarg_keys,
     ) -> None:
         super().__init__()
@@ -135,58 +137,74 @@ class CallWith:
         self.arg_keys = _call_with_args_
         self.kwarg_keys = kwarg_keys
         self.return_keys = _return_as_dict_
+        self.train_mode = _train_mode_
+        self.inference_mode = _inference_mode_
 
     def __call__(
         self,
         *args,
-        _call_with_args_: Iterable[str] | None = None,
-        _return_as_dict_: Iterable[str] | None = None,
+        _args_: Iterable[str] | None = None,
+        _return_keys_: Iterable[str] | None = None,
+        _train_mode_: bool | None = None,
+        _inference_mode_: bool | None = None,
         **kwargs,
     ):
         module_name = self.module.__class__.__name__
 
-        arg_keys = _call_with_args_ or self.arg_keys
+        arg_keys = _args_ or self.arg_keys
         kwarg_keys = self.kwarg_keys
+        _train_mode_ = _train_mode_ or self.train_mode
+        _inference_mode_ = _inference_mode_ or self.inference_mode
 
-        args = list(args)
-        kwargs = DotDict(kwargs)
-
-        # Change and replaces args and kwargs that we call module with
+        # Change and replace args and kwargs that we call module with
         if arg_keys is not None or len(kwarg_keys) > 0:
             arg_keys = arg_keys or []
+
+            kwargs = DotDict(kwargs)  # we need to lookup values using dot strings
+            args = list(args)  # tuple -> list
 
             # Sometimes we receive positional arguments because some modules use nn.Sequential
             # which has a __call__ function that passes positional args. So we pass along args
             # as it and assume these consume the first len(args) of arg_keys.
             arg_keys = arg_keys[len(args) :]
 
-            # Append kwargs to args using arg_keys
+            # Extend args with selected kwargs using arg_keys
             try:
-                [
-                    args.append(kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key)
-                    for kwargs_key in arg_keys
-                ]
+                args.extend([kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key for kwargs_key in arg_keys])
             except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
                 ) from ex
 
-            # Replace kwargs with selected kwargs
+            # Replace kwargs with selected kwargs using kwarg_keys
             try:
-                kwargs = {
-                    name: kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key
-                    for name, kwargs_key in kwarg_keys.items()
-                }
+                kwargs = {name: kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key for name, kwargs_key in kwarg_keys.items()}
             except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
                 ) from ex
 
-        # FIXME: Add better error message
-        ret = self.module(*args, **kwargs)
+        # Apply train mode and inference mode, if necessary, and call module with args and kwargs
+        context = nullcontext()
+        if isinstance(self.module, torch.nn.Module):
+            old_train_mode = self.module.training
+
+            if _train_mode_ is not None:
+                self.module.train(_train_mode_)
+
+            if _inference_mode_ is not None:
+                context = torch.inference_mode(mode=_inference_mode_)
+
+        with context:
+            # FIXME: Add better error message
+            ret = self.module(*args, **kwargs)
+
+        if isinstance(self.module, torch.nn.Module):
+            if _train_mode_ is not None:
+                self.module.train(old_train_mode)
 
         # Change returned values into dictionary, if necessary
-        return_keys = _return_as_dict_ or self.return_keys
+        return_keys = _return_keys_ or self.return_keys
         if return_keys:
             if not isinstance(ret, tuple):
                 raise Exception(
