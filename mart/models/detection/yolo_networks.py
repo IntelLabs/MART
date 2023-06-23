@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from ...ops import box_convert
+from torchvision.ops import box_convert
 from ..yolo import (
     Conv,
     CSPSPP,

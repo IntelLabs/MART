@@ -2,7 +2,7 @@
 import torch
 from torch import Tensor
 
-from ...ops import box_iou
+from torchvision.ops import box_iou
 
 
 def aligned_iou(wh1: Tensor, wh2: Tensor) -> Tensor:

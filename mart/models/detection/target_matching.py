@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import torch
 from torch import Tensor
 
-from ...ops import box_convert
+from torchvision.ops import box_convert
 from .anchor_utils import grid_centers
 from .box_utils import aligned_iou, box_size_ratio, iou_below, is_inside_box
 from .yolo_loss import YOLOLoss

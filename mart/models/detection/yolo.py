@@ -6,12 +6,12 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from ...ops import batched_nms
-from ...transforms import functional as F
-from .._api import register_model, Weights, WeightsEnum
-from .._utils import _ovewrite_value_param
-from ..yolo import YOLOV4Backbone
-from .backbone_utils import _validate_trainable_layers
+from torchvision.ops import batched_nms
+from torchvision.transforms import functional as F
+from torchvision.models._api import register_model, Weights, WeightsEnum
+from torchvision.models._utils import _ovewrite_value_param
+from mart.models.yolo import YOLOV4Backbone
+from torchvision.models.detection.backbone_utils import _validate_trainable_layers
 from .yolo_networks import DarknetNetwork, PRED, TARGET, TARGETS, YOLOV4Network
 
 IMAGES = List[Tensor]  # TorchScript doesn't allow a tuple.
