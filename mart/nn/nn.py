@@ -80,6 +80,12 @@ class SequentialDict(torch.nn.ModuleDict):
                 # We can omit the key of _call_with_args_ if it is the only config.
                 module_cfg = {"_call_with_args_": module_cfg}
 
+            # Add support for calling different functions using dot-syntax
+            if "." not in module_name:
+                module_name = f"{module_name}.__call__"
+            module_name, _call_ = module_name.split(".", 1)
+            module_cfg["_call_"] = _call_
+
             # The return name could be different from module_name when a module is used more than once.
             return_name = module_cfg.pop("_name_", module_name)
             module = CallWith(self[module_name], **module_cfg)
@@ -124,7 +130,8 @@ class ReturnKwargs(torch.nn.Module):
 class CallWith:
     def __init__(
         self,
-        module: Callable,
+        module: object,
+        _call_: str | None = "__call__",
         _call_with_args_: Iterable[str] | None = None,
         _return_as_dict_: Iterable[str] | None = None,
         _train_mode_: bool | None = None,
@@ -134,6 +141,7 @@ class CallWith:
         super().__init__()
 
         self.module = module
+        self.call_attr = _call_
         self.arg_keys = _call_with_args_
         self.kwarg_keys = kwarg_keys
         self.return_keys = _return_as_dict_
@@ -197,7 +205,8 @@ class CallWith:
 
         with context:
             # FIXME: Add better error message
-            ret = self.module(*args, **kwargs)
+            func = getattr(self.module, self.call_attr)
+            ret = func(*args, **kwargs)
 
         if isinstance(self.module, torch.nn.Module):
             if _train_mode_ is not None:
