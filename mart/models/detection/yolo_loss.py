@@ -4,8 +4,11 @@ from typing import Dict, Optional, Tuple
 
 import torch
 from torch import Tensor
-from torch.nn.functional import binary_cross_entropy, binary_cross_entropy_with_logits, one_hot
-
+from torch.nn.functional import (
+    binary_cross_entropy,
+    binary_cross_entropy_with_logits,
+    one_hot,
+)
 from torchvision.ops import (
     box_iou,
     complete_box_iou,
@@ -87,19 +90,24 @@ def _pairwise_confidence_loss(
         targets = torch.ones_like(preds) - predict_overlap
         # Distance-IoU may return negative "overlaps", so we have to make sure that the targets are not negative.
         targets += predict_overlap * overlap.detach().clamp(min=0)
-        return _binary_cross_entropy(preds, targets, reduction="none", input_is_normalized=input_is_normalized)
+        return _binary_cross_entropy(
+            preds, targets, reduction="none", input_is_normalized=input_is_normalized
+        )
     else:
         # When not predicting overlap, target confidence is the same for every prediction, but we should still return a
         # matrix.
         targets = torch.ones_like(preds)
-        result = _binary_cross_entropy(preds, targets, reduction="none", input_is_normalized=input_is_normalized)
+        result = _binary_cross_entropy(
+            preds, targets, reduction="none", input_is_normalized=input_is_normalized
+        )
         return result.unsqueeze(1).expand(overlap.shape)
 
 
 def _foreground_confidence_loss(
     preds: Tensor, overlap: Tensor, input_is_normalized: bool, predict_overlap: Optional[float]
 ) -> Tensor:
-    """Calculates the sum of the confidence losses for foreground anchors and their matched targets.
+    """Calculates the sum of the confidence losses for foreground anchors and their matched
+    targets.
 
     If ``predict_overlap`` is ``None``, the target confidence will be 1. If ``predict_overlap`` is 1.0, ``overlap`` will
     be used as the target confidence. Otherwise this parameter defines a balance between these two targets. The method
@@ -120,7 +128,9 @@ def _foreground_confidence_loss(
         targets -= predict_overlap
         # Distance-IoU may return negative "overlaps", so we have to make sure that the targets are not negative.
         targets += predict_overlap * overlap.detach().clamp(min=0)
-    return _binary_cross_entropy(preds, targets, reduction="sum", input_is_normalized=input_is_normalized)
+    return _binary_cross_entropy(
+        preds, targets, reduction="sum", input_is_normalized=input_is_normalized
+    )
 
 
 def _background_confidence_loss(preds: Tensor, input_is_normalized: bool) -> Tensor:
@@ -134,13 +144,16 @@ def _background_confidence_loss(preds: Tensor, input_is_normalized: bool) -> Ten
         The sum of the background confidence losses.
     """
     targets = torch.zeros_like(preds)
-    return _binary_cross_entropy(preds, targets, reduction="sum", input_is_normalized=input_is_normalized)
+    return _binary_cross_entropy(
+        preds, targets, reduction="sum", input_is_normalized=input_is_normalized
+    )
 
 
 def _target_labels_to_probs(
     targets: Tensor, num_classes: int, dtype: torch.dtype, label_smoothing: Optional[float] = None
 ) -> Tensor:
-    """If ``targets`` is a vector of class labels, converts it to a matrix of one-hot class probabilities.
+    """If ``targets`` is a vector of class labels, converts it to a matrix of one-hot class
+    probabilities.
 
     If label smoothing is disabled, the returned target probabilities will be binary. If label smoothing is enabled, the
     target probabilities will be, ``(label_smoothing / 2)`` or ``(label_smoothing / 2) + (1.0 - label_smoothing)``. That
@@ -277,8 +290,9 @@ class YOLOLoss:
         input_is_normalized: bool,
         image_size: Tensor,
     ) -> Losses:
-        """Calculates the sums of the losses for optimization, over prediction/target pairs, assuming the
-        predictions and targets have been matched (there are as many predictions and targets).
+        """Calculates the sums of the losses for optimization, over prediction/target pairs,
+        assuming the predictions and targets have been matched (there are as many predictions and
+        targets).
 
         Args:
             preds: A dictionary of predictions, containing "boxes", "confidences", and "classprobs".
@@ -296,7 +310,9 @@ class YOLOLoss:
         confidence_loss = _foreground_confidence_loss(
             preds["confidences"], overlap, input_is_normalized, self.predict_overlap
         )
-        confidence_loss += _background_confidence_loss(preds["bg_confidences"], input_is_normalized)
+        confidence_loss += _background_confidence_loss(
+            preds["bg_confidences"], input_is_normalized
+        )
 
         pred_probs = preds["classprobs"]
         target_probs = _target_labels_to_probs(

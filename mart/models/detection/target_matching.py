@@ -3,8 +3,8 @@ from typing import Dict, List, Tuple
 
 import torch
 from torch import Tensor
-
 from torchvision.ops import box_convert
+
 from .anchor_utils import grid_centers
 from .box_utils import aligned_iou, box_size_ratio, iou_below, is_inside_box
 from .yolo_loss import YOLOLoss
@@ -12,7 +12,9 @@ from .yolo_loss import YOLOLoss
 PRIOR_SHAPES = List[List[int]]  # TorchScript doesn't allow a list of tuples.
 
 
-def target_boxes_to_grid(preds: Tensor, targets: Tensor, image_size: Tensor) -> Tuple[Tensor, Tensor]:
+def target_boxes_to_grid(
+    preds: Tensor, targets: Tensor, image_size: Tensor
+) -> Tuple[Tensor, Tensor]:
     """Scales target bounding boxes to feature map coordinates.
 
     It would be better to implement this in a super class, but TorchScript doesn't allow class inheritance.
@@ -59,18 +61,23 @@ class HighestIoUMatching:
     """
 
     def __init__(
-        self, prior_shapes: PRIOR_SHAPES, prior_shape_idxs: List[int], ignore_bg_threshold: float = 0.7
+        self,
+        prior_shapes: PRIOR_SHAPES,
+        prior_shape_idxs: List[int],
+        ignore_bg_threshold: float = 0.7,
     ) -> None:
         self.prior_shapes = prior_shapes
         # anchor_map maps the anchor indices to anchors in this layer, or to -1 if it's not an anchor of this layer.
         # This layer ignores the target if all the selected anchors are in another layer.
         self.anchor_map = [
-            prior_shape_idxs.index(idx) if idx in prior_shape_idxs else -1 for idx in range(len(prior_shapes))
+            prior_shape_idxs.index(idx) if idx in prior_shape_idxs else -1
+            for idx in range(len(prior_shapes))
         ]
         self.ignore_bg_threshold = ignore_bg_threshold
 
     def match(self, wh: Tensor) -> Tuple[Tensor, Tensor]:
-        """Selects anchors for each target based on the predicted shapes. The subclasses implement this method.
+        """Selects anchors for each target based on the predicted shapes. The subclasses implement
+        this method.
 
         Args:
             wh: A matrix of predicted width and height values.
@@ -95,7 +102,8 @@ class HighestIoUMatching:
         targets: Dict[str, Tensor],
         image_size: Tensor,
     ) -> Tuple[List[Tensor], Tensor, Tensor]:
-        """For each target, selects predictions from the same grid cell, where the center of the target box is.
+        """For each target, selects predictions from the same grid cell, where the center of the
+        target box is.
 
         Typically there are three predictions per grid cell. Subclasses implement ``match()``, which selects the
         predictions within the grid cell.
@@ -131,7 +139,7 @@ class IoUThresholdMatching:
             network input resolution.
         prior_shape_idxs: List of indices to ``prior_shapes`` that is used to select the (usually 3) prior shapes that
             this layer uses.
-        threshold: IoU treshold for matching.
+        threshold: IoU threshold for matching.
         ignore_bg_threshold: If a predictor is not responsible for predicting any target, but the corresponding anchor
             has IoU with some target greater than this threshold, the predictor will not be taken into account when
             calculating the confidence loss.
@@ -149,7 +157,8 @@ class IoUThresholdMatching:
         self.ignore_bg_threshold = ignore_bg_threshold
 
     def match(self, wh: Tensor) -> Tuple[Tensor, Tensor]:
-        """Selects anchors for each target based on the predicted shapes. The subclasses implement this method.
+        """Selects anchors for each target based on the predicted shapes. The subclasses implement
+        this method.
 
         Args:
             wh: A matrix of predicted width and height values.
@@ -170,7 +179,8 @@ class IoUThresholdMatching:
         targets: Dict[str, Tensor],
         image_size: Tensor,
     ) -> Tuple[List[Tensor], Tensor, Tensor]:
-        """For each target, selects predictions from the same grid cell, where the center of the target box is.
+        """For each target, selects predictions from the same grid cell, where the center of the
+        target box is.
 
         Typically there are three predictions per grid cell. Subclasses implement ``match()``, which selects the
         predictions within the grid cell.
@@ -199,8 +209,8 @@ class IoUThresholdMatching:
 
 
 class SizeRatioMatching:
-    """For each target, select those prior shapes, whose width and height relative to the target is below given
-    ratio.
+    """For each target, select those prior shapes, whose width and height relative to the target is
+    below given ratio.
 
     This is the matching rule used by Ultralytics YOLOv5 implementation.
 
@@ -227,7 +237,8 @@ class SizeRatioMatching:
         self.ignore_bg_threshold = ignore_bg_threshold
 
     def match(self, wh: Tensor) -> Tuple[Tensor, Tensor]:
-        """Selects anchors for each target based on the predicted shapes. The subclasses implement this method.
+        """Selects anchors for each target based on the predicted shapes. The subclasses implement
+        this method.
 
         Args:
             wh: A matrix of predicted width and height values.
@@ -246,7 +257,8 @@ class SizeRatioMatching:
         targets: Dict[str, Tensor],
         image_size: Tensor,
     ) -> Tuple[List[Tensor], Tensor, Tensor]:
-        """For each target, selects predictions from the same grid cell, where the center of the target box is.
+        """For each target, selects predictions from the same grid cell, where the center of the
+        target box is.
 
         Typically there are three predictions per grid cell. Subclasses implement ``match()``, which selects the
         predictions within the grid cell.
@@ -365,7 +377,9 @@ class SimOTAMatching:
             matched targets. The last tensor contains as many elements as there are ``True`` values in the first mask.
         """
         height, width, boxes_per_cell, _ = preds["boxes"].shape
-        prior_mask, anchor_inside_target = self._get_prior_mask(targets, image_size, width, height, boxes_per_cell)
+        prior_mask, anchor_inside_target = self._get_prior_mask(
+            targets, image_size, width, height, boxes_per_cell
+        )
         prior_preds = {
             "boxes": preds["boxes"][prior_mask],
             "confidences": preds["confidences"][prior_mask],

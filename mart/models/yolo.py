@@ -3,7 +3,7 @@ from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple
 
 import torch
-from torch import nn, Tensor
+from torch import Tensor, nn
 
 
 def _get_padding(kernel_size: int, stride: int) -> Tuple[int, nn.Module]:
@@ -124,8 +124,9 @@ class Conv(nn.Module):
 class MaxPool(nn.Module):
     """A max pooling layer with padding.
 
-    The module tries to add padding so much that the output size will be the input size divided by the stride. If the
-    input size is not divisible by the stride, the output size will be rounded upwards.
+    The module tries to add padding so much that the output size will be the input size divided by
+    the stride. If the input size is not divisible by the stride, the output size will be rounded
+    upwards.
     """
 
     def __init__(self, kernel_size: int, stride: int):
@@ -154,7 +155,10 @@ class RouteLayer(nn.Module):
         self.chunk_idx = chunk_idx
 
     def forward(self, outputs: List[Tensor]) -> Tensor:
-        chunks = [torch.chunk(outputs[layer], self.num_chunks, dim=1)[self.chunk_idx] for layer in self.source_layers]
+        chunks = [
+            torch.chunk(outputs[layer], self.num_chunks, dim=1)[self.chunk_idx]
+            for layer in self.source_layers
+        ]
         return torch.cat(chunks, dim=1)
 
 
@@ -181,7 +185,8 @@ class Mish(nn.Module):
 
 
 class ReOrg(nn.Module):
-    """Re-organizes the tensor so that every square region of four cells is placed into four different channels.
+    """Re-organizes the tensor so that every square region of four cells is placed into four
+    different channels.
 
     The result is a tensor with half the width and height, and four times as many channels.
     """
@@ -223,8 +228,22 @@ class BottleneckBlock(nn.Module):
             hidden_channels = out_channels
 
         self.convs = nn.Sequential(
-            Conv(in_channels, hidden_channels, kernel_size=1, stride=1, activation=activation, norm=norm),
-            Conv(hidden_channels, out_channels, kernel_size=3, stride=1, activation=activation, norm=norm),
+            Conv(
+                in_channels,
+                hidden_channels,
+                kernel_size=1,
+                stride=1,
+                activation=activation,
+                norm=norm,
+            ),
+            Conv(
+                hidden_channels,
+                out_channels,
+                kernel_size=3,
+                stride=1,
+                activation=activation,
+                norm=norm,
+            ),
         )
         self.shortcut = shortcut and in_channels == out_channels
 
@@ -253,9 +272,25 @@ class TinyStage(nn.Module):
         super().__init__()
 
         hidden_channels = num_channels // 2
-        self.conv1 = Conv(hidden_channels, hidden_channels, kernel_size=3, stride=1, activation=activation, norm=norm)
-        self.conv2 = Conv(hidden_channels, hidden_channels, kernel_size=3, stride=1, activation=activation, norm=norm)
-        self.mix = Conv(num_channels, num_channels, kernel_size=1, stride=1, activation=activation, norm=norm)
+        self.conv1 = Conv(
+            hidden_channels,
+            hidden_channels,
+            kernel_size=3,
+            stride=1,
+            activation=activation,
+            norm=norm,
+        )
+        self.conv2 = Conv(
+            hidden_channels,
+            hidden_channels,
+            kernel_size=3,
+            stride=1,
+            activation=activation,
+            norm=norm,
+        )
+        self.mix = Conv(
+            num_channels, num_channels, kernel_size=1, stride=1, activation=activation, norm=norm
+        )
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         partial = torch.chunk(x, 2, dim=1)[1]
@@ -298,14 +333,31 @@ class CSPStage(nn.Module):
         # convolutions with N/2 output channels.
         hidden_channels = out_channels // 2
 
-        self.split1 = Conv(in_channels, hidden_channels, kernel_size=1, stride=1, activation=activation, norm=norm)
-        self.split2 = Conv(in_channels, hidden_channels, kernel_size=1, stride=1, activation=activation, norm=norm)
+        self.split1 = Conv(
+            in_channels, hidden_channels, kernel_size=1, stride=1, activation=activation, norm=norm
+        )
+        self.split2 = Conv(
+            in_channels, hidden_channels, kernel_size=1, stride=1, activation=activation, norm=norm
+        )
         bottlenecks: List[nn.Module] = [
-            BottleneckBlock(hidden_channels, hidden_channels, shortcut=shortcut, norm=norm, activation=activation)
+            BottleneckBlock(
+                hidden_channels,
+                hidden_channels,
+                shortcut=shortcut,
+                norm=norm,
+                activation=activation,
+            )
             for _ in range(depth)
         ]
         self.bottlenecks = nn.Sequential(*bottlenecks)
-        self.mix = Conv(hidden_channels * 2, out_channels, kernel_size=1, stride=1, activation=activation, norm=norm)
+        self.mix = Conv(
+            hidden_channels * 2,
+            out_channels,
+            kernel_size=1,
+            stride=1,
+            activation=activation,
+            norm=norm,
+        )
 
     def forward(self, x: Tensor) -> Tensor:
         y1 = self.bottlenecks(self.split1(x))
@@ -350,7 +402,14 @@ class ELANStage(nn.Module):
         super().__init__()
 
         def conv3x3(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=3, stride=1, activation=activation, norm=norm)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=1,
+                activation=activation,
+                norm=norm,
+            )
 
         def block(in_channels: int, out_channels: int) -> nn.Module:
             convs = [conv3x3(in_channels, out_channels)]
@@ -367,8 +426,12 @@ class ELANStage(nn.Module):
         if split_channels is None:
             split_channels = hidden_channels
 
-        self.split1 = Conv(in_channels, split_channels, kernel_size=1, stride=1, activation=activation, norm=norm)
-        self.split2 = Conv(in_channels, split_channels, kernel_size=1, stride=1, activation=activation, norm=norm)
+        self.split1 = Conv(
+            in_channels, split_channels, kernel_size=1, stride=1, activation=activation, norm=norm
+        )
+        self.split2 = Conv(
+            in_channels, split_channels, kernel_size=1, stride=1, activation=activation, norm=norm
+        )
 
         blocks = [block(split_channels, hidden_channels)]
         for _ in range(depth - 1):
@@ -376,7 +439,9 @@ class ELANStage(nn.Module):
         self.blocks = nn.ModuleList(blocks)
 
         total_channels = (split_channels * 2) + (hidden_channels * depth)
-        self.mix = Conv(total_channels, out_channels, kernel_size=1, stride=1, activation=activation, norm=norm)
+        self.mix = Conv(
+            total_channels, out_channels, kernel_size=1, stride=1, activation=activation, norm=norm
+        )
 
     def forward(self, x: Tensor) -> Tensor:
         outputs = [self.split1(x), self.split2(x)]
@@ -408,7 +473,14 @@ class CSPSPP(nn.Module):
         super().__init__()
 
         def conv(in_channels: int, out_channels: int, kernel_size: int = 1) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=kernel_size, stride=1, activation=activation, norm=norm)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=kernel_size,
+                stride=1,
+                activation=activation,
+                norm=norm,
+            )
 
         self.conv1 = nn.Sequential(
             conv(in_channels, out_channels),
@@ -457,9 +529,18 @@ class FastSPP(nn.Module):
     ):
         super().__init__()
         hidden_channels = in_channels // 2
-        self.conv = Conv(in_channels, hidden_channels, kernel_size=1, stride=1, activation=activation, norm=norm)
+        self.conv = Conv(
+            in_channels, hidden_channels, kernel_size=1, stride=1, activation=activation, norm=norm
+        )
         self.maxpool = MaxPool(kernel_size=5, stride=1)
-        self.mix = Conv(hidden_channels * 4, out_channels, kernel_size=1, stride=1, activation=activation, norm=norm)
+        self.mix = Conv(
+            hidden_channels * 4,
+            out_channels,
+            kernel_size=1,
+            stride=1,
+            activation=activation,
+            norm=norm,
+        )
 
     def forward(self, x: Tensor) -> Tensor:
         y1 = self.conv(x)
@@ -491,13 +572,27 @@ class YOLOV4TinyBackbone(nn.Module):
         super().__init__()
 
         def smooth(num_channels: int) -> nn.Module:
-            return Conv(num_channels, num_channels, kernel_size=3, stride=1, activation=activation, norm=normalization)
+            return Conv(
+                num_channels,
+                num_channels,
+                kernel_size=3,
+                stride=1,
+                activation=activation,
+                norm=normalization,
+            )
 
         def downsample(in_channels: int, out_channels: int) -> nn.Module:
             conv_module = Conv(
-                in_channels, out_channels, kernel_size=3, stride=2, activation=activation, norm=normalization
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=2,
+                activation=activation,
+                norm=normalization,
             )
-            return nn.Sequential(OrderedDict([("downsample", conv_module), ("smooth", smooth(out_channels))]))
+            return nn.Sequential(
+                OrderedDict([("downsample", conv_module), ("smooth", smooth(out_channels))])
+            )
 
         def maxpool(out_channels: int) -> nn.Module:
             return nn.Sequential(
@@ -516,10 +611,19 @@ class YOLOV4TinyBackbone(nn.Module):
             else:
                 downsample_module = downsample(out_channels // 2, out_channels)
             stage_module = TinyStage(out_channels, activation=activation, norm=normalization)
-            return nn.Sequential(OrderedDict([("downsample", downsample_module), ("stage", stage_module)]))
+            return nn.Sequential(
+                OrderedDict([("downsample", downsample_module), ("stage", stage_module)])
+            )
 
         stages = [
-            Conv(in_channels, width, kernel_size=3, stride=2, activation=activation, norm=normalization),
+            Conv(
+                in_channels,
+                width,
+                kernel_size=3,
+                stride=2,
+                activation=activation,
+                norm=normalization,
+            ),
             stage(width * 2, False),
             stage(width * 4, True),
             stage(width * 8, True),
@@ -564,10 +668,24 @@ class YOLOV4Backbone(nn.Module):
             raise ValueError("Width and depth has to be given for an equal number of stages.")
 
         def conv3x3(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=3, stride=1, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=1,
+                activation=activation,
+                norm=normalization,
+            )
 
         def downsample(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=3, stride=2, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=2,
+                activation=activation,
+                norm=normalization,
+            )
 
         def stage(in_channels: int, out_channels: int, depth: int) -> nn.Module:
             csp = CSPStage(
@@ -587,7 +705,9 @@ class YOLOV4Backbone(nn.Module):
                 )
             )
 
-        convs = [conv3x3(in_channels, widths[0])] + [conv3x3(widths[0], widths[0]) for _ in range(depths[0] - 1)]
+        convs = [conv3x3(in_channels, widths[0])] + [
+            conv3x3(widths[0], widths[0]) for _ in range(depths[0] - 1)
+        ]
         self.stem = nn.Sequential(*convs)
         self.stages = nn.ModuleList(
             stage(in_channels, out_channels, depth)
@@ -630,7 +750,12 @@ class YOLOV5Backbone(nn.Module):
 
         def downsample(in_channels: int, out_channels: int, kernel_size: int = 3) -> nn.Module:
             return Conv(
-                in_channels, out_channels, kernel_size=kernel_size, stride=2, activation=activation, norm=normalization
+                in_channels,
+                out_channels,
+                kernel_size=kernel_size,
+                stride=2,
+                activation=activation,
+                norm=normalization,
             )
 
         def stage(in_channels: int, out_channels: int, depth: int) -> nn.Module:
@@ -670,7 +795,8 @@ class YOLOV5Backbone(nn.Module):
 
 
 class YOLOV7Backbone(nn.Module):
-    """A backbone that corresponds to the W6 variant of the Efficient Layer Aggregation Network from YOLOv7.
+    """A backbone that corresponds to the W6 variant of the Efficient Layer Aggregation Network
+    from YOLOv7.
 
     Args:
         in_channels: Number of channels in the input image.
@@ -695,10 +821,24 @@ class YOLOV7Backbone(nn.Module):
         super().__init__()
 
         def conv3x3(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=3, stride=1, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=1,
+                activation=activation,
+                norm=normalization,
+            )
 
         def downsample(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=3, stride=2, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=2,
+                activation=activation,
+                norm=normalization,
+            )
 
         def stage(in_channels: int, out_channels: int) -> nn.Module:
             elan = ELANStage(
@@ -720,7 +860,8 @@ class YOLOV7Backbone(nn.Module):
 
         self.stem = nn.Sequential(*[ReOrg(), conv3x3(in_channels * 4, widths[0])])
         self.stages = nn.ModuleList(
-            stage(in_channels, out_channels) for in_channels, out_channels in zip(widths[:-1], widths[1:])
+            stage(in_channels, out_channels)
+            for in_channels, out_channels in zip(widths[:-1], widths[1:])
         )
 
     def forward(self, x: Tensor) -> List[Tensor]:

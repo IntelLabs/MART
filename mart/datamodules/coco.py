@@ -7,9 +7,9 @@
 import os
 from typing import Any, Callable, List, Optional
 
+import numpy as np
 import torch
 from torch.utils.data import default_collate
-import numpy as np
 from torchvision.datasets.coco import CocoDetection as CocoDetection_
 from torchvision.datasets.folder import default_loader
 

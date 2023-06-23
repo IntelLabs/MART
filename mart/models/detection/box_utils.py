@@ -1,13 +1,12 @@
 # https://raw.githubusercontent.com/pytorch/vision/ae30df455405fb56946425bf3f3c318280b0a7ae/torchvision/models/detection/box_utils.py
 import torch
 from torch import Tensor
-
 from torchvision.ops import box_iou
 
 
 def aligned_iou(wh1: Tensor, wh2: Tensor) -> Tensor:
-    """Calculates a matrix of intersections over union from box dimensions, assuming that the boxes are located at
-    the same coordinates.
+    """Calculates a matrix of intersections over union from box dimensions, assuming that the boxes
+    are located at the same coordinates.
 
     Args:
         wh1: An ``[N, 2]`` matrix of box shapes (width and height).
@@ -27,8 +26,8 @@ def aligned_iou(wh1: Tensor, wh2: Tensor) -> Tensor:
 
 
 def iou_below(pred_boxes: Tensor, target_boxes: Tensor, threshold: float) -> Tensor:
-    """Creates a binary mask whose value will be ``True``, unless the predicted box overlaps any target
-    significantly (IoU greater than ``threshold``).
+    """Creates a binary mask whose value will be ``True``, unless the predicted box overlaps any
+    target significantly (IoU greater than ``threshold``).
 
     Args:
         pred_boxes: The predicted corner coordinates. Tensor of size ``[height, width, boxes_per_cell, 4]``.

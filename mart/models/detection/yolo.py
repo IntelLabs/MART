@@ -5,21 +5,22 @@ from typing import Any, Dict, List, Optional, Union
 import torch
 import torch.nn as nn
 from torch import Tensor
-
+from torchvision.models._api import Weights, WeightsEnum, register_model
+from torchvision.models._utils import _ovewrite_value_param
+from torchvision.models.detection.backbone_utils import _validate_trainable_layers
 from torchvision.ops import batched_nms
 from torchvision.transforms import functional as F
-from torchvision.models._api import register_model, Weights, WeightsEnum
-from torchvision.models._utils import _ovewrite_value_param
+
 from mart.models.yolo import YOLOV4Backbone
-from torchvision.models.detection.backbone_utils import _validate_trainable_layers
-from .yolo_networks import DarknetNetwork, PRED, TARGET, TARGETS, YOLOV4Network
+
+from .yolo_networks import PRED, TARGET, TARGETS, DarknetNetwork, YOLOV4Network
 
 IMAGES = List[Tensor]  # TorchScript doesn't allow a tuple.
 
 
 class YOLO(nn.Module):
-    """YOLO implementation that supports the most important features of YOLOv3, YOLOv4, YOLOv5, YOLOv7, Scaled-
-    YOLOv4, and YOLOX.
+    """YOLO implementation that supports the most important features of YOLOv3, YOLOv4, YOLOv5,
+    YOLOv7, Scaled- YOLOv4, and YOLOX.
 
     *YOLOv3 paper*: `Joseph Redmon and Ali Farhadi <https://arxiv.org/abs/1804.02767>`__
 
@@ -113,8 +114,8 @@ class YOLO(nn.Module):
     def forward(
         self, images: Union[Tensor, IMAGES], targets: Optional[TARGETS] = None
     ) -> Union[Tensor, Dict[str, Tensor]]:
-        """Runs a forward pass through the network (all layers listed in ``self.network``), and if training targets
-        are provided, computes the losses from the detection layers.
+        """Runs a forward pass through the network (all layers listed in ``self.network``), and if
+        training targets are provided, computes the losses from the detection layers.
 
         Detections are concatenated from the detection layers. Each detection layer will produce a number of detections
         that depends on the size of the feature map and the number of anchors per feature map cell.
@@ -144,8 +145,8 @@ class YOLO(nn.Module):
         return {"overlap": losses[0], "confidence": losses[1], "classification": losses[2]}
 
     def infer(self, image: Tensor) -> PRED:
-        """Feeds an image to the network and returns the detected bounding boxes, confidence scores, and class
-        labels.
+        """Feeds an image to the network and returns the detected bounding boxes, confidence
+        scores, and class labels.
 
         If a prediction has a high score for more than one class, it will be duplicated.
 
@@ -172,9 +173,9 @@ class YOLO(nn.Module):
         return detections
 
     def process_detections(self, preds: Tensor) -> List[PRED]:
-        """Splits the detection tensor returned by a forward pass into a list of prediction dictionaries, and
-        filters them based on confidence threshold, non-maximum suppression (NMS), and maximum number of
-        predictions.
+        """Splits the detection tensor returned by a forward pass into a list of prediction
+        dictionaries, and filters them based on confidence threshold, non-maximum suppression
+        (NMS), and maximum number of predictions.
 
         If for any single detection there are multiple categories whose score is above the confidence threshold, the
         detection will be duplicated to create one detection for each category. NMS processes one category at a time,
@@ -237,15 +238,21 @@ class YOLO(nn.Module):
         """
         if not isinstance(images, Tensor):
             if not isinstance(images, (tuple, list)):
-                raise TypeError(f"Expected images to be a Tensor, tuple, or a list, got {type(images).__name__}.")
+                raise TypeError(
+                    f"Expected images to be a Tensor, tuple, or a list, got {type(images).__name__}."
+                )
             if not images:
                 raise ValueError("No images in batch.")
             shape = images[0].shape
             for image in images:
                 if not isinstance(image, Tensor):
-                    raise ValueError(f"Expected image to be of type Tensor, got {type(image).__name__}.")
+                    raise ValueError(
+                        f"Expected image to be of type Tensor, got {type(image).__name__}."
+                    )
                 if image.shape != shape:
-                    raise ValueError(f"Images with different shapes in one batch: {shape} and {image.shape}")
+                    raise ValueError(
+                        f"Images with different shapes in one batch: {shape} and {image.shape}"
+                    )
 
         if targets is None:
             if self.training:
@@ -254,7 +261,9 @@ class YOLO(nn.Module):
                 return
 
         if not isinstance(targets, (tuple, list)):
-            raise TypeError(f"Expected targets to be a tuple or a list, got {type(images).__name__}.")
+            raise TypeError(
+                f"Expected targets to be a tuple or a list, got {type(images).__name__}."
+            )
         if len(images) != len(targets):
             raise ValueError(f"Got {len(images)} images, but targets for {len(targets)} images.")
 
@@ -263,14 +272,20 @@ class YOLO(nn.Module):
                 raise ValueError("Target dictionary doesn't contain boxes.")
             boxes = target["boxes"]
             if not isinstance(boxes, Tensor):
-                raise TypeError(f"Expected target boxes to be of type Tensor, got {type(boxes).__name__}.")
+                raise TypeError(
+                    f"Expected target boxes to be of type Tensor, got {type(boxes).__name__}."
+                )
             if (boxes.ndim != 2) or (boxes.shape[-1] != 4):
-                raise ValueError(f"Expected target boxes to be tensors of shape [N, 4], got {list(boxes.shape)}.")
+                raise ValueError(
+                    f"Expected target boxes to be tensors of shape [N, 4], got {list(boxes.shape)}."
+                )
             if "labels" not in target:
                 raise ValueError("Target dictionary doesn't contain labels.")
             labels = target["labels"]
             if not isinstance(labels, Tensor):
-                raise ValueError(f"Expected target labels to be of type Tensor, got {type(labels).__name__}.")
+                raise ValueError(
+                    f"Expected target labels to be of type Tensor, got {type(labels).__name__}."
+                )
             if (labels.ndim < 1) or (labels.ndim > 2) or (len(labels) != len(boxes)):
                 raise ValueError(
                     f"Expected target labels to be tensors of shape [N] or [N, num_classes], got {list(labels.shape)}."
@@ -295,7 +310,9 @@ class YOLOV4_Weights(WeightsEnum):
     )
 
 
-def freeze_backbone_layers(backbone: nn.Module, trainable_layers: Optional[int], is_trained: bool) -> None:
+def freeze_backbone_layers(
+    backbone: nn.Module, trainable_layers: Optional[int], is_trained: bool
+) -> None:
     """Freezes backbone layers layers that won't be used for training.
 
     Args:
@@ -331,8 +348,7 @@ def yolov4(
     detections_per_image: int = 300,
     **kwargs: Any,
 ) -> YOLO:
-    """
-    Constructs a YOLOv4 model.
+    """Constructs a YOLOv4 model.
 
     .. betastatus:: detection module
 
@@ -376,11 +392,15 @@ def yolov4(
 
     if weights is not None:
         weights_backbone = None
-        num_classes = _ovewrite_value_param("num_classes", num_classes, len(weights.meta["categories"]))
+        num_classes = _ovewrite_value_param(
+            "num_classes", num_classes, len(weights.meta["categories"])
+        )
     elif num_classes is None:
         num_classes = 91
 
-    backbone_kwargs = {key: kwargs[key] for key in ("widths", "activation", "normalization") if key in kwargs}
+    backbone_kwargs = {
+        key: kwargs[key] for key in ("widths", "activation", "normalization") if key in kwargs
+    }
     backbone = YOLOV4Backbone(in_channels, **backbone_kwargs)
 
     is_trained = weights is not None or weights_backbone is not None
@@ -406,8 +426,7 @@ def yolo_darknet(
     detections_per_image: int = 300,
     **kwargs: Any,
 ) -> YOLO:
-    """
-    Constructs a YOLO model from a Darknet configuration file.
+    """Constructs a YOLO model from a Darknet configuration file.
 
     .. betastatus:: detection module
 

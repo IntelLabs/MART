@@ -29,7 +29,8 @@ def grid_centers(grid_size: Tensor) -> Tensor:
 
 @torch.jit.script
 def global_xy(xy: Tensor, image_size: Tensor) -> Tensor:
-    """Adds offsets to the predicted box center coordinates to obtain global coordinates to the image.
+    """Adds offsets to the predicted box center coordinates to obtain global coordinates to the
+    image.
 
     The predicted coordinates are interpreted as coordinates inside a grid cell whose width and height is 1. Adding
     offset to the cell, dividing by the grid size, and multiplying by the image size, we get global coordinates in the

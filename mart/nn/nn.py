@@ -13,7 +13,15 @@ from typing import Callable, Iterable
 
 import torch
 
-__all__ = ["GroupNorm32", "SequentialDict", "ReturnKwargs", "CallWith", "Sum", "TotalVariation", "EmptyTargets"]
+__all__ = [
+    "GroupNorm32",
+    "SequentialDict",
+    "ReturnKwargs",
+    "CallWith",
+    "Sum",
+    "TotalVariation",
+    "EmptyTargets",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +186,12 @@ class CallWith:
 
             # Extend args with selected kwargs using arg_keys
             try:
-                args.extend([kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key for kwargs_key in arg_keys])
+                args.extend(
+                    [
+                        kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key
+                        for kwargs_key in arg_keys
+                    ]
+                )
             except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
@@ -186,7 +199,10 @@ class CallWith:
 
             # Replace kwargs with selected kwargs using kwarg_keys
             try:
-                kwargs = {name: kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key for name, kwargs_key in kwarg_keys.items()}
+                kwargs = {
+                    name: kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key
+                    for name, kwargs_key in kwarg_keys.items()
+                }
             except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
@@ -312,9 +328,7 @@ class TotalVariation(Sum):
     def _total_variation(self, image):
         return torch.mean(
             torch.sum(torch.square(image[:, 1:, :] - image[:, :-1, :]))
-            + torch.sum(  # noqa: W503
-                torch.square(image[:, :, 1:] - image[:, :, :-1])
-            )
+            + torch.sum(torch.square(image[:, :, 1:] - image[:, :, :-1]))  # noqa: W503
         )
 
 
@@ -324,5 +338,6 @@ class EmptyTargets(torch.nn.Module):
             {
                 "boxes": torch.empty((0, 4), device=t["boxes"].device),
                 "labels": torch.empty(0, dtype=torch.int64, device=t["labels"].device),
-            } for t in targets
+            }
+            for t in targets
         ]

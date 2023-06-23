@@ -9,11 +9,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch import Tensor
-
 from torchvision.ops import box_convert
+
 from ..yolo import (
-    Conv,
     CSPSPP,
+    Conv,
     CSPStage,
     ELANStage,
     FastSPP,
@@ -26,7 +26,13 @@ from ..yolo import (
     YOLOV7Backbone,
 )
 from .anchor_utils import global_xy
-from .target_matching import HighestIoUMatching, IoUThresholdMatching, PRIOR_SHAPES, SimOTAMatching, SizeRatioMatching
+from .target_matching import (
+    PRIOR_SHAPES,
+    HighestIoUMatching,
+    IoUThresholdMatching,
+    SimOTAMatching,
+    SizeRatioMatching,
+)
 from .yolo_loss import YOLOLoss
 
 DARKNET_CONFIG = Dict[str, Any]
@@ -138,7 +144,10 @@ class DetectionLayer(nn.Module):
 
         # It's better to use binary_cross_entropy_with_logits() for loss computation, so we'll provide the unnormalized
         # confidence and classprob, when available.
-        preds = [{"boxes": b, "confidences": c, "classprobs": p} for b, c, p in zip(box, confidence, classprob)]
+        preds = [
+            {"boxes": b, "confidences": c, "classprobs": p}
+            for b, c, p in zip(box, confidence, classprob)
+        ]
 
         return output, preds
 
@@ -172,7 +181,9 @@ class DetectionLayer(nn.Module):
         pred_boxes = torch.empty((0, 4), device=return_preds[0]["boxes"].device)
         pred_confidences = torch.empty(0, device=return_preds[0]["confidences"].device)
         pred_bg_confidences = torch.empty(0, device=return_preds[0]["confidences"].device)
-        pred_classprobs = torch.empty((0, self.num_classes), device=return_preds[0]["classprobs"].device)
+        pred_classprobs = torch.empty(
+            (0, self.num_classes), device=return_preds[0]["classprobs"].device
+        )
         target_boxes = torch.empty((0, 4), device=targets[0]["boxes"].device)
         target_labels = torch.empty(0, dtype=torch.int64, device=targets[0]["labels"].device)
 
@@ -182,15 +193,23 @@ class DetectionLayer(nn.Module):
                     image_preds, image_targets, image_size
                 )
                 pred_boxes = torch.cat((pred_boxes, image_return_preds["boxes"][pred_selector]))
-                pred_confidences = torch.cat((pred_confidences, image_return_preds["confidences"][pred_selector]))
+                pred_confidences = torch.cat(
+                    (pred_confidences, image_return_preds["confidences"][pred_selector])
+                )
                 pred_bg_confidences = torch.cat(
                     (pred_bg_confidences, image_return_preds["confidences"][background_selector])
                 )
-                pred_classprobs = torch.cat((pred_classprobs, image_return_preds["classprobs"][pred_selector]))
+                pred_classprobs = torch.cat(
+                    (pred_classprobs, image_return_preds["classprobs"][pred_selector])
+                )
                 target_boxes = torch.cat((target_boxes, image_targets["boxes"][target_selector]))
-                target_labels = torch.cat((target_labels, image_targets["labels"][target_selector]))
+                target_labels = torch.cat(
+                    (target_labels, image_targets["labels"][target_selector])
+                )
             else:
-                pred_bg_confidences = torch.cat((pred_bg_confidences, image_return_preds["confidences"].flatten()))
+                pred_bg_confidences = torch.cat(
+                    (pred_bg_confidences, image_return_preds["confidences"].flatten())
+                )
 
         matched_preds = {
             "boxes": pred_boxes,
@@ -231,8 +250,12 @@ class DetectionLayer(nn.Module):
 
         matched_preds, matched_targets = self.match_targets(preds, loss_preds, targets, image_size)
 
-        losses = self.loss_func.elementwise_sums(matched_preds, matched_targets, self.input_is_normalized, image_size)
-        losses = torch.stack((losses.overlap, losses.confidence, losses.classification)) / len(preds)
+        losses = self.loss_func.elementwise_sums(
+            matched_preds, matched_targets, self.input_is_normalized, image_size
+        )
+        losses = torch.stack((losses.overlap, losses.confidence, losses.classification)) / len(
+            preds
+        )
 
         hits = len(matched_targets["boxes"])
 
@@ -296,17 +319,28 @@ def create_detection_layer(
     matching_func: Callable
     if matching_algorithm == "simota":
         loss_func = YOLOLoss(
-            overlap_func, None, None, overlap_loss_multiplier, confidence_loss_multiplier, class_loss_multiplier
+            overlap_func,
+            None,
+            None,
+            overlap_loss_multiplier,
+            confidence_loss_multiplier,
+            class_loss_multiplier,
         )
-        matching_func = SimOTAMatching(prior_shapes, prior_shape_idxs, loss_func, spatial_range, size_range)
+        matching_func = SimOTAMatching(
+            prior_shapes, prior_shape_idxs, loss_func, spatial_range, size_range
+        )
     elif matching_algorithm == "size":
         if matching_threshold is None:
             raise ValueError("matching_threshold is required with size ratio matching.")
-        matching_func = SizeRatioMatching(prior_shapes, prior_shape_idxs, matching_threshold, ignore_bg_threshold)
+        matching_func = SizeRatioMatching(
+            prior_shapes, prior_shape_idxs, matching_threshold, ignore_bg_threshold
+        )
     elif matching_algorithm == "iou":
         if matching_threshold is None:
             raise ValueError("matching_threshold is required with IoU threshold matching.")
-        matching_func = IoUThresholdMatching(prior_shapes, prior_shape_idxs, matching_threshold, ignore_bg_threshold)
+        matching_func = IoUThresholdMatching(
+            prior_shapes, prior_shape_idxs, matching_threshold, ignore_bg_threshold
+        )
     elif matching_algorithm == "maxiou" or matching_algorithm is None:
         matching_func = HighestIoUMatching(prior_shapes, prior_shape_idxs, ignore_bg_threshold)
     else:
@@ -321,14 +355,16 @@ def create_detection_layer(
         class_loss_multiplier,
     )
     layer_shapes = [prior_shapes[i] for i in prior_shape_idxs]
-    return DetectionLayer(prior_shapes=layer_shapes, matching_func=matching_func, loss_func=loss_func, **kwargs)
+    return DetectionLayer(
+        prior_shapes=layer_shapes, matching_func=matching_func, loss_func=loss_func, **kwargs
+    )
 
 
 class DetectionStage(nn.Module):
     """This is a convenience class for running a detection layer.
 
-    It might be cleaner to implement this as a function, but TorchScript allows only specific types in function
-    arguments, not modules.
+    It might be cleaner to implement this as a function, but TorchScript allows only specific types
+    in function arguments, not modules.
     """
 
     def __init__(self, **kwargs: Any) -> None:
@@ -344,7 +380,8 @@ class DetectionStage(nn.Module):
         losses: List[Tensor],
         hits: List[int],
     ) -> None:
-        """Runs the detection layer on the inputs and appends the output to the ``detections`` list.
+        """Runs the detection layer on the inputs and appends the output to the ``detections``
+        list.
 
         If ``targets`` is given, also calculates the losses and appends to the ``losses`` list.
 
@@ -361,7 +398,9 @@ class DetectionStage(nn.Module):
         detections.append(output)
 
         if targets is not None:
-            layer_losses, layer_hits = self.detection_layer.calculate_losses(preds, targets, image_size)
+            layer_losses, layer_hits = self.detection_layer.calculate_losses(
+                preds, targets, image_size
+            )
             losses.append(layer_losses)
             hits.append(layer_hits)
 
@@ -378,11 +417,17 @@ class DetectionStageWithAux(nn.Module):
     """
 
     def __init__(
-        self, spatial_range: float = 5.0, aux_spatial_range: float = 3.0, aux_weight: float = 0.25, **kwargs: Any
+        self,
+        spatial_range: float = 5.0,
+        aux_spatial_range: float = 3.0,
+        aux_weight: float = 0.25,
+        **kwargs: Any,
     ) -> None:
         super().__init__()
         self.detection_layer = create_detection_layer(spatial_range=spatial_range, **kwargs)
-        self.aux_detection_layer = create_detection_layer(spatial_range=aux_spatial_range, **kwargs)
+        self.aux_detection_layer = create_detection_layer(
+            spatial_range=aux_spatial_range, **kwargs
+        )
         self.aux_weight = aux_weight
 
     def forward(
@@ -395,8 +440,8 @@ class DetectionStageWithAux(nn.Module):
         losses: List[Tensor],
         hits: List[int],
     ) -> None:
-        """Runs the detection layer and the auxiliary detection layer on their respective inputs and appends the
-        outputs to the ``detections`` list.
+        """Runs the detection layer and the auxiliary detection layer on their respective inputs
+        and appends the outputs to the ``detections`` list.
 
         If ``targets`` is given, also calculates the losses and appends to the ``losses`` list.
 
@@ -415,7 +460,9 @@ class DetectionStageWithAux(nn.Module):
 
         if targets is not None:
             # Match lead head predictions to targets and calculate losses from lead head outputs.
-            layer_losses, layer_hits = self.detection_layer.calculate_losses(preds, targets, image_size)
+            layer_losses, layer_hits = self.detection_layer.calculate_losses(
+                preds, targets, image_size
+            )
             losses.append(layer_losses)
             hits.append(layer_hits)
 
@@ -522,7 +569,14 @@ class YOLOV4TinyNetwork(nn.Module):
         num_outputs = (5 + num_classes) * anchors_per_cell
 
         def conv(in_channels: int, out_channels: int, kernel_size: int = 1) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size, stride=1, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size,
+                stride=1,
+                activation=activation,
+                norm=normalization,
+            )
 
         def upsample(in_channels: int, out_channels: int) -> nn.Module:
             channels = conv(in_channels, out_channels)
@@ -542,7 +596,9 @@ class YOLOV4TinyNetwork(nn.Module):
                 **kwargs,
             )
 
-        self.backbone = backbone or YOLOV4TinyBackbone(width=width, activation=activation, normalization=normalization)
+        self.backbone = backbone or YOLOV4TinyBackbone(
+            width=width, activation=activation, normalization=normalization
+        )
 
         self.fpn5 = conv(width * 16, width * 8)
         self.out5 = nn.Sequential(
@@ -588,7 +644,8 @@ class YOLOV4TinyNetwork(nn.Module):
 
 
 class YOLOV4Network(nn.Module):
-    """Network architecture that corresponds approximately to the Cross Stage Partial Network from YOLOv4.
+    """Network architecture that corresponds approximately to the Cross Stage Partial Network from
+    YOLOv4.
 
     Args:
         num_classes: Number of different classes that this model predicts.
@@ -664,7 +721,14 @@ class YOLOV4Network(nn.Module):
             return CSPSPP(in_channels, out_channels, activation=activation, norm=normalization)
 
         def conv(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=1, stride=1, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=1,
+                stride=1,
+                activation=activation,
+                norm=normalization,
+            )
 
         def csp(in_channels: int, out_channels: int) -> nn.Module:
             return CSPStage(
@@ -677,9 +741,18 @@ class YOLOV4Network(nn.Module):
             )
 
         def out(in_channels: int) -> nn.Module:
-            conv = Conv(in_channels, in_channels, kernel_size=3, stride=1, activation=activation, norm=normalization)
+            conv = Conv(
+                in_channels,
+                in_channels,
+                kernel_size=3,
+                stride=1,
+                activation=activation,
+                norm=normalization,
+            )
             outputs = nn.Conv2d(in_channels, num_outputs, kernel_size=1)
-            return nn.Sequential(OrderedDict([("conv", conv), (f"outputs_{num_outputs}", outputs)]))
+            return nn.Sequential(
+                OrderedDict([("conv", conv), (f"outputs_{num_outputs}", outputs)])
+            )
 
         def upsample(in_channels: int, out_channels: int) -> nn.Module:
             channels = conv(in_channels, out_channels)
@@ -687,7 +760,14 @@ class YOLOV4Network(nn.Module):
             return nn.Sequential(OrderedDict([("channels", channels), ("upsample", upsample)]))
 
         def downsample(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=3, stride=2, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=2,
+                activation=activation,
+                norm=normalization,
+            )
 
         def detect(prior_shape_idxs: Sequence[int]) -> DetectionStage:
             assert prior_shapes is not None
@@ -702,7 +782,9 @@ class YOLOV4Network(nn.Module):
         if backbone is not None:
             self.backbone = backbone
         else:
-            self.backbone = YOLOV4Backbone(widths=widths, activation=activation, normalization=normalization)
+            self.backbone = YOLOV4Backbone(
+                widths=widths, activation=activation, normalization=normalization
+            )
 
         w3 = widths[-3]
         w4 = widths[-2]
@@ -758,7 +840,8 @@ class YOLOV4Network(nn.Module):
 
 
 class YOLOV4P6Network(nn.Module):
-    """Network architecture that corresponds approximately to the variant of YOLOv4 with four detection layers.
+    """Network architecture that corresponds approximately to the variant of YOLOv4 with four
+    detection layers.
 
     Args:
         num_classes: Number of different classes that this model predicts.
@@ -841,7 +924,14 @@ class YOLOV4P6Network(nn.Module):
             return CSPSPP(in_channels, out_channels, activation=activation, norm=normalization)
 
         def conv(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=1, stride=1, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=1,
+                stride=1,
+                activation=activation,
+                norm=normalization,
+            )
 
         def csp(in_channels: int, out_channels: int) -> nn.Module:
             return CSPStage(
@@ -854,9 +944,18 @@ class YOLOV4P6Network(nn.Module):
             )
 
         def out(in_channels: int) -> nn.Module:
-            conv = Conv(in_channels, in_channels, kernel_size=3, stride=1, activation=activation, norm=normalization)
+            conv = Conv(
+                in_channels,
+                in_channels,
+                kernel_size=3,
+                stride=1,
+                activation=activation,
+                norm=normalization,
+            )
             outputs = nn.Conv2d(in_channels, num_outputs, kernel_size=1)
-            return nn.Sequential(OrderedDict([("conv", conv), (f"outputs_{num_outputs}", outputs)]))
+            return nn.Sequential(
+                OrderedDict([("conv", conv), (f"outputs_{num_outputs}", outputs)])
+            )
 
         def upsample(in_channels: int, out_channels: int) -> nn.Module:
             channels = conv(in_channels, out_channels)
@@ -864,7 +963,14 @@ class YOLOV4P6Network(nn.Module):
             return nn.Sequential(OrderedDict([("channels", channels), ("upsample", upsample)]))
 
         def downsample(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=3, stride=2, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=2,
+                activation=activation,
+                norm=normalization,
+            )
 
         def detect(prior_shape_idxs: Sequence[int]) -> DetectionStage:
             assert prior_shapes is not None
@@ -880,7 +986,10 @@ class YOLOV4P6Network(nn.Module):
             self.backbone = backbone
         else:
             self.backbone = YOLOV4Backbone(
-                widths=widths, depths=(1, 1, 3, 15, 15, 7, 7), activation=activation, normalization=normalization
+                widths=widths,
+                depths=(1, 1, 3, 15, 15, 7, 7),
+                activation=activation,
+                normalization=normalization,
             )
 
         w3 = widths[-4]
@@ -952,8 +1061,8 @@ class YOLOV4P6Network(nn.Module):
 
 
 class YOLOV5Network(nn.Module):
-    """The YOLOv5 network architecture. Different variants (n/s/m/l/x) can be achieved by adjusting the ``depth``
-    and ``width`` parameters.
+    """The YOLOv5 network architecture. Different variants (n/s/m/l/x) can be achieved by adjusting
+    the ``depth`` and ``width`` parameters.
 
     Args:
         num_classes: Number of different classes that this model predicts.
@@ -1034,10 +1143,24 @@ class YOLOV5Network(nn.Module):
             return FastSPP(in_channels, out_channels, activation=activation, norm=normalization)
 
         def downsample(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=3, stride=2, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=2,
+                activation=activation,
+                norm=normalization,
+            )
 
         def conv(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=1, stride=1, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=1,
+                stride=1,
+                activation=activation,
+                norm=normalization,
+            )
 
         def out(in_channels: int) -> nn.Module:
             outputs = nn.Conv2d(in_channels, num_outputs, kernel_size=1)
@@ -1124,7 +1247,8 @@ class YOLOV5Network(nn.Module):
 
 
 class YOLOV7Network(nn.Module):
-    """Network architecture that corresponds to the W6 variant of YOLOv7 with four detection layers.
+    """Network architecture that corresponds to the W6 variant of YOLOv7 with four detection
+    layers.
 
     Args:
         num_classes: Number of different classes that this model predicts.
@@ -1210,7 +1334,14 @@ class YOLOV7Network(nn.Module):
             return CSPSPP(in_channels, out_channels, activation=activation, norm=normalization)
 
         def conv(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=1, stride=1, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=1,
+                stride=1,
+                activation=activation,
+                norm=normalization,
+            )
 
         def elan(in_channels: int, out_channels: int) -> nn.Module:
             return ELANStage(
@@ -1225,10 +1356,17 @@ class YOLOV7Network(nn.Module):
 
         def out(in_channels: int, hidden_channels: int) -> nn.Module:
             conv = Conv(
-                in_channels, hidden_channels, kernel_size=3, stride=1, activation=activation, norm=normalization
+                in_channels,
+                hidden_channels,
+                kernel_size=3,
+                stride=1,
+                activation=activation,
+                norm=normalization,
             )
             outputs = nn.Conv2d(hidden_channels, num_outputs, kernel_size=1)
-            return nn.Sequential(OrderedDict([("conv", conv), (f"outputs_{num_outputs}", outputs)]))
+            return nn.Sequential(
+                OrderedDict([("conv", conv), (f"outputs_{num_outputs}", outputs)])
+            )
 
         def upsample(in_channels: int, out_channels: int) -> nn.Module:
             channels = conv(in_channels, out_channels)
@@ -1236,7 +1374,14 @@ class YOLOV7Network(nn.Module):
             return nn.Sequential(OrderedDict([("channels", channels), ("upsample", upsample)]))
 
         def downsample(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=3, stride=2, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=2,
+                activation=activation,
+                norm=normalization,
+            )
 
         def detect(prior_shape_idxs: Sequence[int]) -> DetectionStageWithAux:
             assert prior_shapes is not None
@@ -1252,7 +1397,11 @@ class YOLOV7Network(nn.Module):
             self.backbone = backbone
         else:
             self.backbone = YOLOV7Backbone(
-                widths=widths, depth=2, block_depth=2, activation=activation, normalization=normalization
+                widths=widths,
+                depth=2,
+                block_depth=2,
+                activation=activation,
+                normalization=normalization,
             )
 
         w3 = widths[-4]
@@ -1320,16 +1469,24 @@ class YOLOV7Network(nn.Module):
         x = torch.cat((self.downsample5(n5), c6), dim=1)
         n6 = self.pan6(x)
 
-        self.detect3(self.out3(n3), self.aux_out3(n3), targets, image_size, detections, losses, hits)
-        self.detect4(self.out4(n4), self.aux_out4(p4), targets, image_size, detections, losses, hits)
-        self.detect5(self.out5(n5), self.aux_out5(p5), targets, image_size, detections, losses, hits)
-        self.detect6(self.out6(n6), self.aux_out6(c6), targets, image_size, detections, losses, hits)
+        self.detect3(
+            self.out3(n3), self.aux_out3(n3), targets, image_size, detections, losses, hits
+        )
+        self.detect4(
+            self.out4(n4), self.aux_out4(p4), targets, image_size, detections, losses, hits
+        )
+        self.detect5(
+            self.out5(n5), self.aux_out5(p5), targets, image_size, detections, losses, hits
+        )
+        self.detect6(
+            self.out6(n6), self.aux_out6(c6), targets, image_size, detections, losses, hits
+        )
         return detections, losses, hits
 
 
 class YOLOXHead(nn.Module):
-    """A module that produces features for YOLO detection layer, decoupling the classification and localization
-    features.
+    """A module that produces features for YOLO detection layer, decoupling the classification and
+    localization features.
 
     Args:
         in_channels: Number of input channels that the module expects.
@@ -1353,7 +1510,9 @@ class YOLOXHead(nn.Module):
         super().__init__()
 
         def conv(in_channels: int, out_channels: int, kernel_size: int = 1) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size, stride=1, activation=activation, norm=norm)
+            return Conv(
+                in_channels, out_channels, kernel_size, stride=1, activation=activation, norm=norm
+            )
 
         def linear(in_channels: int, out_channels: int) -> nn.Module:
             return nn.Conv2d(in_channels, out_channels, kernel_size=1)
@@ -1367,7 +1526,11 @@ class YOLOXHead(nn.Module):
         def classprob(num_channels: int) -> nn.Module:
             num_outputs = anchors_per_cell * num_classes
             outputs = linear(num_channels, num_outputs)
-            return nn.Sequential(OrderedDict([("convs", features(num_channels)), (f"outputs_{num_outputs}", outputs)]))
+            return nn.Sequential(
+                OrderedDict(
+                    [("convs", features(num_channels)), (f"outputs_{num_outputs}", outputs)]
+                )
+            )
 
         self.stem = conv(in_channels, hidden_channels)
         self.feat = features(hidden_channels)
@@ -1385,8 +1548,8 @@ class YOLOXHead(nn.Module):
 
 
 class YOLOXNetwork(nn.Module):
-    """The YOLOX network architecture. Different variants (nano/tiny/s/m/l/x) can be achieved by adjusting the
-    ``depth`` and ``width`` parameters.
+    """The YOLOX network architecture. Different variants (nano/tiny/s/m/l/x) can be achieved by
+    adjusting the ``depth`` and ``width`` parameters.
 
     Args:
         num_classes: Number of different classes that this model predicts.
@@ -1456,10 +1619,24 @@ class YOLOXNetwork(nn.Module):
             return FastSPP(in_channels, out_channels, activation=activation, norm=normalization)
 
         def downsample(in_channels: int, out_channels: int) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size=3, stride=2, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                stride=2,
+                activation=activation,
+                norm=normalization,
+            )
 
         def conv(in_channels: int, out_channels: int, kernel_size: int = 1) -> nn.Module:
-            return Conv(in_channels, out_channels, kernel_size, stride=1, activation=activation, norm=normalization)
+            return Conv(
+                in_channels,
+                out_channels,
+                kernel_size,
+                stride=1,
+                activation=activation,
+                norm=normalization,
+            )
 
         def csp(in_channels: int, out_channels: int) -> nn.Module:
             return CSPStage(
@@ -1552,7 +1729,8 @@ class YOLOXNetwork(nn.Module):
 
 
 class DarknetNetwork(nn.Module):
-    """This class can be used to parse the configuration files of the Darknet YOLOv4 implementation.
+    """This class can be used to parse the configuration files of the Darknet YOLOv4
+    implementation.
 
     Iterates through the layers from the configuration and creates corresponding PyTorch modules. If ``weights_path`` is
     given and points to a Darknet model file, loads the convolutional layer weights from the file.
@@ -1586,7 +1764,11 @@ class DarknetNetwork(nn.Module):
     """
 
     def __init__(
-        self, config_path: str, weights_path: Optional[str] = None, in_channels: Optional[int] = None, **kwargs: Any
+        self,
+        config_path: str,
+        weights_path: Optional[str] = None,
+        in_channels: Optional[int] = None,
+        **kwargs: Any,
     ) -> None:
         super().__init__()
 
@@ -1672,7 +1854,8 @@ class DarknetNetwork(nn.Module):
         def read(tensor: Tensor) -> int:
             """Reads the contents of ``tensor`` from the current position of ``weight_file``.
 
-            Returns the number of elements read. If there's no more data in ``weight_file``, returns 0.
+            Returns the number of elements read. If there's no more data in ``weight_file``,
+            returns 0.
             """
             np_array = np.fromfile(weight_file, count=tensor.numel(), dtype=np.float32)
             num_elements = np_array.size
@@ -1791,7 +1974,9 @@ class DarknetNetwork(nn.Module):
                 section = {"type": section_match.group(1)}
             else:
                 if section is None:
-                    raise RuntimeError("Darknet network configuration file does not start with a section header.")
+                    raise RuntimeError(
+                        "Darknet network configuration file does not start with a section header."
+                    )
                 key, value = line.split("=")
                 key = key.rstrip()
                 value = value.lstrip()
@@ -1802,9 +1987,11 @@ class DarknetNetwork(nn.Module):
         return sections
 
 
-def _create_layer(config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any) -> CREATE_LAYER_OUTPUT:
-    """Calls one of the ``_create_<layertype>(config, num_inputs)`` functions to create a PyTorch module from the
-    layer config.
+def _create_layer(
+    config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any
+) -> CREATE_LAYER_OUTPUT:
+    """Calls one of the ``_create_<layertype>(config, num_inputs)`` functions to create a PyTorch
+    module from the layer config.
 
     Args:
         config: Dictionary of configuration options for this layer.
@@ -1825,7 +2012,9 @@ def _create_layer(config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any) 
     return create_func[config["type"]](config, num_inputs, **kwargs)
 
 
-def _create_convolutional(config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any) -> CREATE_LAYER_OUTPUT:
+def _create_convolutional(
+    config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any
+) -> CREATE_LAYER_OUTPUT:
     """Creates a convolutional layer.
 
     Args:
@@ -1852,7 +2041,9 @@ def _create_convolutional(config: DARKNET_CONFIG, num_inputs: List[int], **kwarg
     return layer, config["filters"]
 
 
-def _create_maxpool(config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any) -> CREATE_LAYER_OUTPUT:
+def _create_maxpool(
+    config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any
+) -> CREATE_LAYER_OUTPUT:
     """Creates a max pooling layer.
 
     Padding is added so that the output resolution will be the input resolution divided by stride, rounded upwards.
@@ -1869,7 +2060,9 @@ def _create_maxpool(config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any
     return layer, num_inputs[-1]
 
 
-def _create_route(config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any) -> CREATE_LAYER_OUTPUT:
+def _create_route(
+    config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any
+) -> CREATE_LAYER_OUTPUT:
     """Creates a routing layer.
 
     A routing layer concatenates the output (or part of it) from the layers specified by the "layers" configuration
@@ -1898,7 +2091,9 @@ def _create_route(config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any) 
     return layer, num_outputs
 
 
-def _create_shortcut(config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any) -> CREATE_LAYER_OUTPUT:
+def _create_shortcut(
+    config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any
+) -> CREATE_LAYER_OUTPUT:
     """Creates a shortcut layer.
 
     A shortcut layer adds a residual connection from the layer specified by the "from" configuration option.
@@ -1915,7 +2110,9 @@ def _create_shortcut(config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: An
     return layer, num_inputs[-1]
 
 
-def _create_upsample(config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any) -> CREATE_LAYER_OUTPUT:
+def _create_upsample(
+    config: DARKNET_CONFIG, num_inputs: List[int], **kwargs: Any
+) -> CREATE_LAYER_OUTPUT:
     """Creates a layer that upsamples the data.
 
     Args:
