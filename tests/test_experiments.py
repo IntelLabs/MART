@@ -264,7 +264,7 @@ def test_resume(tmpdir):
     overrides_yaml.write(
         "\n".join(
             [
-                "- experiment=CIFAR10_RobustBench",
+                "- experiment=CIFAR10_CNN",
                 "- datamodule=dummy_classification",
                 "- datamodule.ims_per_batch=2",
                 "- datamodule.num_workers=0",
