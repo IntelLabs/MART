@@ -1,6 +1,9 @@
 _target_: mart.models.LitModular
 _convert_: all
 
+output_preds_key: "preds"
+output_target_key: "target"
+
 modules: ???
 optimizer: ???
 
