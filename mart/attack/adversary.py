@@ -67,7 +67,6 @@ class Adversary(pl.LightningModule):
         # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
         # and DDP won't try to get the uninitialized parameters of perturbation.
         self._perturber = [perturber]
-
         self.composer = composer
         self.optimizer = optimizer
         if not isinstance(self.optimizer, OptimizerFactory):
