@@ -1,0 +1,32 @@
+# Introduction
+
+This example shows how to use MART to evaluate adversarial robustness of models from RobustBench
+
+The `requirements.txt` contains dependency of MART and RobustBench.
+
+The `configs` folder contains configurations of the target model `classifier_robustbench` and the MART experiment `CIFAR10_RobustBench`.
+
+## Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+## How to run
+
+```bash
+# run on CPU
+python -m mart experiment=CIFAR10_RobustBench \
+	trainer=default \
+	fit=false \
+	+trainer.limit_test_batches=1 \
+	+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1
+
+# run on GPU
+CUDA_VISIBLE_DEVICES=0 \
+python -m mart experiment=CIFAR10_RobustBench \
+	trainer=gpu \
+	fit=false \
+	+trainer.limit_test_batches=1 \
+	+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1
+```
