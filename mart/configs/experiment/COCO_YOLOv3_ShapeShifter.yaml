@@ -119,9 +119,6 @@ model:
     seq010:
       yolo:
         images: "input_adv"
-    seq030:
-      yolo:
-        images: "input_adv"
         targets: "empty_targets"
     seq050:
       total_variation:
@@ -130,7 +127,7 @@ model:
     seq100:
       loss:
         _call_with_args_:
-          - "losses.confidence"
+          - "yolo.confidence"
           - "total_variation"
         weights:
           - 1
@@ -144,15 +141,8 @@ model:
     seq004: ${..training_sequence.seq004}
     seq005: ${..training_sequence.seq005}
     seq006: ${..training_sequence.seq006}
-    seq010: ${..training_sequence.seq010}
-    seq030:
-      yolo:
-        images: "input_adv"
-        targets: "empty_targets"
     seq050: ${..training_sequence.seq050}
-    seq100: ${..training_sequence.seq100}
 
   test_sequence:
     seq005: ${..training_sequence.seq005}
     seq006: ${..training_sequence.seq006}
-    seq010: ${..training_sequence.seq010}

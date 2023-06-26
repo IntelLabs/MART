@@ -137,12 +137,10 @@ class YOLO(nn.Module):
         images_tensor = images if isinstance(images, Tensor) else torch.stack(images)
         detections, losses, hits = self.network(images_tensor, targets)
 
-        if targets is None:
-            detections = torch.cat(detections, 1)
-            return detections
+        detections = torch.cat(detections, 1)
 
         losses = torch.stack(losses).sum(0)
-        return {"overlap": losses[0], "confidence": losses[1], "classification": losses[2]}
+        return {"detections": detections, "overlap": losses[0], "confidence": losses[1], "classification": losses[2]}
 
     def infer(self, image: Tensor) -> PRED:
         """Feeds an image to the network and returns the detected bounding boxes, confidence

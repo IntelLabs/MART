@@ -23,33 +23,23 @@ training_sequence:
   seq010:
     yolo:
       images: "input"
+      targets: "target.list_of_targets"
 
   seq020:
     yolo.process_detections:
       _name_: "preds"
-      preds: "yolo"
-
-  seq030:
-    yolo:
-      _name_: "losses"
-      images: "input"
-      targets: "target.list_of_targets"
+      preds: "yolo.detections"
 
   seq100:
     loss:
       _call_with_args_:
-        - "losses.overlap"
-        - "losses.confidence"
-        - "losses.classification"
+        - "yolo.overlap"
+        - "yolo.confidence"
+        - "yolo.classification"
 
 validation_sequence:
   seq010: ${..training_sequence.seq010}
   seq020: ${..training_sequence.seq020}
-  seq030:
-    yolo:
-      _name_: "losses"
-      images: "input"
-      targets: "target.list_of_targets"
   seq100: ${..training_sequence.seq100}
 
 test_sequence:
@@ -58,14 +48,14 @@ test_sequence:
 
 training_step_log:
   loss: "loss"
-  loss_overlap: "losses.overlap"
-  loss_confidence: "losses.confidence"
-  loss_classification: "losses.classification"
+  loss_overlap: "yolo.overlap"
+  loss_confidence: "yolo.confidence"
+  loss_classification: "yolo.classification"
 
 validation_step_log:
   loss: "loss"
-  loss_overlap: "losses.overlap"
-  loss_confidence: "losses.confidence"
-  loss_classification: "losses.classification"
+  loss_overlap: "yolo.overlap"
+  loss_confidence: "yolo.confidence"
+  loss_classification: "yolo.classification"
 
 test_step_log: null
