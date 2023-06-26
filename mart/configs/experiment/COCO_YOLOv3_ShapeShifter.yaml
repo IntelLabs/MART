@@ -144,5 +144,6 @@ model:
     seq050: ${..training_sequence.seq050}
 
   test_sequence:
+    seq004: ${..training_sequence.seq004}
     seq005: ${..training_sequence.seq005}
     seq006: ${..training_sequence.seq006}
