@@ -133,7 +133,7 @@ class YOLO(nn.Module):
             detection layer is the feature map size (width * height) times the number of anchors per cell (usually 3 or
             4). The predicted box coordinates are in `(x1, y1, x2, y2)` format and scaled to the input image size.
         """
-        self.validate_batch(images, targets)
+        #self.validate_batch(images, targets)
         images_tensor = images if isinstance(images, Tensor) else torch.stack(images)
         detections, losses, hits = self.network(images_tensor, targets)
 

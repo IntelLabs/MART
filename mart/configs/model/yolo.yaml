@@ -23,8 +23,6 @@ training_sequence:
   seq010:
     yolo:
       images: "input"
-      _train_mode_: False
-      _inference_mode_: True
 
   seq020:
     yolo.process_detections:
@@ -52,7 +50,6 @@ validation_sequence:
       _name_: "losses"
       images: "input"
       targets: "target.list_of_targets"
-      _train_mode_: False
   seq100: ${..training_sequence.seq100}
 
 test_sequence:
