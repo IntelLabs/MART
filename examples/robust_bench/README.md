@@ -1,10 +1,14 @@
 # Introduction
 
-This example shows how to use MART to evaluate adversarial robustness of models from RobustBench
+This example shows how to use MART to evaluate adversarial robustness of models from RobustBench.
+
+Note that the attack algorithm here is not optimal, just for the demonstration purpose.
 
 The `requirements.txt` contains dependency of MART and RobustBench.
 
-The `configs` folder contains configurations of the target model `classifier_robustbench` and the MART experiment `CIFAR10_RobustBench`.
+The `./configs` folder contains configurations of the target model `classifier_robustbench` and the MART experiment `CIFAR10_RobustBench`.
+
+The configuration files in `./configs` precedes those in `mart.configs` (MART's built-in configs).
 
 ## Installation
 
