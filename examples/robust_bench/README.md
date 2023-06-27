@@ -32,5 +32,17 @@ python -m mart experiment=CIFAR10_RobustBench \
 	trainer=gpu \
 	fit=false \
 	+trainer.limit_test_batches=1 \
-	+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1
+	+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1 \
+	+model.test_sequence.seq005=input_adv_test \
+	model.test_sequence.seq010.preprocessor=["input_adv_test"]
+
+# Evaluate with AutoAttack, expect 0.6171875
+CUDA_VISIBLE_DEVICES=0 \
+python -m mart experiment=CIFAR10_RobustBench \
+	trainer=gpu \
+	fit=false \
+	+trainer.limit_test_batches=1 \
+	+attack@model.modules.input_adv_test=classification_autoattack \
+	+model.test_sequence.seq005=input_adv_test \
+	model.test_sequence.seq010.preprocessor=["input_adv_test"]
 ```

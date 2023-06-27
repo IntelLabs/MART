@@ -24,7 +24,6 @@ experiments_names = [
     "COCO_TorchvisionFasterRCNN",
     "COCO_TorchvisionFasterRCNN_Adv",
     "COCO_TorchvisionRetinaNet",
-    "ArmoryCarlaOverObjDet_TorchvisionFasterRCNN",
 ]
 
 
