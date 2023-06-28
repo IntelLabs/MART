@@ -35,6 +35,7 @@ class LitModular(LightningModule):
         test_sequence=None,
         test_step_log=None,
         test_metrics=None,
+        gradient_modifier=None,
         load_state_dict=None,
         output_loss_key="loss",
         output_preds_key="preds",
@@ -91,6 +92,8 @@ class LitModular(LightningModule):
         self.test_step_log = test_step_log or {}
         self.test_metrics = test_metrics
 
+        self.gradient_modifier = gradient_modifier
+
         # Load state dict for specified modules. We flatten it because Hydra
         # commandlines converts dotted paths to nested dictionaries.
         load_state_dict = flatten_dict(load_state_dict or {})
@@ -119,6 +122,18 @@ class LitModular(LightningModule):
                 config["lr_scheduler"] = self.lr_scheduler(config["optimizer"])
 
         return config
+
+    def configure_gradient_clipping(
+        self, optimizer, optimizer_idx, gradient_clip_val=None, gradient_clip_algorithm=None
+    ):
+        # Configuring gradient clipping in pl.Trainer is still useful, so use it.
+        super().configure_gradient_clipping(
+            optimizer, optimizer_idx, gradient_clip_val, gradient_clip_algorithm
+        )
+
+        if self.gradient_modifier is not None:
+            for group in optimizer.param_groups:
+                self.gradient_modifier(group["params"])
 
     def forward(self, **kwargs):
         return self.model(**kwargs)

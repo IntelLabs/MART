@@ -91,3 +91,118 @@ class Composite(Composer):
             perturbation = perturbation * mask
 
         return input * (1 - mask) + perturbation
+
+
+# FIXME: It would be really nice if we could compose composers just like we can compose everything else...
+class WarpComposite(Composite):
+    def __init__(
+        self,
+        warp,
+        *args,
+        clamp=(0, 255),
+        premultiplied_alpha=True,
+        **kwargs,
+    ):
+        super().__init__(*args, premultiplied_alpha=premultiplied_alpha, **kwargs)
+
+        self._warp = warp
+        self.clamp = clamp
+
+    # FIXME: This looks an awful like warp below. We should be able to get rid of this function.
+    def fixed_warp(self, perturbation, *, input, target):
+        # Use gs_coords to do fixed perspective warp
+        assert "gs_coords" in target
+
+        if len(input.shape) == 4 and len(perturbation.shape) == 3:
+            return torch.stack(
+                [
+                    self.warp(perturbation, input=inp, target={"gs_coords": endpoints})
+                    for inp, endpoints in zip(input, target["gs_coords"])
+                ]
+            )
+        else:
+            # coordinates are [[left, top], [right, top], [right, bottom], [left, bottom]]
+            # perturbation is CHW
+            startpoints = [
+                [0, 0],
+                [perturbation.shape[2], 0],
+                [perturbation.shape[2], perturbation.shape[1]],
+                [0, perturbation.shape[1]],
+            ]
+            endpoints = target["gs_coords"]
+
+            pert_w, pert_h = F.get_image_size(perturbation)
+            image_w, image_h = F.get_image_size(input)
+
+            # Pad perturbation to image size
+            if pert_w < image_w or pert_h < image_h:
+                # left, top, right and bottom
+                padding = [0, 0, max(image_w - pert_w, 0), max(image_h - pert_h, 0)]
+                perturbation = F.pad(perturbation, padding)
+
+            perturbation = F.perspective(perturbation, startpoints, endpoints)
+
+            # Crop perturbation to image size
+            if pert_w != image_w or pert_h != image_h:
+                perturbation = F.crop(perturbation, 0, 0, image_h, image_w)
+            return perturbation
+
+    def warp(self, perturbation, *, input, target):
+        # Always use gs_coords if present in target
+        if "gs_coords" in target:
+            return self.fixed_warp(perturbation, input=input, target=target)
+
+        # Otherwise, warp the perturbation onto the input
+        if len(input.shape) == 4 and len(perturbation.shape) == 3:  # support for batch warping
+            return torch.stack(
+                [self.warp(perturbation, input=inp, target=target) for inp in input]
+            )
+        else:
+            pert_w, pert_h = F.get_image_size(perturbation)
+            image_w, image_h = F.get_image_size(input)
+
+            # Pad perturbation to image size
+            if pert_w < image_w or pert_h < image_h:
+                # left, top, right and bottom
+                padding = [0, 0, max(image_w - pert_w, 0), max(image_h - pert_h, 0)]
+                perturbation = F.pad(perturbation, padding)
+
+            perturbation = self._warp(perturbation)
+
+            # Crop perturbation to image size
+            if pert_w != image_w or pert_h != image_h:
+                perturbation = F.crop(perturbation, 0, 0, image_h, image_w)
+            return perturbation
+
+    def compose(self, perturbation, *, input, target):
+        # Create mask of ones to keep track of filled in pixels
+        mask = torch.ones_like(perturbation[:1])
+
+        # Add mask to perturbation so we can keep track of warping.
+        perturbation = torch.cat((perturbation, mask))
+
+        # Apply warp transform
+        perturbation = self.warp(perturbation, input=input, target=target)
+
+        # Extract mask from perturbation. The use of channels first forces this hack.
+        if len(perturbation.shape) == 4:
+            mask = perturbation[:, 3:, ...]
+            perturbation = perturbation[:, :3, ...]
+        else:
+            mask = perturbation[3:, ...]
+            perturbation = perturbation[:3, ...]
+
+        # Set/update perturbable mask
+        perturbable_mask = 1
+        if "perturbable_mask" in target:
+            perturbable_mask = target["perturbable_mask"]
+        perturbable_mask = perturbable_mask * mask
+
+        # Pre multiply perturbation and clamp it to input min/max
+        perturbation = perturbation * perturbable_mask
+        perturbation.clamp_(*self.clamp)
+
+        # Set mask for super().compose
+        target["perturbable_mask"] = perturbable_mask
+
+        return super().compose(perturbation, input=input, target=target)
