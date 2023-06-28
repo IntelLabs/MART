@@ -135,13 +135,13 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
 
     output_data = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
 
-    # Adversarial perturbation will have one parameter after forward is called.
+    # Adversary will have no parameter even after forward is called, because we hide Perturber in a list.
     params = [p for p in adversary.parameters()]
-    assert len(params) == 1
+    assert len(params) == 0
 
-    # Adversarial perturbation should have one state dict item being exported to the model checkpoint.
+    # Adversary should have no state dict item being exported to the model checkpoint, because we hide Perturber in a list.
     state_dict = adversary.state_dict()
-    assert len(state_dict) == 1
+    assert len(state_dict) == 0
 
 
 def test_loading_perturbation_from_state_dict():
