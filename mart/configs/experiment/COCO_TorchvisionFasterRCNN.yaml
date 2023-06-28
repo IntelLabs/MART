@@ -28,13 +28,6 @@ datamodule:
   world_size: 1
 
 model:
-  modules:
-    losses_and_detections:
-      model:
-        # Inferred by torchvision.
-        num_classes: null
-        weights: COCO_V1
-
   optimizer:
     lr: 0.0125
     momentum: 0.9

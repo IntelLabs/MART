@@ -20,7 +20,8 @@ callbacks:
 trainer:
   # 117,266 training images, 6 epochs, batch_size=2, 351798
   max_steps: 351798
-  precision: 16
+  # FIXME: "nms_kernel" not implemented for 'BFloat16', torch.ops.torchvision.nms().
+  precision: 32
 
 datamodule:
   ims_per_batch: 2
@@ -28,11 +29,9 @@ datamodule:
 
 model:
   modules:
-    losses_and_detections:
-      model:
-        # Inferred by torchvision.
-        num_classes: null
-        weights: COCO_V1
+    detector:
+      num_classes: null # inferred by torchvision
+      weights: COCO_V1
 
   optimizer:
     lr: 0.0125

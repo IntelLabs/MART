@@ -2,28 +2,84 @@
 defaults:
   - torchvision_object_detection
 
-# log all losses separately in training.
+load_state_dict:
+  _model_:
+    _target_: hydra.utils._locate # FIXME: Use hydra.utils.get_object when available
+    path: "torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights.COCO_V1"
+
+# log all losses separately in losses.
 training_step_log:
-  loss_objectness: "losses_and_detections.training.loss_objectness"
-  loss_rpn_box_reg: "losses_and_detections.training.loss_rpn_box_reg"
-  loss_classifier: "losses_and_detections.training.loss_classifier"
-  loss_box_reg: "losses_and_detections.training.loss_box_reg"
+  loss_objectness: "rpn.losses.loss_objectness"
+  loss_rpn_box_reg: "rpn.losses.loss_rpn_box_reg"
+  loss_classifier: "roi_heads.losses.loss_classifier"
+  loss_box_reg: "roi_heads.losses.loss_box_reg"
 
 training_sequence:
   seq010:
     preprocessor: ["input"]
 
   seq020:
-    losses_and_detections: ["preprocessor", "target"]
+    transform:
+      images: "preprocessor"
+      targets: "target"
+      _return_as_dict_: ["images", "targets"]
 
   seq030:
+    backbone:
+      x: "transform.images.tensors"
+
+  seq040:
+    rpn:
+      _train_mode_: True
+      images: "transform.images"
+      features: "backbone"
+      targets: "transform.targets"
+      _return_as_dict_: ["proposals", "losses"]
+
+  seq050:
+    roi_heads:
+      _train_mode_: True
+      features: "backbone"
+      proposals: "rpn.proposals"
+      image_shapes: "transform.images.image_sizes"
+      targets: "transform.targets"
+      _return_as_dict_: ["detections", "losses"]
+
+  seq060:
+    rpn:
+      _name_: "rpn_eval"
+      _train_mode_: False
+      _inference_mode_: True
+      images: "transform.images"
+      features: "backbone"
+      targets: "transform.targets"
+      _return_as_dict_: ["proposals", "losses"]
+
+  seq070:
+    roi_heads:
+      _name_: "roi_heads_eval"
+      _train_mode_: False
+      _inference_mode_: True
+      features: "backbone"
+      proposals: "rpn_eval.proposals"
+      image_shapes: "transform.images.image_sizes"
+      targets: "transform.targets"
+      _return_as_dict_: ["detections", "losses"]
+
+  seq080:
+    preds:
+      result: "roi_heads_eval.detections"
+      image_shapes: "transform.images.image_sizes"
+      original_images: "preprocessor"
+
+  seq100:
     loss:
       # Sum up the losses.
       [
-        "losses_and_detections.training.loss_objectness",
-        "losses_and_detections.training.loss_rpn_box_reg",
-        "losses_and_detections.training.loss_classifier",
-        "losses_and_detections.training.loss_box_reg",
+        "rpn.losses.loss_objectness",
+        "rpn.losses.loss_rpn_box_reg",
+        "roi_heads.losses.loss_classifier",
+        "roi_heads.losses.loss_box_reg",
       ]
 
 validation_sequence:
@@ -31,20 +87,198 @@ validation_sequence:
     preprocessor: ["input"]
 
   seq020:
-    losses_and_detections: ["preprocessor", "target"]
+    transform:
+      images: "preprocessor"
+      targets: "target"
+      _return_as_dict_: ["images", "targets"]
+
+  seq030:
+    backbone:
+      x: "transform.images.tensors"
+
+  seq040:
+    rpn:
+      _train_mode_: True
+      images: "transform.images"
+      features: "backbone"
+      targets: "transform.targets"
+      _return_as_dict_: ["proposals", "losses"]
+
+  seq050:
+    roi_heads:
+      _train_mode_: True
+      features: "backbone"
+      proposals: "rpn.proposals"
+      image_shapes: "transform.images.image_sizes"
+      targets: "transform.targets"
+      _return_as_dict_: ["detections", "losses"]
+
+  seq060:
+    rpn:
+      _name_: "rpn_eval"
+      _train_mode_: False
+      _inference_mode_: True
+      images: "transform.images"
+      features: "backbone"
+      targets: "transform.targets"
+      _return_as_dict_: ["proposals", "losses"]
+
+  seq070:
+    roi_heads:
+      _name_: "roi_heads_eval"
+      _train_mode_: False
+      _inference_mode_: True
+      features: "backbone"
+      proposals: "rpn_eval.proposals"
+      image_shapes: "transform.images.image_sizes"
+      targets: "transform.targets"
+      _return_as_dict_: ["detections", "losses"]
+
+  seq080:
+    preds:
+      result: "roi_heads_eval.detections"
+      image_shapes: "transform.images.image_sizes"
+      original_images: "preprocessor"
 
 test_sequence:
   seq010:
     preprocessor: ["input"]
 
   seq020:
-    losses_and_detections: ["preprocessor", "target"]
+    transform:
+      images: "preprocessor"
+      targets: "target"
+      _return_as_dict_: ["images", "targets"]
+
+  seq030:
+    backbone:
+      x: "transform.images.tensors"
+
+  seq040:
+    rpn:
+      _train_mode_: True
+      images: "transform.images"
+      features: "backbone"
+      targets: "transform.targets"
+      _return_as_dict_: ["proposals", "losses"]
+
+  seq050:
+    roi_heads:
+      _train_mode_: True
+      features: "backbone"
+      proposals: "rpn.proposals"
+      image_shapes: "transform.images.image_sizes"
+      targets: "transform.targets"
+      _return_as_dict_: ["detections", "losses"]
+
+  seq060:
+    rpn:
+      _name_: "rpn_eval"
+      _train_mode_: False
+      _inference_mode_: True
+      images: "transform.images"
+      features: "backbone"
+      targets: "transform.targets"
+      _return_as_dict_: ["proposals", "losses"]
+
+  seq070:
+    roi_heads:
+      _name_: "roi_heads_eval"
+      _train_mode_: False
+      _inference_mode_: True
+      features: "backbone"
+      proposals: "rpn_eval.proposals"
+      image_shapes: "transform.images.image_sizes"
+      targets: "transform.targets"
+      _return_as_dict_: ["detections", "losses"]
+
+  seq080:
+    preds:
+      result: "roi_heads_eval.detections"
+      image_shapes: "transform.images.image_sizes"
+      original_images: "preprocessor"
 
 modules:
-  losses_and_detections:
-    # 17s: DualModeGeneralizedRCNN
-    # 23s: DualMode
-    _target_: mart.models.DualModeGeneralizedRCNN
-    model:
-      _target_: torchvision.models.detection.fasterrcnn_resnet50_fpn
-      num_classes: ???
+  transform:
+    _target_: torchvision.models.detection.transform.GeneralizedRCNNTransform
+    min_size: 800
+    max_size: 1333
+    image_mean: [0.485, 0.456, 0.406]
+    image_std: [0.229, 0.224, 0.225]
+
+  backbone:
+    _target_: torchvision.models.detection.backbone_utils.BackboneWithFPN
+    backbone:
+      _target_: torchvision.models.resnet.ResNet
+      block:
+        _target_: hydra.utils.get_method
+        path: torchvision.models.resnet.Bottleneck
+      layers: [3, 4, 6, 3]
+      num_classes: 1000
+      zero_init_residual: False
+      groups: 1
+      width_per_group: 64
+      replace_stride_with_dilation: null
+      norm_layer:
+        _target_: hydra.utils.get_method
+        path: torchvision.ops.misc.FrozenBatchNorm2d
+    return_layers:
+      { "layer1": "0", "layer2": "1", "layer3": "2", "layer4": "3" }
+    in_channels_list: [256, 512, 1024, 2048]
+    out_channels: 256
+
+  rpn:
+    _target_: torchvision.models.detection.rpn.RegionProposalNetwork
+    anchor_generator:
+      _target_: torchvision.models.detection.anchor_utils.AnchorGenerator
+      sizes:
+        - [32]
+        - [64]
+        - [128]
+        - [256]
+        - [512]
+      aspect_ratios:
+        - [0.5, 1.0, 2.0]
+        - [0.5, 1.0, 2.0]
+        - [0.5, 1.0, 2.0]
+        - [0.5, 1.0, 2.0]
+        - [0.5, 1.0, 2.0]
+    head:
+      _target_: torchvision.models.detection.rpn.RPNHead
+      in_channels: 256 # backbone.out_channels
+      num_anchors: 3
+    fg_iou_thresh: 0.7
+    bg_iou_thresh: 0.3
+    batch_size_per_image: 256
+    positive_fraction: 0.5
+    pre_nms_top_n: { "training": 2000, "testing": 1000 }
+    post_nms_top_n: { "training": 2000, "testing": 1000 }
+    nms_thresh: 0.7
+    score_thresh: 0.0
+
+  roi_heads:
+    _target_: torchvision.models.detection.roi_heads.RoIHeads
+    box_roi_pool:
+      _target_: torchvision.ops.MultiScaleRoIAlign
+      featmap_names: ["0", "1", "2", "3"] # backbone.return_layers
+      output_size: 7
+      sampling_ratio: 2
+    box_head:
+      _target_: torchvision.models.detection.faster_rcnn.TwoMLPHead
+      in_channels: 12544 # backbone.out_channels * (box_roi_pool.output_size ** 2)
+      representation_size: 1024
+    box_predictor:
+      _target_: torchvision.models.detection.faster_rcnn.FastRCNNPredictor
+      in_channels: 1024 # box_head.representation_size
+      num_classes: 91 # coco classes + background
+    fg_iou_thresh: 0.5
+    bg_iou_thresh: 0.5
+    batch_size_per_image: 512
+    positive_fraction: 0.25
+    bbox_reg_weights: null
+    score_thresh: 0.05
+    nms_thresh: 0.5
+    detections_per_img: 100
+
+  preds:
+    _target_: mart.models.detection.GeneralizedRCNNPostProcessor

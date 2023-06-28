@@ -95,10 +95,26 @@ class LitModular(LightningModule):
         # commandlines converts dotted paths to nested dictionaries.
         load_state_dict = flatten_dict(load_state_dict or {})
 
-        for name, path in load_state_dict.items():
-            module = attrgetter(name)(self.model)
-            logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
-            module.load_state_dict(torch.load(path, map_location="cpu"))
+        for name, state_dict in load_state_dict.items():
+            if name == "_model_":
+                module = self.model
+            else:
+                module = attrgetter(name)(self.model)
+
+            if isinstance(state_dict, str):
+                logger.info(f"Loading {state_dict} for {module.__class__.__name__}...")
+                state_dict = torch.load(state_dict, map_location="cpu")
+
+            elif hasattr(state_dict, "get_state_dict"):
+                logger.info(
+                    f"Loading {state_dict.__class__.__name__} for {module.__class__.__name__}..."
+                )
+                state_dict = state_dict.get_state_dict(progress=True)
+
+            else:
+                raise ValueError(f"Unsupported state_dict: {state_dict}")
+
+            module.load_state_dict(state_dict, strict=True)
 
         self.output_loss_key = output_loss_key
         self.output_preds_key = output_preds_key

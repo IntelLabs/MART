@@ -11,11 +11,12 @@ tags: ["regular_training"]
 optimized_metric: "test_metrics/map"
 
 model:
+  load_state_dict: null
+
   modules:
-    losses_and_detections:
-      model:
+    roi_heads:
+      box_predictor:
         num_classes: 3
-        weights: null
 
   optimizer:
     lr: 0.0125
