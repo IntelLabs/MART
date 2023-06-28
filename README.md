@@ -68,41 +68,12 @@ pre-commit install
 
 ## How to run
 
-The [configs](/configs) folder is required to run the toolkit. You can evaluate adversarial robustness of pretrained models with chosen experiment configuration from [configs/experiment/](configs/experiment/). Feel free to override any parameter from command line. Run `make` to learn more tasks pre-defined in [Makefile](Makefile).
+The toolkit comes with built-in experiment configurations in [mart/configs](mart/configs).
 
-```bash
-# run on CPU
-python -m mart experiment=CIFAR10_RobustBench \
-	trainer=default \
-	fit=false \
-	+trainer.limit_test_batches=1 \
-	+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1
+For example, you can run a fast adversarial training experiment on CIFAR-10 with `python -m mart experiment=CIFAR10_CNN_Adv`.
+Running on GPU will make it even faster `CUDA_VISIBLE_DEVICES=0 python -m mart experiment=CIFAR10_CNN_Adv trainer=gpu trainer.precision=16`.
 
-# run on GPU
-python -m mart experiment=CIFAR10_RobustBench \
-	trainer=gpu \
-	fit=false \
-	+trainer.limit_test_batches=1 \
-	+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1
-
-# train on 1 GPU
-python -m mart experiment=ArmoryCarlaOverObjDet_TorchvisionFasterRCNN \
-	task_name=1GPU_ArmoryCarlaOverObjDet_TorchvisionFasterRCNN \
-	trainer=gpu \
-	fit=true
-
-# train on multiple GPUs using Distributed Data Parallel
-python -m mart experiment=ArmoryCarlaOverObjDet_TorchvisionFasterRCNN \
-	task_name=2GPUs_ArmoryCarlaOverObjDet_TorchvisionFasterRCNN \
-	fit=true \
-	trainer=ddp \
-	trainer.devices=2 \
-	datamodule.ims_per_batch=4 \
-	model.optimizer.lr=0.025 \
-	trainer.max_steps=5244
-```
-
-You can also install the repository as a package, then run `python -m mart` from anywhere with your own `configs` folder.
+You can see other examples in [examples](/examples).
 
 ## Acknowledgements
 
