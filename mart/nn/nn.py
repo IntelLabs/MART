@@ -80,11 +80,16 @@ class SequentialDict(torch.nn.ModuleDict):
                 # We can omit the key of _call_with_args_ if it is the only config.
                 module_cfg = {"_call_with_args_": module_cfg}
 
+            # Add support for calling different functions using dot-syntax
+            if "." not in module_name:
+                module_name = f"{module_name}.__call__"
+            module_name, _call_ = module_name.split(".", 1)
+            module_cfg["_call_"] = _call_
+
             # The return name could be different from module_name when a module is used more than once.
             return_name = module_cfg.pop("_name_", module_name)
             module = CallWith(self[module_name], **module_cfg)
             module_dict[return_name] = module
-
         return module_dict
 
     def forward(self, step=None, sequence=None, **kwargs):
@@ -125,7 +130,8 @@ class ReturnKwargs(torch.nn.Module):
 class CallWith:
     def __init__(
         self,
-        module: Callable,
+        module: object,
+        _call_: str | None = "__call__",
         _call_with_args_: Iterable[str] | None = None,
         _return_as_dict_: Iterable[str] | None = None,
         _train_mode_: bool | None = None,
@@ -135,6 +141,7 @@ class CallWith:
         super().__init__()
 
         self.module = module
+        self.call_attr = _call_
         self.arg_keys = _call_with_args_
         self.kwarg_keys = kwarg_keys
         self.return_keys = _return_as_dict_
@@ -157,30 +164,32 @@ class CallWith:
         _train_mode_ = _train_mode_ or self.train_mode
         _inference_mode_ = _inference_mode_ or self.inference_mode
 
-        args = list(args)
-        kwargs = DotDict(kwargs)
-
-        # Change and replaces args and kwargs that we call module with
+        # Change and replace args and kwargs that we call module with
         if arg_keys is not None or len(kwarg_keys) > 0:
             arg_keys = arg_keys or []
+
+            kwargs = DotDict(kwargs)  # we need to lookup values using dot strings
+            args = list(args)  # tuple -> list
 
             # Sometimes we receive positional arguments because some modules use nn.Sequential
             # which has a __call__ function that passes positional args. So we pass along args
             # as it and assume these consume the first len(args) of arg_keys.
             arg_keys = arg_keys[len(args) :]
 
-            # Append kwargs to args using arg_keys
+            # Extend args with selected kwargs using arg_keys
             try:
-                [
-                    args.append(kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key)
-                    for kwargs_key in arg_keys
-                ]
+                args.extend(
+                    [
+                        kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key
+                        for kwargs_key in arg_keys
+                    ]
+                )
             except KeyError as ex:
                 raise Exception(
                     f"{module_name} only received kwargs: {', '.join(kwargs.keys())}."
                 ) from ex
 
-            # Replace kwargs with selected kwargs
+            # Replace kwargs with selected kwargs using kwarg_keys
             try:
                 kwargs = {
                     name: kwargs[kwargs_key] if isinstance(kwargs_key, str) else kwargs_key
@@ -204,7 +213,8 @@ class CallWith:
 
         with context:
             # FIXME: Add better error message
-            ret = self.module(*args, **kwargs)
+            func = getattr(self.module, self.call_attr)
+            ret = func(*args, **kwargs)
 
         if isinstance(self.module, torch.nn.Module):
             if _train_mode_ is not None:
