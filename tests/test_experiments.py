@@ -165,23 +165,6 @@ def test_cifar10_cnn_autoattack_experiment(classification_cfg, tmp_path):
 
 
 @RunIf(sh=True)
-def test_cifar10_robust_bench_experiment(classification_cfg, tmp_path):
-    """Test CIFAR10 Robust Bench experiment."""
-    overrides = classification_cfg["trainer"] + classification_cfg["datamodel"]
-    command = [
-        module,
-        "-m",
-        "experiment=CIFAR10_RobustBench",
-        "hydra.sweep.dir=" + str(tmp_path),
-        "+attack@model.modules.input_adv_test=classification_eps8_pgd10_step1",
-        "optimized_metric=training_metrics/acc",
-        "++datamodule.train_dataset.image_size=[3,32,32]",
-        "++datamodule.train_dataset.num_classes=10",
-    ] + overrides
-    run_sh_command(command)
-
-
-@RunIf(sh=True)
 @pytest.mark.slow
 def test_imagenet_timm_experiment(classification_cfg, tmp_path):
     """Test ImageNet Timm experiment."""
@@ -281,7 +264,7 @@ def test_resume(tmpdir):
     overrides_yaml.write(
         "\n".join(
             [
-                "- experiment=CIFAR10_RobustBench",
+                "- experiment=CIFAR10_CNN",
                 "- datamodule=dummy_classification",
                 "- datamodule.ims_per_batch=2",
                 "- datamodule.num_workers=0",
