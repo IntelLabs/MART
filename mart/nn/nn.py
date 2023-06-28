@@ -13,7 +13,15 @@ from typing import Callable, Iterable
 
 import torch
 
-__all__ = ["GroupNorm32", "SequentialDict", "ReturnKwargs", "CallWith", "Sum"]
+__all__ = [
+    "GroupNorm32",
+    "SequentialDict",
+    "ReturnKwargs",
+    "CallWith",
+    "Sum",
+    "TotalVariation",
+    "EmptyTargets",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -308,3 +316,28 @@ class Sum(torch.nn.Module):
 
         assert len(weights) == len(values)
         return sum(value * weight for value, weight in zip(values, weights))
+
+
+# FIXME: This must exist already?!
+class TotalVariation(Sum):
+    def forward(self, *values, weights=None):
+        values = [self._total_variation(value) for value in values]
+
+        return super().forward(*values, weights=weights)
+
+    def _total_variation(self, image):
+        return torch.mean(
+            torch.sum(torch.square(image[:, 1:, :] - image[:, :-1, :]))
+            + torch.sum(torch.square(image[:, :, 1:] - image[:, :, :-1]))  # noqa: W503
+        )
+
+
+class EmptyTargets(torch.nn.Module):
+    def forward(self, targets):
+        return [
+            {
+                "boxes": torch.empty((0, 4), device=t["boxes"].device),
+                "labels": torch.empty(0, dtype=torch.int64, device=t["labels"].device),
+            }
+            for t in targets
+        ]

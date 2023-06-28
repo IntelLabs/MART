@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+from __future__ import annotations
+
 import logging
 import os
 from typing import Dict, Optional, Tuple
@@ -29,6 +31,10 @@ __all__ = [
     "ConvertInstanceSegmentationToPerturbable",
     "RandomHorizontalFlip",
     "ConvertCocoPolysToMask",
+    "PadToSquare",
+    "Resize",
+    "RemapLabels",
+    "CreatePerturbableMaskFromImage",
 ]
 
 
@@ -115,7 +121,7 @@ class ConvertInstanceSegmentationToPerturbable(ExTransform):
     """Merge all instance masks and reverse."""
 
     def __call__(self, image, target):
-        perturbable_mask = torch.sum(target["masks"], dim=0) == 0
+        perturbable_mask = torch.sum(target["masks"], dim=0, keepdim=True) == 0
         # Convert to float to be differentiable.
         target["perturbable_mask"] = perturbable_mask.float()
 
@@ -173,8 +179,8 @@ class RandomHorizontalFlip(T.RandomHorizontalFlip, ExTransform):
         return image, target
 
     def forward(
-        self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
-    ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
+        self, image: Tensor, target: dict[str, Tensor] | None = None
+    ) -> tuple[Tensor, dict[str, Tensor] | None]:
         if torch.rand(1) < self.p:
             image = F.hflip(image)
             if target is not None:
@@ -190,3 +196,251 @@ class RandomHorizontalFlip(T.RandomHorizontalFlip, ExTransform):
 
 class ConvertCocoPolysToMask(ConvertCocoPolysToMask_, ExTransform):
     pass
+
+
+class PadToSquare(ExTransform):
+    def __init__(self, fill):
+        self.fill = fill
+
+    def __call__(
+        self,
+        image: Tensor,  # CHW
+        target: dict[str, Tensor] | None = None,
+    ):
+        w, h = F.get_image_size(image)
+
+        l_or_t = abs(h - w) // 2
+        r_or_b = abs(h - w) - l_or_t
+
+        # padding is  (left, top, right, bottom)
+        if h > w:
+            padding = (l_or_t, 0, r_or_b, 0)
+        else:
+            padding = (0, l_or_t, 0, r_or_b)
+
+        image = F.pad(image, padding, fill=self.fill)
+
+        if target is not None:
+            if "boxes" in target:
+                target["boxes"] = self.pad_boxes(target["boxes"], padding)
+            if "masks" in target:
+                target["masks"] = self.pad_masks(target["masks"], padding)
+            if "keypoints" in target:
+                target["keypoints"] = self.pad_keypoints(target["keypoints"], padding)
+            if "perturbable_mask" in target:
+                target["perturbable_mask"] = self.pad_masks(target["perturbable_mask"], padding)
+            if "gs_coords" in target:
+                target["gs_coords"] = self.pad_coordinates(target["gs_coords"], padding)
+
+        return image, target
+
+    def pad_boxes(self, boxes, padding):
+        boxes[:, 0] += padding[0]  # X + left
+        boxes[:, 1] += padding[1]  # Y + top
+        boxes[:, 2] += padding[0]  # X + left
+        boxes[:, 3] += padding[1]  # Y + top
+
+        return boxes
+
+    def pad_masks(self, masks, padding):
+        return F.pad(masks, padding, fill=0)
+
+    def pad_keypoints(self, keypoints, padding):
+        raise NotImplementedError
+
+    def pad_coordinates(self, coordinates, padding):
+        # coordinates are [[left, top], [right, top], [right, bottom], [left, bottom]]
+        # padding is [left, top, right bottom]
+        coordinates[:, 0] += padding[0]  # left padding
+        coordinates[:, 1] += padding[1]  # top padding
+
+        return coordinates
+
+
+class Resize(ExTransform):
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(
+        self,
+        image: Tensor,
+        target: dict[str, Tensor] | None = None,
+    ):
+        orig_w, orig_h = F.get_image_size(image)
+        image = F.resize(image, size=self.size)
+        new_w, new_h = F.get_image_size(image)
+
+        dw, dh = new_w / orig_w, new_h / orig_h
+
+        if target is not None:
+            if "boxes" in target:
+                target["boxes"] = self.resize_boxes(target["boxes"], (dw, dh))
+            if "masks" in target:
+                target["masks"] = self.resize_masks(target["masks"], (dw, dh))
+            if "keypoints" in target:
+                target["keypoints"] = self.resize_keypoints(target["keypoints"], (dw, dh))
+            if "perturbable_mask" in target:
+                target["perturbable_mask"] = self.resize_masks(
+                    target["perturbable_mask"], (dw, dh)
+                )
+            if "gs_coords" in target:
+                target["gs_coords"] = self.resize_coordinates(target["gs_coords"], (dw, dh))
+
+        return image, target
+
+    def resize_boxes(self, boxes, ratio):
+        boxes[:, 0] *= ratio[0]  # X1 * width ratio
+        boxes[:, 1] *= ratio[1]  # Y1 * height ratio
+        boxes[:, 2] *= ratio[0]  # X2 * width ratio
+        boxes[:, 3] *= ratio[1]  # Y2 * height ratio
+
+        return boxes
+
+    def resize_masks(self, masks, ratio):
+        assert len(masks.shape) == 3
+
+        # Resize fails on empty tensors
+        if masks.shape[0] == 0:
+            return torch.zeros((0, *self.size), dtype=masks.dtype, device=masks.device)
+
+        return F.resize(masks, size=self.size, interpolation=F.InterpolationMode.NEAREST)
+
+    def resize_keypoints(self, keypoints, ratio):
+        raise NotImplementedError
+
+    def resize_coordinates(self, coordinates, ratio):
+        # coordinates are [[left, top], [right, top], [right, bottom], [left, bottom]]
+        # ratio is [width, height]
+        coordinates[:, 0] = (coordinates[:, 0] * ratio[0]).to(int)  # width ratio
+        coordinates[:, 1] = (coordinates[:, 1] * ratio[1]).to(int)  # height ratio
+
+        return coordinates
+
+
+class RemapLabels(ExTransform):
+    COCO_MAP = {
+        1: 0,
+        2: 1,
+        3: 2,
+        4: 3,
+        5: 4,
+        6: 5,
+        7: 6,
+        8: 7,
+        9: 8,
+        10: 9,
+        11: 10,
+        13: 11,
+        14: 12,
+        15: 13,
+        16: 14,
+        17: 15,
+        18: 16,
+        19: 17,
+        20: 18,
+        21: 19,
+        22: 20,
+        23: 21,
+        24: 22,
+        25: 23,
+        27: 24,
+        28: 25,
+        31: 26,
+        32: 27,
+        33: 28,
+        34: 29,
+        35: 30,
+        36: 31,
+        37: 32,
+        38: 33,
+        39: 34,
+        40: 35,
+        41: 36,
+        42: 37,
+        43: 38,
+        44: 39,
+        46: 40,
+        47: 41,
+        48: 42,
+        49: 43,
+        50: 44,
+        51: 45,
+        52: 46,
+        53: 47,
+        54: 48,
+        55: 49,
+        56: 50,
+        57: 51,
+        58: 52,
+        59: 53,
+        60: 54,
+        61: 55,
+        62: 56,
+        63: 57,
+        64: 58,
+        65: 59,
+        67: 60,
+        70: 61,
+        72: 62,
+        73: 63,
+        74: 64,
+        75: 65,
+        76: 66,
+        77: 67,
+        78: 68,
+        79: 69,
+        80: 70,
+        81: 71,
+        82: 72,
+        84: 73,
+        85: 74,
+        86: 75,
+        87: 76,
+        88: 77,
+        89: 78,
+        90: 79,
+    }
+
+    def __init__(
+        self,
+        label_map: dict[int, int] | None = None,
+    ):
+        if label_map is None:
+            label_map = self.COCO_MAP
+
+        self.label_map = label_map
+
+    def __call__(
+        self,
+        image: Tensor,
+        target: dict[str, Tensor],
+    ):
+        labels = target["labels"]
+
+        # This is a terrible implementation
+        for i, label in enumerate(labels):
+            labels[i] = self.label_map[label.item()]
+
+        target["labels"] = labels
+
+        return image, target
+
+
+class CreatePerturbableMaskFromImage(ExTransform):
+    def __init__(self, chroma_key, threshold):
+        self.chroma_key = torch.tensor(chroma_key)
+        self.threshold = threshold
+
+    def __call__(
+        self,
+        image: Tensor,
+        target: dict[str, Tensor],
+    ):
+        self.chroma_key = self.chroma_key.to(image.device)
+
+        l2_dist = ((image - self.chroma_key[:, None, None]) ** 2).sum(dim=0, keepdim=True).sqrt()
+        perturbable_mask = l2_dist <= self.threshold
+
+        target["perturbable_mask"] = perturbable_mask.float()
+
+        return image, target
