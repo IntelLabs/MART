@@ -1,5 +1,4 @@
 from .adversary import *
-from .adversary_in_art import *
 from .adversary_wrapper import *
 from .callbacks import Callback
 from .gain import *

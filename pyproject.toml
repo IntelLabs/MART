@@ -34,10 +34,6 @@ dependencies = [
 
   # ----- object detection----- #
   "pycocotools ~= 2.0.5",
-
-  # -------- Adversary ---------#
-  "robustbench @ git+https://github.com/RobustBench/robustbench.git@9a590683b7daecf963244dea402529f0d728c727",
-  "adversarial-robustness-toolbox ~= 1.13.0"
 ]
 
 [project.urls]
@@ -54,6 +50,10 @@ developer = [
   "wheel",                     # support setup.py
   "pytest-cov[toml]",
   "protobuf==3.20.0"
+]
+
+extras = [
+  "adversarial-robustness-toolbox ~= 1.13.0"
 ]
 
 [tool.setuptools]
