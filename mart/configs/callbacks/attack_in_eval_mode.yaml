@@ -1,2 +1,11 @@
 attack_in_eval_mode:
   _target_: mart.callbacks.AttackInEvalMode
+  module_classes: ???
+  #  - _target_: hydra.utils.get_class
+  #    path: mart.models.LitModular
+  #  - _target_: hydra.utils.get_class
+  #    path: torch.nn.BatchNorm2d
+  #  - _target_: hydra.utils.get_class
+  #    path: torch.nn.Dropout
+  #  - _target_: hydra.utils.get_class
+  #    path: torch.nn.SyncBatchNorm
