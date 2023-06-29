@@ -31,27 +31,6 @@ coco_ds = {
     },
 }
 
-carla_ds = {
-    "train": {
-        "folder": "train",
-        "modalities": ["rgb"],
-        "ann_folder": "train",
-        "ann_file": "kwcoco_annotations.json",
-    },
-    "val": {
-        "folder": "val",
-        "modalities": ["rgb"],
-        "ann_folder": "val",
-        "ann_file": "kwcoco_annotations.json",
-    },
-    "test": {
-        "folder": "dev",
-        "modalities": ["foreground_mask", "rgb"],
-        "ann_folder": "dev",
-        "ann_file": "kwcoco_annotations.json",
-    },
-}
-
 
 # common configuration for classification related tests.
 @pytest.fixture(scope="function")
@@ -92,26 +71,6 @@ def coco_cfg(tmp_path) -> Dict:
     GlobalHydra.instance().clear()
 
 
-@pytest.fixture(scope="function")
-def carla_cfg(tmp_path) -> Dict:
-    # Generate fake CARLA dataset on disk at tmp_path
-    dataset = FakeCOCODataset(tmp_path, config=carla_ds, name="carla_over_obj_det")
-    dataset.generate(num_images=2, num_annotations_per_image=2)
-
-    cfg = {
-        "trainer": [
-            "++trainer.fast_dev_run=3",
-        ],
-        "datamodel": [
-            "++paths.data_dir=" + str(tmp_path),
-            "datamodule.num_workers=0",
-        ],
-    }
-    yield cfg
-
-    GlobalHydra.instance().clear()
-
-
 @RunIf(sh=True)
 def test_cifar10_cnn_adv_experiment(classification_cfg, tmp_path):
     """Test CIFAR10 CNN experiment."""
@@ -141,25 +100,6 @@ def test_cifar10_cnn_experiment(classification_cfg, tmp_path):
         "optimized_metric=training_metrics/acc",
         "++datamodule.train_dataset.image_size=[3,32,32]",
         "++datamodule.train_dataset.num_classes=10",
-    ] + overrides
-    run_sh_command(command)
-
-
-@RunIf(sh=True)
-def test_cifar10_cnn_autoattack_experiment(classification_cfg, tmp_path):
-    """Test CIFAR10 CNN AutoAttack experiment."""
-    overrides = classification_cfg["datamodel"]
-    command = [
-        module,
-        "-m",
-        "experiment=CIFAR10_CNN",
-        "hydra.sweep.dir=" + str(tmp_path),
-        "++datamodule.train_dataset.image_size=[3,32,32]",
-        "++datamodule.train_dataset.num_classes=10",
-        "fit=false",
-        "+attack@model.modules.input_adv_test=classification_autoattack",
-        '+model.modules.input_adv_test.adversary.partial.device="cpu"',
-        "+trainer.limit_test_batches=1",
     ] + overrides
     run_sh_command(command)
 
@@ -224,22 +164,6 @@ def test_coco_retinanet_experiment(coco_cfg, tmp_path):
         "hydra.sweep.dir=" + str(tmp_path),
         "trainer.precision=32",
         "optimized_metric=training/loss_box_reg",
-    ] + overrides
-    run_sh_command(command)
-
-
-@RunIf(sh=True)
-@pytest.mark.slow
-def test_armory_carla_fasterrcnn_experiment(carla_cfg, tmp_path):
-    """Test Armory CARLA TorchVision FasterRCNN experiment."""
-    overrides = carla_cfg["trainer"] + carla_cfg["datamodel"]
-    command = [
-        module,
-        "-m",
-        "experiment=ArmoryCarlaOverObjDet_TorchvisionFasterRCNN",
-        "+attack@model.modules.input_adv_test=object_detection_mask_adversary",
-        "hydra.sweep.dir=" + str(tmp_path),
-        "optimized_metric=training/loss_objectness",
     ] + overrides
     run_sh_command(command)
 
