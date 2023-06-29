@@ -23,23 +23,27 @@ class AdversarialTraining(Callback):
         self.validation_adversary = validation_adversary or adversary
         self.test_adversary = test_adversary or adversary
 
-    # FIXME: These are hacks. Ideally we would use on_after_batch_transfer but that isn't exposed to
-    #        callbacks only to LightningModules. But maybe we can forward those to callbacks?
-    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
+    def on_after_batch_transfer(self, trainer, pl_module, batch, dataloader_idx):
+        # FIXME: Would be nice if batch was a structured object (or a dict)
         input, target = batch
-        input_adv = self.train_adversary.attack(
-            pl_module, input=input, target=target, step="training"
-        )
-        input[:] = input_adv  # XXX: hacke
 
-    def on_validation_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
-        input, target = batch
-        input_adv = self.validation_adversary.attack(
-            pl_module, input=input, target=target, step="validation"
-        )
-        input[:] = input_adv  # XXX: hacke
+        if trainer.training:
+            adversary = self.train_adversary
+            step = "training"  # FIXME: Use pl_module.training_step?
 
-    def on_test_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
-        input, target = batch
-        input_adv = self.test_adversary.attack(pl_module, input=input, target=target, step="test")
-        input[:] = input_adv  # XXX: hacke
+        elif trainer.validating:
+            adversary = self.validation_adversary
+            step = "validation"  # FIXME: Use pl_module.validation_step?
+
+        elif trainer.testing:
+            adversary = self.test_adversary
+            step = "test"  # FIXME: Use pl_module.test_step?
+
+        else:
+            return batch
+
+        # Move adversary to same device as pl_module
+        adversary.to(pl_module.device)
+        input = adversary.attack(pl_module, input=input, target=target, step=step)
+
+        return [input, target]
