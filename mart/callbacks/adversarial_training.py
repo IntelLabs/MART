@@ -27,12 +27,16 @@ class AdversarialTraining(Callback):
     #        callbacks only to LightningModules. But maybe we can forward those to callbacks?
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
         input, target = batch
-        input_adv = self.train_adversary.attack(pl_module, input=input, target=target, step="training")
+        input_adv = self.train_adversary.attack(
+            pl_module, input=input, target=target, step="training"
+        )
         input[:] = input_adv  # XXX: hacke
 
     def on_validation_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
         input, target = batch
-        input_adv = self.validation_adversary.attack(pl_module, input=input, target=target, step="validation")
+        input_adv = self.validation_adversary.attack(
+            pl_module, input=input, target=target, step="validation"
+        )
         input[:] = input_adv  # XXX: hacke
 
     def on_test_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
