@@ -23,24 +23,19 @@ class AdversarialTraining(Callback):
         self.validation_adversary = validation_adversary or adversary
         self.test_adversary = test_adversary or adversary
 
+    # FIXME: These are hacks. Ideally we would use on_after_batch_transfer but that isn't exposed to
+    #        callbacks only to LightningModules. But maybe we can forward those to callbacks?
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
         input, target = batch
-
-        # FIXME: We reach into LitModular here...how can we get rid of this?
-        assert isinstance(pl_module, LitModular)
-        model = pl_module.model
-        sequence = model._sequences["training"]
-
-        # FIXME: This doesn't work because sequence does not include the Adversary module. How can we fix that?
-        #        Because this a callback, we can safely assume the Adversary module should live before the model.
-        #        We should be able to "manually" insert it into the sequence here.
-        out = self.train_adversary(input=input, target=target, model=model, sequence=sequence)
-        print("out =", out)
+        input_adv = self.train_adversary.attack(pl_module, input=input, target=target, step="training")
+        input[:] = input_adv  # XXX: hacke
 
     def on_validation_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
-        # FIXME: Copy on_train_batch_start
-        pass
+        input, target = batch
+        input_adv = self.validation_adversary.attack(pl_module, input=input, target=target, step="validation")
+        input[:] = input_adv  # XXX: hacke
 
     def on_test_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
-        # FIXME: Copy on_train_batch_start
-        pass
+        input, target = batch
+        input_adv = self.test_adversary.attack(pl_module, input=input, target=target, step="test")
+        input[:] = input_adv  # XXX: hacke

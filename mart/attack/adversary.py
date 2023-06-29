@@ -152,22 +152,21 @@ class Adversary(pl.LightningModule):
                 self.gradient_modifier(group["params"])
 
     @silent()
-    def forward(self, *, model=None, sequence=None, **batch):
+    def forward(self, *, model=None, **batch):
         batch["model"] = model
-        batch["sequence"] = sequence
 
-        # Adversary lives within a sequence of model. To signal the adversary should attack, one
-        # must pass a model to attack when calling the adversary. Since we do not know where the
-        # Adversary lives inside the model, we also need the remaining sequence to be able to
-        # get a loss.
-        if model and sequence:
+        # Adversary can live within a sequence of model. To signal the adversary should
+        # attack, one must pass a model to attack when calling the adversary. Since we
+        # do not know where the Adversary lives inside the model, we also need the
+        # remaining sequence to be able to get a loss.
+        if model:
             self._attack(**batch)
 
         perturbation = self.perturber(**batch)
         input_adv = self.composer(perturbation, **batch)
 
         # Enforce constraints after the attack optimization ends.
-        if model and sequence:
+        if model:
             self.enforcer(input_adv, **batch)
 
         return input_adv
@@ -211,3 +210,11 @@ class Adversary(pl.LightningModule):
         # This is a problem when this LightningModule has parameters, so we stop this from
         # happening by ignoring the call to cpu().
         pass
+
+    def attack(adversary, model, **batch):
+        # Create attacked model where the adversary executes before the model
+        def attacked_model(*, input, **batch):
+            adv_input = adversary(input=input, **batch)
+            return model(input=adv_input, **batch)
+
+        return adversary(**batch, model=attacked_model)
