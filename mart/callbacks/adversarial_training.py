@@ -35,6 +35,8 @@ class AdversarialTraining(Callback):
         pl_module.on_after_batch_transfer = self._on_after_batch_transfer
 
     def on_after_batch_transfer(self, pl_module, batch, dataloader_idx):
+        batch = self._on_after_batch_transfer(batch, dataloader_idx)
+
         # FIXME: Would be nice if batch was a structured object (or a dict)
         input, target = batch
 
