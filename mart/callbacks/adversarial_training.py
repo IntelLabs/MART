@@ -39,19 +39,15 @@ class AdversarialTraining(Callback):
         input, target = batch
 
         trainer = pl_module.trainer
-
         if trainer.training:
             adversary = self.train_adversary
-            step = "training"  # FIXME: Use pl_module.training_step?
-
+            step = "training"
         elif trainer.validating:
             adversary = self.validation_adversary
-            step = "validation"  # FIXME: Use pl_module.training_step?
-
+            step = "validation"
         elif trainer.testing:
             adversary = self.test_adversary
-            step = "test"  # FIXME: Use pl_module.training_step?
-
+            step = "test"
         else:
             return batch
 
