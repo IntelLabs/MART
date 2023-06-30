@@ -26,13 +26,13 @@ class AdversarialTraining(Callback):
         self.test_adversary = test_adversary or adversary
 
     def setup(self, trainer, pl_module, stage=None):
+        self._on_after_batch_transfer = pl_module.on_after_batch_transfer
         pl_module.on_after_batch_transfer = types.MethodType(
             self.on_after_batch_transfer, pl_module
         )
 
-    def teardown(self, trainer, pl_module, start=None):
-        # FIXME: remove on_after_batch_transfer
-        pass
+    def teardown(self, trainer, pl_module, stage=None):
+        pl_module.on_after_batch_transfer = self._on_after_batch_transfer
 
     def on_after_batch_transfer(self, pl_module, batch, dataloader_idx):
         # FIXME: Would be nice if batch was a structured object (or a dict)
