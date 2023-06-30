@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+import types
+
 from pytorch_lightning.callbacks import Callback
 
 from mart.models import LitModular
@@ -23,9 +25,20 @@ class AdversarialTraining(Callback):
         self.validation_adversary = validation_adversary or adversary
         self.test_adversary = test_adversary or adversary
 
-    def on_after_batch_transfer(self, trainer, pl_module, batch, dataloader_idx):
+    def setup(self, trainer, pl_module, stage=None):
+        pl_module.on_after_batch_transfer = types.MethodType(
+            self.on_after_batch_transfer, pl_module
+        )
+
+    def teardown(self, trainer, pl_module, start=None):
+        # FIXME: remove on_after_batch_transfer
+        pass
+
+    def on_after_batch_transfer(self, pl_module, batch, dataloader_idx):
         # FIXME: Would be nice if batch was a structured object (or a dict)
         input, target = batch
+
+        trainer = pl_module.trainer
 
         if trainer.training:
             adversary = self.train_adversary
@@ -33,11 +46,11 @@ class AdversarialTraining(Callback):
 
         elif trainer.validating:
             adversary = self.validation_adversary
-            step = "validation"  # FIXME: Use pl_module.validation_step?
+            step = "validation"  # FIXME: Use pl_module.training_step?
 
         elif trainer.testing:
             adversary = self.test_adversary
-            step = "test"  # FIXME: Use pl_module.test_step?
+            step = "test"  # FIXME: Use pl_module.training_step?
 
         else:
             return batch

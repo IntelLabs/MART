@@ -120,14 +120,6 @@ class LitModular(LightningModule):
 
         return config
 
-    # FIXME: This is a hack to make callbacks have an on_after_batch_transfer hook.
-    def on_after_batch_transfer(self, batch, dataloader_idx):
-        for callback in self.trainer.callbacks:
-            if not hasattr(callback, "on_after_batch_transfer"):
-                continue
-
-            return callback.on_after_batch_transfer(self.trainer, self, batch, dataloader_idx)
-
     def forward(self, **kwargs):
         return self.model(**kwargs)
 
