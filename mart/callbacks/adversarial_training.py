@@ -37,9 +37,7 @@ class AdversarialTraining(Callback):
     def on_after_batch_transfer(self, pl_module, batch, dataloader_idx):
         batch = self._on_after_batch_transfer(batch, dataloader_idx)
 
-        # FIXME: Would be nice if batch was a structured object (or a dict)
-        input, target = batch
-
+        # FIXME: Remove use of step
         trainer = pl_module.trainer
         if trainer.training:
             adversary = self.train_adversary
@@ -53,8 +51,18 @@ class AdversarialTraining(Callback):
         else:
             return batch
 
-        # Move adversary to same device as pl_module
-        adversary.to(pl_module.device)
-        input = adversary.attack(pl_module, input=input, target=target, step=step)
+        # Create attacked model where the adversary executes before the model
+        # FIXME: Should we just use pl_module.training_step? Ideally we would not decompose batch
+        #        and instead pass batch directly to the underlying pl_module since it knows how to
+        #        interpret batch.
+        def attacked_model(input, **batch):
+            input_adv = adversary(input=input, **batch)
+            return pl_module(input=input_adv, **batch)
 
-        return [input, target]
+        # Move adversary to same device as pl_module and run attack
+        # FIXME: Directly pass batch instead of assuming it has a structure?
+        input, target = batch
+        adversary.to(pl_module.device)
+        input_adv = adversary(input=input, target=target, step=step, model=attacked_model)
+
+        return [input_adv, target]

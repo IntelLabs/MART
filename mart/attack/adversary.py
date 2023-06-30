@@ -210,11 +210,3 @@ class Adversary(pl.LightningModule):
         # This is a problem when this LightningModule has parameters, so we stop this from
         # happening by ignoring the call to cpu().
         pass
-
-    def attack(adversary, model, **batch):
-        # Create attacked model where the adversary executes before the model
-        def attacked_model(*, input, **batch):
-            adv_input = adversary(input=input, **batch)
-            return model(input=adv_input, **batch)
-
-        return adversary(**batch, model=attacked_model)
