@@ -5,17 +5,16 @@
 #
 
 import logging
+from operator import attrgetter
+
+import torch
+from pytorch_lightning import LightningModule
+
+from ..nn import SequentialDict
+from ..optim import OptimizerFactory
+from ..utils import flatten_dict
 
 logger = logging.getLogger(__name__)
-
-from operator import attrgetter  # noqa: E402
-
-import torch  # noqa: E402
-from pytorch_lightning import LightningModule  # noqa: E402
-
-from ..nn import SequentialDict  # noqa: E402
-from ..optim import OptimizerFactory  # noqa: E402
-from ..utils import flatten_dict  # noqa: E402
 
 __all__ = ["LitModular"]
 
