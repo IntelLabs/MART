@@ -92,10 +92,14 @@ class LitModular(LightningModule):
 
         # Load state dict for specified modules. We flatten it because Hydra
         # commandlines converts dotted paths to nested dictionaries.
+        if isinstance(load_state_dict, str):
+            load_state_dict = {None: load_state_dict}
         load_state_dict = flatten_dict(load_state_dict or {})
 
         for name, path in load_state_dict.items():
-            module = attrgetter(name)(self.model)
+            module = self.model
+            if name is not None:
+                module = attrgetter(name)(module)
             logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
             module.load_state_dict(torch.load(path, map_location="cpu"))
 
