@@ -5,17 +5,16 @@
 #
 
 import logging
+from operator import attrgetter
+
+import torch
+from pytorch_lightning import LightningModule
+
+from ..nn import SequentialDict
+from ..optim import OptimizerFactory
+from ..utils import flatten_dict
 
 logger = logging.getLogger(__name__)
-
-from operator import attrgetter  # noqa: E402
-
-import torch  # noqa: E402
-from pytorch_lightning import LightningModule  # noqa: E402
-
-from ..nn import SequentialDict  # noqa: E402
-from ..optim import OptimizerFactory  # noqa: E402
-from ..utils import flatten_dict  # noqa: E402
 
 __all__ = ["LitModular"]
 
@@ -93,10 +92,14 @@ class LitModular(LightningModule):
 
         # Load state dict for specified modules. We flatten it because Hydra
         # commandlines converts dotted paths to nested dictionaries.
+        if isinstance(load_state_dict, str):
+            load_state_dict = {None: load_state_dict}
         load_state_dict = flatten_dict(load_state_dict or {})
 
         for name, path in load_state_dict.items():
-            module = attrgetter(name)(self.model)
+            module = self.model
+            if name is not None:
+                module = attrgetter(name)(module)
             logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
             module.load_state_dict(torch.load(path, map_location="cpu"))
 
