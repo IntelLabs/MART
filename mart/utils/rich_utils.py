@@ -5,8 +5,8 @@ import rich
 import rich.syntax
 import rich.tree
 from hydra.core.hydra_config import HydraConfig
+from lightning.pytorch.utilities import rank_zero_only
 from omegaconf import DictConfig, OmegaConf, open_dict
-from pytorch_lightning.utilities import rank_zero_only
 from rich.prompt import Prompt
 
 from mart.utils import pylogger
@@ -20,7 +20,7 @@ log = pylogger.get_pylogger(__name__)
 def print_config_tree(
     cfg: DictConfig,
     print_order: Sequence[str] = (
-        "datamodule",
+        "data",
         "model",
         "callbacks",
         "logger",
@@ -97,11 +97,3 @@ def enforce_tags(cfg: DictConfig, save_to_file: bool = False) -> None:
     if save_to_file:
         with open(Path(cfg.paths.output_dir, "tags.log"), "w") as file:
             rich.print(cfg.tags, file=file)
-
-
-if __name__ == "__main__":
-    from hydra import compose, initialize
-
-    with initialize(version_base="1.2", config_path="../../configs"):
-        cfg = compose(config_name="train.yaml", return_hydra_config=False, overrides=[])
-        print_config_tree(cfg, resolve=False, save_to_file=False)

@@ -3,7 +3,7 @@
 defaults:
   - COCO_TorchvisionFasterRCNN
   - override /model/modules@model.modules.preprocessor: tuple_tensorizer_normalizer
-  - override /datamodule: armory_carla_over_objdet_perturbable_mask
+  - override /data: armory_carla_over_objdet_perturbable_mask
 
 task_name: "ArmoryCarlaOverObjDet_TorchvisionFasterRCNN"
 tags: ["regular_training"]

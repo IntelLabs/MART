@@ -1,16 +1,20 @@
+# 50K Training examples and 10K validation/test shared examples.
 defaults:
   - default.yaml
 
 train_dataset:
-  _target_: torchvision.datasets.ImageNet
-
-  root: ${paths.data_dir}/imagenet/2012/
-  split: train
+  _target_: torchvision.datasets.CIFAR10
+  root: ${paths.data_dir} # paths.data_dir is specified in configs/paths/???.yaml
+  train: true
   transform:
     _target_: torchvision.transforms.Compose
     transforms:
-      - _target_: torchvision.transforms.RandomResizedCrop
-        size: 224
+      - _target_: torchvision.transforms.RandomCrop
+        size: 32
+        padding: 4
+        pad_if_needed: false
+        fill: 0
+        padding_mode: reflect
       - _target_: torchvision.transforms.RandomHorizontalFlip
       - _target_: torchvision.transforms.ToTensor
       - _target_: mart.transforms.Denormalize
@@ -23,16 +27,16 @@ train_dataset:
         zero_point: 0
         quant_min: 0
         quant_max: 255
+  target_transform: null
+  download: true
 
 val_dataset:
-  _target_: torchvision.datasets.ImageNet
-  root: ${paths.data_dir}/imagenet/2012/
-  split: val
+  _target_: torchvision.datasets.CIFAR10
+  root: ${paths.data_dir} # paths.data_dir is specified in configs/paths/???.yaml
+  train: false
   transform:
     _target_: torchvision.transforms.Compose
     transforms:
-      - _target_: torchvision.transforms.CenterCrop
-        size: 224
       - _target_: torchvision.transforms.ToTensor
       - _target_: mart.transforms.Denormalize
         center: 0
@@ -44,5 +48,13 @@ val_dataset:
         zero_point: 0
         quant_min: 0
         quant_max: 255
+  target_transform: null
+  download: true
 
 test_dataset: ${.val_dataset}
+
+num_workers: 4
+collate_fn: null
+
+# The accuracy metric may require this value.
+num_classes: 10

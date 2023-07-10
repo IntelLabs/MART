@@ -9,7 +9,7 @@ from unittest.mock import Mock
 
 import pytest
 import torch
-from pytorch_lightning.utilities.exceptions import MisconfigurationException
+from lightning.pytorch.utilities.exceptions import MisconfigurationException
 from torch.optim import SGD
 
 import mart

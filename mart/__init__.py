@@ -1,7 +1,7 @@
 import importlib
 
 from mart import attack as attack
-from mart import datamodules as datamodules
+from mart import data as data
 from mart import models as models
 from mart import nn as nn
 from mart import optim as optim

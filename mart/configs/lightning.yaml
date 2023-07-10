@@ -3,7 +3,7 @@
 # specify here default training configuration
 defaults:
   - _self_
-  - datamodule: null
+  - data: null
   - model: null
   - metric: null
   - optimization: null

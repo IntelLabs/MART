@@ -9,7 +9,7 @@ from unittest.mock import Mock
 
 import pytest
 import torch
-from pytorch_lightning.utilities.exceptions import MisconfigurationException
+from lightning.pytorch.utilities.exceptions import MisconfigurationException
 from torch.optim import SGD
 
 import mart
@@ -355,7 +355,8 @@ def test_configure_gradient_clipping():
     # We need to mock a trainer since LightningModule does some checks
     adversary.trainer = Mock(gradient_clip_val=1.0, gradient_clip_algorithm="norm")
 
-    adversary.configure_gradient_clipping(optimizer, 0)
+    # Keep the gradient_clip_val the same in Trainer and configure_gradient_clipping()
+    adversary.configure_gradient_clipping(optimizer, 1.0)
 
     # Once for each parameter in the optimizer
     assert gradient_modifier.call_count == 2

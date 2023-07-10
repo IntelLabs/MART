@@ -35,7 +35,7 @@ def convert_coco_poly_to_mask(segmentations, height, width):
 
 
 # Source: https://github.com/pytorch/vision/blob/dc07ac2add8285e16a716564867d0b4b953f6735/references/detection/coco_utils.py#L47
-# Adapted to mart.datamodules.coco.CocoDetection by adding the "file_name" field.
+# Adapted to mart.data.coco.CocoDetection by adding the "file_name" field.
 class ConvertCocoPolysToMask:
     def __call__(self, image, target):
         w, h = F.get_image_size(image)

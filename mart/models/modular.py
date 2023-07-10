@@ -8,7 +8,7 @@ import logging
 from operator import attrgetter
 
 import torch
-from pytorch_lightning import LightningModule
+from lightning.pytorch import LightningModule
 
 from ..nn import SequentialDict
 from ..optim import OptimizerFactory
@@ -147,7 +147,7 @@ class LitModular(LightningModule):
 
         return output[self.output_loss_key]
 
-    def training_epoch_end(self, outputs):
+    def on_train_epoch_end(self):
         if self.training_metrics is not None:
             # Some models only return loss in the training mode.
             metrics = self.training_metrics.compute()
@@ -171,7 +171,7 @@ class LitModular(LightningModule):
 
         return None
 
-    def validation_epoch_end(self, outputs):
+    def on_validation_epoch_end(self):
         metrics = self.validation_metrics.compute()
         metrics = self.flatten_metrics(metrics)
         self.validation_metrics.reset()
@@ -193,7 +193,7 @@ class LitModular(LightningModule):
 
         return None
 
-    def test_epoch_end(self, outputs):
+    def on_test_epoch_end(self):
         metrics = self.test_metrics.compute()
         metrics = self.flatten_metrics(metrics)
         self.test_metrics.reset()
@@ -239,4 +239,6 @@ class LitModular(LightningModule):
 
         enumerate_metric(metrics, prefix)
 
-        self.log_dict(metrics_dict, prog_bar=prog_bar)
+        # PyTorch Lightning: It is recommended to use `self.log('validation_metrics/acc', ..., sync_dist=True)`
+        # when logging on epoch level in distributed setting to accumulate the metric across devices.
+        self.log_dict(metrics_dict, prog_bar=prog_bar, sync_dist=True)
