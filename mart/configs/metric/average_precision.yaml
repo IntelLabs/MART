@@ -2,11 +2,9 @@
 
 training_metrics:
   _target_: torchmetrics.detection.mean_ap.MeanAveragePrecision
-  compute_on_step: false
 
 validation_metrics:
   _target_: torchmetrics.detection.mean_ap.MeanAveragePrecision
-  compute_on_step: false
 
 test_metrics:
   _target_: torchmetrics.collections.MetricCollection
@@ -14,7 +12,6 @@ test_metrics:
   metrics:
     map:
       _target_: torchmetrics.detection.mean_ap.MeanAveragePrecision
-      compute_on_step: false
     json:
       _target_: mart.utils.export.CocoPredictionJSON
       prediction_file_name: ${paths.output_dir}/test_prediction.json
