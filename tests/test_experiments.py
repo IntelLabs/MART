@@ -195,12 +195,13 @@ def test_resume(tmpdir):
         "\n".join(
             [
                 "- experiment=CIFAR10_CNN",
-                "- datamodule=dummy_classification",
-                "- datamodule.ims_per_batch=2",
-                "- datamodule.num_workers=0",
-                "- datamodule.train_dataset.size=2",
-                "- datamodule.train_dataset.image_size=[3,32,32]",
-                "- datamodule.train_dataset.num_classes=10",
+                "- data=dummy_classification",
+                "- data.ims_per_batch=2",
+                "- data.num_workers=0",
+                "- data.train_dataset.size=2",
+                "- data.train_dataset.image_size=[3,32,32]",
+                "- data.train_dataset.num_classes=10",
+                "- +data.num_classes=10",
                 "- fit=false",  # Don't train or test the model, because the checkpoint is invalid.
                 "- test=false",
                 "- optimized_metric=null",  # No metric to retrieve.
