@@ -4,13 +4,10 @@ defaults:
 
 # log all losses separately in training.
 training_step_log:
-  [
-    "rpn_loss.loss_objectness",
-    "rpn_loss.loss_rpn_box_reg",
-    "box_loss.loss_classifier",
-    "box_loss.loss_box_reg",
-    "loss",
-  ]
+  loss_objectness: "losses_and_detections.training.loss_objectness"
+  loss_rpn_box_reg: "losses_and_detections.training.loss_rpn_box_reg"
+  loss_classifier: "losses_and_detections.training.loss_classifier"
+  loss_box_reg: "losses_and_detections.training.loss_box_reg"
 
 training_sequence:
   seq010:
@@ -29,36 +26,12 @@ training_sequence:
         "losses_and_detections.training.loss_box_reg",
       ]
 
-  seq040:
-    output:
-      # Output all losses for logging, defined in model.training_step_log
-      {
-        "preds": "losses_and_detections.eval",
-        "target": "target",
-        "loss": "loss",
-        "rpn_loss.loss_objectness": "losses_and_detections.training.loss_objectness",
-        "rpn_loss.loss_rpn_box_reg": "losses_and_detections.training.loss_rpn_box_reg",
-        "box_loss.loss_classifier": "losses_and_detections.training.loss_classifier",
-        "box_loss.loss_box_reg": "losses_and_detections.training.loss_box_reg",
-      }
-
 validation_sequence:
   seq010:
     preprocessor: ["input"]
 
   seq020:
     losses_and_detections: ["preprocessor", "target"]
-
-  seq030:
-    output:
-      {
-        "preds": "losses_and_detections.eval",
-        "target": "target",
-        "rpn_loss.loss_objectness": "losses_and_detections.training.loss_objectness",
-        "rpn_loss.loss_rpn_box_reg": "losses_and_detections.training.loss_rpn_box_reg",
-        "box_loss.loss_classifier": "losses_and_detections.training.loss_classifier",
-        "box_loss.loss_box_reg": "losses_and_detections.training.loss_box_reg",
-      }
 
 test_sequence:
   seq010:
@@ -67,24 +40,11 @@ test_sequence:
   seq020:
     losses_and_detections: ["preprocessor", "target"]
 
-  seq030:
-    output:
-      {
-        "preds": "losses_and_detections.eval",
-        "target": "target",
-        "rpn_loss.loss_objectness": "losses_and_detections.training.loss_objectness",
-        "rpn_loss.loss_rpn_box_reg": "losses_and_detections.training.loss_rpn_box_reg",
-        "box_loss.loss_classifier": "losses_and_detections.training.loss_classifier",
-        "box_loss.loss_box_reg": "losses_and_detections.training.loss_box_reg",
-      }
-
 modules:
   losses_and_detections:
     # 17s: DualModeGeneralizedRCNN
     # 23s: DualMode
     _target_: mart.models.DualModeGeneralizedRCNN
     model:
-      weights_fpath: ???
-      model:
-        _target_: torchvision.models.detection.fasterrcnn_resnet50_fpn
-        num_classes: ???
+      _target_: torchvision.models.detection.fasterrcnn_resnet50_fpn
+      num_classes: ???

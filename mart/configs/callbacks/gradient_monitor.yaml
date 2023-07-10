@@ -1,0 +1,3 @@
+gradient_monitor:
+  _target_: mart.callbacks.GradientMonitor
+  norm_types: ["inf", 2]

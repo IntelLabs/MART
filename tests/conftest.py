@@ -20,12 +20,10 @@ pyrootutils.set_root(path=root, dotenv=True, pythonpath=True)
 experiments_names = [
     "CIFAR10_CNN",
     "CIFAR10_CNN_Adv",
-    "CIFAR10_RobustBench",
     "ImageNet_Timm",
     "COCO_TorchvisionFasterRCNN",
     "COCO_TorchvisionFasterRCNN_Adv",
     "COCO_TorchvisionRetinaNet",
-    "ArmoryCarlaOverObjDet_TorchvisionFasterRCNN",
 ]
 
 

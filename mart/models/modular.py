@@ -5,14 +5,16 @@
 #
 
 import logging
+from operator import attrgetter
+
+import torch
+from lightning.pytorch import LightningModule
+
+from ..nn import SequentialDict
+from ..optim import OptimizerFactory
+from ..utils import flatten_dict
 
 logger = logging.getLogger(__name__)
-
-import torch  # noqa: E402
-from lightning.pytorch import LightningModule  # noqa: E402
-
-from ..nn import SequentialDict  # noqa: E402
-from ..optim import OptimizerFactory  # noqa: E402
 
 __all__ = ["LitModular"]
 
@@ -32,8 +34,10 @@ class LitModular(LightningModule):
         test_sequence=None,
         test_step_log=None,
         test_metrics=None,
-        weights_fpath=None,
-        strict=True,
+        load_state_dict=None,
+        output_loss_key="loss",
+        output_preds_key="preds",
+        output_target_key="target",
     ):
         super().__init__()
 
@@ -61,9 +65,6 @@ class LitModular(LightningModule):
         }
         self.model = SequentialDict(modules, sequences)
 
-        if weights_fpath is not None:
-            self.model.load_state_dict(torch.load(weights_fpath), strict=strict)
-
         self.optimizer_fn = optimizer
         if not isinstance(self.optimizer_fn, OptimizerFactory):
             # Set bias_decay and norm_decay to 0.
@@ -71,14 +72,40 @@ class LitModular(LightningModule):
 
         self.lr_scheduler = lr_scheduler
 
-        self.training_step_log = training_step_log or ["loss"]
+        # Be backwards compatible by turning list into dict where each item is its own key-value
+        if isinstance(training_step_log, (list, tuple)):
+            training_step_log = {item: item for item in training_step_log}
+        self.training_step_log = training_step_log or {}
         self.training_metrics = training_metrics
 
-        self.validation_step_log = validation_step_log or []
+        # Be backwards compatible by turning list into dict where each item is its own key-value
+        if isinstance(validation_step_log, (list, tuple)):
+            validation_step_log = {item: item for item in validation_step_log}
+        self.validation_step_log = validation_step_log or {}
         self.validation_metrics = validation_metrics
 
-        self.test_step_log = test_step_log or []
+        # Be backwards compatible by turning list into dict where each item is its own key-value
+        if isinstance(test_step_log, (list, tuple)):
+            test_step_log = {item: item for item in test_step_log}
+        self.test_step_log = test_step_log or {}
         self.test_metrics = test_metrics
+
+        # Load state dict for specified modules. We flatten it because Hydra
+        # commandlines converts dotted paths to nested dictionaries.
+        if isinstance(load_state_dict, str):
+            load_state_dict = {None: load_state_dict}
+        load_state_dict = flatten_dict(load_state_dict or {})
+
+        for name, path in load_state_dict.items():
+            module = self.model
+            if name is not None:
+                module = attrgetter(name)(module)
+            logger.info(f"Loading state_dict {path} for {module.__class__.__name__}...")
+            module.load_state_dict(torch.load(path, map_location="cpu"))
+
+        self.output_loss_key = output_loss_key
+        self.output_preds_key = output_preds_key
+        self.output_target_key = output_target_key
 
     def configure_optimizers(self):
         config = {}
@@ -107,21 +134,18 @@ class LitModular(LightningModule):
         input, target = batch
         output = self(input=input, target=target, model=self.model, step="training")
 
-        for name in self.training_step_log:
-            # Display loss on prog_bar.
-            self.log(f"training/{name}", output[name], prog_bar=True)
-
-        assert "loss" in output
+        for log_name, output_key in self.training_step_log.items():
+            self.log(f"training/{log_name}", output[output_key])
 
         if self.training_metrics is not None:
             # Some models only return loss in the training mode.
-            if "preds" not in output or "target" not in output:
+            if self.output_preds_key not in output or self.output_target_key not in output:
                 raise ValueError(
-                    "You have specified training_metrics, but the model does not return preds and target during training. You can either nullify training_metrics or configure the model to return preds and target in the training output."
+                    f"You have specified training_metrics, but the model does not return {self.output_preds_key} or {self.output_target_key} during training. You can either nullify training_metrics or configure the model to return {self.output_preds_key} and {self.output_target_key} in the training output."
                 )
-            self.training_metrics(output["preds"], output["target"])
-        loss = output.pop("loss")
-        return loss
+            self.training_metrics(output[self.output_preds_key], output[self.output_target_key])
+
+        return output[self.output_loss_key]
 
     def on_train_epoch_end(self):
         if self.training_metrics is not None:
@@ -140,13 +164,12 @@ class LitModular(LightningModule):
         input, target = batch
         output = self(input=input, target=target, model=self.model, step="validation")
 
-        for name in self.validation_step_log:
-            self.log(f"validation/{name}", output[name])
+        for log_name, output_key in self.validation_step_log.items():
+            self.log(f"validation/{log_name}", output[output_key])
 
-        self.validation_metrics(output["preds"], output["target"])
+        self.validation_metrics(output[self.output_preds_key], output[self.output_target_key])
 
-        # I don't know why this is required to prevent CUDA memory leak in validaiton and test. (Not required in training.)
-        output.clear()
+        return None
 
     def on_validation_epoch_end(self):
         metrics = self.validation_metrics.compute()
@@ -163,13 +186,12 @@ class LitModular(LightningModule):
         input, target = batch
         output = self(input=input, target=target, model=self.model, step="test")
 
-        for name in self.test_step_log:
-            self.log(f"test/{name}", output[name])
+        for log_name, output_key in self.test_step_log.items():
+            self.log(f"test/{log_name}", output[output_key])
 
-        self.test_metrics(output["preds"], output["target"])
+        self.test_metrics(output[self.output_preds_key], output[self.output_target_key])
 
-        # I don't know why this is required to prevent CUDA memory leak in validaiton and test. (Not required in training.)
-        output.clear()
+        return None
 
     def on_test_epoch_end(self):
         metrics = self.test_metrics.compute()

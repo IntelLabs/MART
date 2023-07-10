@@ -2,6 +2,5 @@ _target_: mart.nn.CallWith
 module:
   _target_: mart.attack.objective.Missed
   confidence_threshold: 0.0
-arg_keys:
-  - preds
-kwarg_keys: null
+_call_with_args_:
+  - ${model.output_preds_key}

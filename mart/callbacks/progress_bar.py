@@ -16,7 +16,7 @@ __all__ = ["ProgressBar"]
 class ProgressBar(TQDMProgressBar):
     """Display progress bar of attack iterations with the gain value."""
 
-    def __init__(self, *args, disable=False, rename_metrics=None, **kwargs):
+    def __init__(self, *args, enable=True, **kwargs):
         if "process_position" not in kwargs:
             # Automatically place the progress bar by rank if position is not specified.
             # rank starts with 0
@@ -27,11 +27,8 @@ class ProgressBar(TQDMProgressBar):
 
         super().__init__(*args, **kwargs)
 
-        if disable:
+        if not enable:
             self.disable()
-
-        # E.g. rename loss as gain for adversary's progress bar.
-        self.rename_metrics = rename_metrics or {}
 
     def init_train_tqdm(self):
         bar = super().init_train_tqdm()
@@ -46,4 +43,4 @@ class ProgressBar(TQDMProgressBar):
 
         # So that it does not display Epoch n.
         rank_id = rank_zero_only.rank
-        self.train_progress_bar.set_description(f"Attack@rank{rank_id}")
+        self.main_progress_bar.set_description(f"Attack@rank{rank_id}")

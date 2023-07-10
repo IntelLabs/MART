@@ -14,8 +14,8 @@ dependencies = [
   "torch ~= 2.0.1",
   "torchvision ~= 0.15.2",
   "lightning ~= 2.0.2",
-  # TODO: Manually downgrad to torchmetrics == 0.6.0.
-  "torchmetrics == 0.11.4",
+  "torchmetrics == 1.0.0",
+  "numpy == 1.23.5", # https://github.com/pytorch/pytorch/issues/91516
 
   # --------- hydra --------- #
   "hydra-core ~= 1.2.0",
@@ -35,10 +35,6 @@ dependencies = [
 
   # ----- object detection----- #
   "pycocotools ~= 2.0.5",
-
-  # -------- Adversary ---------#
-  "robustbench @ git+https://github.com/RobustBench/robustbench.git@9a590683b7daecf963244dea402529f0d728c727",
-  "adversarial-robustness-toolbox ~= 1.13.0"
 ]
 
 [project.urls]
@@ -55,6 +51,10 @@ developer = [
   "wheel",                     # support setup.py
   "pytest-cov[toml]",
   "protobuf==3.20.0"
+]
+
+extras = [
+  "adversarial-robustness-toolbox ~= 1.13.0"
 ]
 
 [tool.setuptools]

@@ -3,7 +3,9 @@ defaults:
   - torchvision_object_detection
 
 # log all losses separately in training.
-training_step_log: ["loss_classifier", "loss_box_reg"]
+training_step_log:
+  loss_classifier: "losses_and_detections.training.classification"
+  loss_box_reg: "losses_and_detections.training.bbox_regression"
 
 training_sequence:
   - preprocessor: ["input"]
@@ -14,43 +16,18 @@ training_sequence:
         "losses_and_detections.training.classification",
         "losses_and_detections.training.bbox_regression",
       ]
-  - output:
-      # Output all losses for logging, defined in model.training_step_log
-      {
-        "preds": "losses_and_detections.eval",
-        "target": "target",
-        "loss": "loss",
-        "loss_classifier": "losses_and_detections.training.classification",
-        "loss_box_reg": "losses_and_detections.training.bbox_regression",
-      }
 
 validation_sequence:
   - preprocessor: ["input"]
   - losses_and_detections: ["preprocessor", "target"]
-  - output:
-      {
-        "preds": "losses_and_detections.eval",
-        "target": "target",
-        "loss_classifier": "losses_and_detections.training.classification",
-        "loss_box_reg": "losses_and_detections.training.bbox_regression",
-      }
 
 test_sequence:
   - preprocessor: ["input"]
   - losses_and_detections: ["preprocessor", "target"]
-  - output:
-      {
-        "preds": "losses_and_detections.eval",
-        "target": "target",
-        "loss_classifier": "losses_and_detections.training.classification",
-        "loss_box_reg": "losses_and_detections.training.bbox_regression",
-      }
 
 modules:
   losses_and_detections:
     # _target_: mart.models.DualMode
     model:
-      weights_fpath: ???
-      model:
-        _target_: torchvision.models.detection.retinanet_resnet50_fpn
-        num_classes: ???
+      _target_: torchvision.models.detection.retinanet_resnet50_fpn
+      num_classes: ???

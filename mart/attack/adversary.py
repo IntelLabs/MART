@@ -58,7 +58,14 @@ class Adversary(pl.LightningModule):
         """
         super().__init__()
 
+        # Avoid resuming perturbation from a saved checkpoint.
+        self._register_load_state_dict_pre_hook(
+            # Appear to have consumed the state_dict.
+            lambda state_dict, *args, **kwargs: state_dict.clear()
+        )
+
         # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
+        # and DDP won't try to get the uninitialized parameters of perturbation.
         self._perturber = [perturber]
         self.composer = composer
         self.optimizer = optimizer
@@ -76,7 +83,7 @@ class Adversary(pl.LightningModule):
             self._attacker = partial(
                 pl.Trainer,
                 num_sanity_val_steps=0,
-                logger=False,
+                logger=list(kwargs.pop("logger", {}).values()),
                 max_epochs=0,
                 limit_train_batches=kwargs.pop("max_iters", 10),
                 callbacks=list(kwargs.pop("callbacks", {}).values()),  # dict to list of values
@@ -96,7 +103,8 @@ class Adversary(pl.LightningModule):
 
     @property
     def perturber(self) -> Perturber:
-        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
+        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint,
+        # and DDP won't try to get the uninitialized parameters of perturbation.
         return self._perturber[0]
 
     def configure_optimizers(self):
@@ -126,7 +134,7 @@ class Adversary(pl.LightningModule):
         if len(gain.shape) > 0:
             gain = gain.sum()
 
-        # Display gain on progress bar.
+        # Log gain as a metric for LR scheduler to monitor, and show gain on progress bar.
         self.log("gain", gain, prog_bar=True)
 
         return gain
