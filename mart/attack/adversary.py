@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Callable
 import lightning.pytorch as pl
 import torch
 
-from mart.utils import de_inference, silent
+from mart.utils import silent
 
 from ..optim import OptimizerFactory
 
@@ -159,10 +159,6 @@ class Adversary(pl.LightningModule):
         # Adversary lives inside the model, we also need the remaining sequence to be able to
         # get a loss.
         if model and sequence:
-            # Tensors created in the inference mode do not work with autograd.
-            if torch.is_inference_mode_enabled():
-                with torch.inference_mode(False):
-                    batch = de_inference(batch)
             self._attack(**batch)
 
         perturbation = self.perturber(**batch)
@@ -174,11 +170,6 @@ class Adversary(pl.LightningModule):
 
         return input_adv
 
-    # Make sure we can do autograd.
-    # Earlier Pytorch Lightning uses no_grad(), but later PL uses inference_mode():
-    #   https://github.com/Lightning-AI/lightning/pull/12715
-    @torch.enable_grad()
-    @torch.inference_mode(False)
     def _attack(self, *, input, **batch):
         batch["input"] = input
 
