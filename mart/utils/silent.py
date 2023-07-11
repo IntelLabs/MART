@@ -13,7 +13,10 @@ __all__ = ["silent"]
 class silent(ContextDecorator):
     """Suppress logging."""
 
-    DEFAULT_NAMES = ["lightning.pytorch.utilities.rank_zero", "lightning.pytorch.accelerators.gpu"]
+    DEFAULT_NAMES = [
+        "lightning.pytorch.utilities.rank_zero",
+        "lightning.pytorch.accelerators.cuda",
+    ]
 
     def __init__(self, names=None):
         if names is None:
