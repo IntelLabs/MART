@@ -1,6 +1,7 @@
 import os
 import time
 import warnings
+from collections import OrderedDict
 from glob import glob
 from importlib.util import find_spec
 from pathlib import Path
@@ -300,6 +301,9 @@ def flatten_dict(d, delimiter="."):
 def de_inference(object):
     if isinstance(object, torch.Tensor) and object.is_inference():
         return object.clone()
+    elif isinstance(object, (torch.nn.ModuleDict, OrderedDict)):
+        # Don't mess up with these dicts.
+        return object
     elif isinstance(object, dict):
         ret = {}
         for key, value in object.items():

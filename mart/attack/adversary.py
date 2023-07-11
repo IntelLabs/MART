@@ -162,8 +162,7 @@ class Adversary(pl.LightningModule):
             # Tensors created in the inference mode do not work with autograd.
             if torch.is_inference_mode_enabled():
                 with torch.inference_mode(False):
-                    batch["input"] = de_inference(batch["input"])
-                    batch["target"] = de_inference(batch["target"])
+                    batch = de_inference(batch)
             self._attack(**batch)
 
         perturbation = self.perturber(**batch)
