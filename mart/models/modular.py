@@ -145,7 +145,11 @@ class LitModular(LightningModule):
                 )
             self.training_metrics(output[self.output_preds_key], output[self.output_target_key])
 
-        return output[self.output_loss_key]
+        loss = output[self.output_loss_key]
+        # We need to manually log loss on the progress bar in newer PL.
+        self.log("loss", loss, prog_bar=True)
+
+        return loss
 
     def on_train_epoch_end(self):
         if self.training_metrics is not None:
