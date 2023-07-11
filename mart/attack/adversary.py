@@ -177,21 +177,21 @@ class Adversary(pl.LightningModule):
     @torch.inference_mode(False)
     def _attack(self, *, input, target, **batch):
         # Clone tensors for autograd, in case they were created in the inference mode.
-        def clone(object):
-            if isinstance(object, torch.Tensor):
+        def de_inference(object):
+            if isinstance(object, torch.Tensor) and object.is_inference():
                 return object.clone()
             elif isinstance(object, dict):
                 ret = {}
                 for key, value in object.items():
-                    ret[key] = clone(value)
+                    ret[key] = de_inference(value)
                 return ret
             elif isinstance(object, (tuple, list)):
-                return [clone(item) for item in object]
+                return [de_inference(item) for item in object]
             else:
                 return object
 
-        input = clone(input)
-        target = clone(target)
+        input = de_inference(input)
+        target = de_inference(target)
 
         batch["input"] = input
         batch["target"] = target
