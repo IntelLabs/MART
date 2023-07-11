@@ -170,8 +170,31 @@ class Adversary(pl.LightningModule):
 
         return input_adv
 
-    def _attack(self, *, input, **batch):
+    # Make sure we can do autograd.
+    # Earlier Pytorch Lightning uses no_grad(), but later PL uses inference_mode():
+    #   https://github.com/Lightning-AI/lightning/pull/12715
+    @torch.enable_grad()
+    @torch.inference_mode(False)
+    def _attack(self, *, input, target, **batch):
+        # Clone tensors for autograd, in case they were created in the inference mode.
+        def clone(object):
+            if isinstance(object, torch.Tensor):
+                return object.clone()
+            elif isinstance(object, dict):
+                ret = {}
+                for key, value in object.items():
+                    ret[key] = clone(value)
+                return ret
+            elif isinstance(object, (tuple, list)):
+                return [clone(item) for item in object]
+            else:
+                return object
+
+        input = clone(input)
+        target = clone(target)
+
         batch["input"] = input
+        batch["target"] = target
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input)
