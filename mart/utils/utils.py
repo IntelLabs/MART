@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import hydra
+import torch
 from hydra.core.hydra_config import HydraConfig
 from lightning.pytorch import Callback
 from lightning.pytorch.loggers import Logger
@@ -27,6 +28,7 @@ __all__ = [
     "save_file",
     "task_wrapper",
     "flatten_dict",
+    "de_inference",
 ]
 
 log = pylogger.get_pylogger(__name__)
@@ -292,3 +294,18 @@ def flatten_dict(d, delimiter="."):
         ret[key] = value
 
     return ret
+
+
+# Clone tensors for autograd, in case they were created in the inference mode.
+def de_inference(object):
+    if isinstance(object, torch.Tensor) and object.is_inference():
+        return object.clone()
+    elif isinstance(object, dict):
+        ret = {}
+        for key, value in object.items():
+            ret[key] = de_inference(value)
+        return ret
+    elif isinstance(object, (tuple, list)):
+        return [de_inference(item) for item in object]
+    else:
+        return object

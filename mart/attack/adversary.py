@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Callable
 import lightning.pytorch as pl
 import torch
 
-from mart.utils import silent
+from mart.utils import de_inference, silent
 
 from ..optim import OptimizerFactory
 
@@ -159,6 +159,11 @@ class Adversary(pl.LightningModule):
         # Adversary lives inside the model, we also need the remaining sequence to be able to
         # get a loss.
         if model and sequence:
+            # Tensors created in the inference mode do not work with autograd.
+            if torch.is_inference_mode_enabled():
+                with torch.inference_mode(False):
+                    batch["input"] = de_inference(batch["input"])
+                    batch["target"] = de_inference(batch["target"])
             self._attack(**batch)
 
         perturbation = self.perturber(**batch)
@@ -175,26 +180,8 @@ class Adversary(pl.LightningModule):
     #   https://github.com/Lightning-AI/lightning/pull/12715
     @torch.enable_grad()
     @torch.inference_mode(False)
-    def _attack(self, *, input, target, **batch):
-        # Clone tensors for autograd, in case they were created in the inference mode.
-        def de_inference(object):
-            if isinstance(object, torch.Tensor) and object.is_inference():
-                return object.clone()
-            elif isinstance(object, dict):
-                ret = {}
-                for key, value in object.items():
-                    ret[key] = de_inference(value)
-                return ret
-            elif isinstance(object, (tuple, list)):
-                return [de_inference(item) for item in object]
-            else:
-                return object
-
-        input = de_inference(input)
-        target = de_inference(target)
-
+    def _attack(self, *, input, **batch):
         batch["input"] = input
-        batch["target"] = target
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input)
