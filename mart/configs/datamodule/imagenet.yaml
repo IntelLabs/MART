@@ -46,3 +46,5 @@ val_dataset:
         quant_max: 255
 
 test_dataset: ${.val_dataset}
+
+num_classes: 1000

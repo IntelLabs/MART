@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 import torch
-from pytorch_lightning.utilities.exceptions import MisconfigurationException
+from lightning.pytorch.utilities.exceptions import MisconfigurationException
 
 from .projector import Projector
 

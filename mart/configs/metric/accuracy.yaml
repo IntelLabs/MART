@@ -6,7 +6,8 @@ training_metrics:
   metrics:
     acc:
       _target_: torchmetrics.Accuracy
-      compute_on_step: false
+      task: multiclass
+      num_classes: ${datamodule.num_classes}
 
 validation_metrics: ${.training_metrics}
 
