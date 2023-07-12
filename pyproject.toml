@@ -55,7 +55,6 @@ developer = [
 ]
 
 extras = [
-  "adversarial-robustness-toolbox ~= 1.13.0"
 ]
 
 [tool.setuptools]
