@@ -11,10 +11,11 @@ authors = [
 requires-python = ">=3.9"
 
 dependencies = [
-  "torch ~= 1.13.1",
-  "torchvision ~= 0.14.1",
-  "pytorch-lightning ~= 1.6.5",
-  "torchmetrics == 0.6.0",
+  "torch ~= 2.0.1",
+  "torchvision ~= 0.15.2",
+  "lightning[extra] ~= 2.0.5", # Full functionality including TensorboardX.
+  "pydantic == 1.10.11", # https://github.com/Lightning-AI/lightning/pull/18022/files
+  "torchmetrics == 1.0.0",
   "numpy == 1.23.5", # https://github.com/pytorch/pytorch/issues/91516
 
   # --------- hydra --------- #
