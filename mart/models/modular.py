@@ -245,6 +245,5 @@ class LitModular(LightningModule):
 
         enumerate_metric(metrics, prefix)
 
-        # PyTorch Lightning: It is recommended to use `self.log('validation_metrics/acc', ..., sync_dist=True)`
-        # when logging on epoch level in distributed setting to accumulate the metric across devices.
-        self.log_dict(metrics_dict, prog_bar=prog_bar, sync_dist=True)
+        # sync_dist is not necessary for torchmetrics: https://torchmetrics.readthedocs.io/en/stable/pages/lightning.html
+        self.log_dict(metrics_dict, prog_bar=prog_bar)
