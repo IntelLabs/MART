@@ -42,8 +42,8 @@ class Adversary(pl.LightningModule):
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
-        transform: Callable | None,
-        untransform: Callable | None,
+        transform: Callable | None = None,
+        untransform: Callable | None = None,
         **kwargs,
     ):
         """_summary_
