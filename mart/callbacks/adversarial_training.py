@@ -36,6 +36,8 @@ class AdversarialTraining(Callback):
     def on_after_batch_transfer(self, pl_module, batch, dataloader_idx):
         batch = self._on_after_batch_transfer(batch, dataloader_idx)
 
+        adversary = None
+
         trainer = pl_module.trainer
         if trainer.training:
             adversary = self.train_adversary
@@ -43,7 +45,9 @@ class AdversarialTraining(Callback):
             adversary = self.validation_adversary
         elif trainer.testing:
             adversary = self.test_adversary
-        else:
+
+        # Skip if adversary is not defined for the phase train/validation/test.
+        if adversary is None:
             return batch
 
         # Move adversary to same device as pl_module and run attack
