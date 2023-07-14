@@ -127,12 +127,16 @@ class Adversary(pl.LightningModule):
         # copy batch since we modify it and it is used internally
         # batch = batch.copy()
 
+        input = batch["input"]
+        target = batch["target"]
+        # What we need is a frozen model that returns (a dictionary of) logits, or losses.
+        model = batch["model"]
+
         # Compose un-transformed input_adv from batch["input"], then give to model for updated gain.
-        # Note: Only input and target are required by perturber.projector and composer.
-        input_adv = self.get_input_adv(**batch)
+        input_adv = self.get_input_adv(input=input, target=target)
 
         # A model that returns output dictionary.
-        outputs = self.model(input=input_adv, target=batch["target"])
+        outputs = model(input=input_adv, target=target)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -162,19 +166,12 @@ class Adversary(pl.LightningModule):
             for group in optimizer.param_groups:
                 self.gradient_modifier(group["params"])
 
-    @property
-    def model(self):
-        # Hide model in a list, so that it won't be tampered by the inner Trainer.
-        return self._model[0]
-
     @silent()
     def forward(self, *, input, target, model):
-        # What we need is a frozen model that returns (a dictionary of) logits, or losses.
-        self._model = [model]
-
         # Transform input so that it's easier to work with by adversary.
         input_transformed = self.transform(input)
-        batch = {"input": input_transformed, "target": target}
+
+        batch = {"input": input_transformed, "target": target, "model": model}
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input_transformed)
@@ -185,8 +182,9 @@ class Adversary(pl.LightningModule):
         self.attacker.fit(self, train_dataloaders=cycle([batch]))
 
         # Get the transformed input_adv for enforcer checking.
-        input_adv_transformed = self.get_input_adv(untransform=False, **batch)
-        self.enforcer(input_adv_transformed, **batch)
+        input_adv_transformed = self.get_input_adv(input=input, target=target, untransform=False)
+        self.enforcer(input_adv_transformed, input=input, target=target)
+
         # Un-transform to the same format as input.
         input_adv = self.untransform(input_adv_transformed)
 
