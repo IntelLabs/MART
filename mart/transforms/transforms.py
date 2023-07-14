@@ -7,16 +7,7 @@
 import torch
 from torchvision.transforms import transforms as T
 
-__all__ = [
-    "Denormalize",
-    "Cat",
-    "Permute",
-    "Unsqueeze",
-    "Squeeze",
-    "Chunk",
-    "TupleTransforms",
-    "GetItems",
-]
+__all__ = ["Denormalize", "Cat", "Permute", "Unsqueeze", "Squeeze", "Chunk", "TupleTransforms"]
 
 
 class Denormalize(T.Normalize):
@@ -90,14 +81,3 @@ class TupleTransforms(torch.nn.Module):
     def forward(self, x_tuple):
         output_tuple = tuple(self.transforms(x) for x in x_tuple)
         return output_tuple
-
-
-class GetItems:
-    """Get a list of values with a list of keys from a dictionary."""
-
-    def __init__(self, keys):
-        self.keys = keys
-
-    def __call__(self, x):
-        x_list = [x[key] for key in self.keys]
-        return x_list
