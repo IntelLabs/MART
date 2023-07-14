@@ -15,9 +15,10 @@ modules:
   preprocessor:
     _target_: mart.transforms.TupleTransforms
     transforms:
+      # no-op
       _target_: torchvision.transforms.Normalize
       mean: 0
-      std: 255
+      std: 1
 
   losses_and_detections:
     # Return losses in the training mode and predictions in the eval mode in one pass.

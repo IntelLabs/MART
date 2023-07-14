@@ -3,10 +3,10 @@ defaults:
 
 modules:
   preprocessor:
-    # Convert [0, 255] input to [0, 1]
+    # no-op
     _target_: torchvision.transforms.Normalize
     mean: 0
-    std: 255
+    std: 1
 
   logits:
     _target_: timm.models.convnext.convnext_tiny
