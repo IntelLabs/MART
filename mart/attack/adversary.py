@@ -42,6 +42,8 @@ class Adversary(pl.LightningModule):
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
+        transform: Callable | None,
+        untransform: Callable | None,
         **kwargs,
     ):
         """_summary_
@@ -55,6 +57,8 @@ class Adversary(pl.LightningModule):
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
+            transform (Callable): Transform input into a convenient format, e.g. [0,1]->[0.255].
+            untransform (Callable): Transform adversarial input in the convenient format back into the original format of input, e.g. [0,255]->[0,1].
         """
         super().__init__()
 
@@ -101,8 +105,8 @@ class Adversary(pl.LightningModule):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
-        # TODO: Make this configurable. E.g. [0,1] <-> [0,255]
-        self.transform = self.untransform = lambda x: x
+        self.transform = transform if transform is not None else lambda x: x
+        self.untransform = untransform if untransform is not None else lambda x: x
 
     @property
     def perturber(self) -> Perturber:
@@ -182,8 +186,10 @@ class Adversary(pl.LightningModule):
         self.attacker.fit(self, train_dataloaders=cycle([batch]))
 
         # Get the transformed input_adv for enforcer checking.
-        input_adv_transformed = self.get_input_adv(input=input, target=target, untransform=False)
-        self.enforcer(input_adv_transformed, input=input, target=target)
+        input_adv_transformed = self.get_input_adv(
+            input=input_transformed, target=target, untransform=False
+        )
+        self.enforcer(input_adv_transformed, input=input_transformed, target=target)
 
         # Un-transform to the same format as input.
         input_adv = self.untransform(input_adv_transformed)
