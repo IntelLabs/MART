@@ -6,7 +6,7 @@
 
 import os
 
-from pytorch_lightning.callbacks import Callback
+from lightning.pytorch.callbacks import Callback
 from torchvision.transforms import ToPILImage
 
 __all__ = ["PerturbedImageVisualizer"]

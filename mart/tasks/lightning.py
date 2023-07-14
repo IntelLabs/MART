@@ -1,15 +1,15 @@
 from typing import Any, Dict, List, Tuple
 
 import hydra
-from omegaconf import DictConfig
-from pytorch_lightning import (
+from lightning.pytorch import (
     Callback,
     LightningDataModule,
     LightningModule,
     Trainer,
     seed_everything,
 )
-from pytorch_lightning.loggers import LightningLoggerBase
+from lightning.pytorch.loggers import Logger
+from omegaconf import DictConfig
 
 from mart import utils
 
@@ -42,7 +42,7 @@ def lightning(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     callbacks: List[Callback] = utils.instantiate_callbacks(cfg.get("callbacks"))
 
     # Init lightning loggers
-    logger: List[LightningLoggerBase] = utils.instantiate_loggers(cfg.get("logger"))
+    logger: List[Logger] = utils.instantiate_loggers(cfg.get("logger"))
 
     # Init lightning trainer
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")

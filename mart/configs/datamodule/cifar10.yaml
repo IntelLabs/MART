@@ -55,3 +55,4 @@ test_dataset: ${.val_dataset}
 
 num_workers: 4
 collate_fn: null
+num_classes: 10

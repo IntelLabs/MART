@@ -1,6 +1,7 @@
 import os
 import time
 import warnings
+from collections import OrderedDict
 from glob import glob
 from importlib.util import find_spec
 from pathlib import Path
@@ -8,11 +9,11 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import hydra
 from hydra.core.hydra_config import HydraConfig
+from lightning.pytorch import Callback
+from lightning.pytorch.loggers import Logger
+from lightning.pytorch.utilities import rank_zero_only
+from lightning.pytorch.utilities.model_summary import summarize
 from omegaconf import DictConfig, OmegaConf
-from pytorch_lightning import Callback
-from pytorch_lightning.loggers import LightningLoggerBase
-from pytorch_lightning.utilities import rank_zero_only
-from pytorch_lightning.utilities.model_summary import summarize
 
 from mart.utils import pylogger, rich_utils
 
@@ -126,9 +127,9 @@ def instantiate_callbacks(callbacks_cfg: DictConfig) -> List[Callback]:
     return callbacks
 
 
-def instantiate_loggers(logger_cfg: DictConfig) -> List[LightningLoggerBase]:
+def instantiate_loggers(logger_cfg: DictConfig) -> List[Logger]:
     """Instantiates loggers from config."""
-    logger: List[LightningLoggerBase] = []
+    logger: List[Logger] = []
 
     if not logger_cfg:
         log.warning("Logger config is empty.")
