@@ -1,0 +1,16 @@
+# FIXME: Merge tuple and tensor transforms to simplify configs.
+_target_: mart.transforms.TupleTransforms
+transforms:
+  _target_: torchvision.transforms.Compose
+  transforms:
+    - _target_: mart.transforms.Denormalize
+      center: 0
+      scale: 255
+    # Fix potential numeric error.
+    - _target_: torch.fake_quantize_per_tensor_affine
+      _partial_: true
+      # (x/1+0).round().clamp(0, 255) * 1
+      scale: 1
+      zero_point: 0
+      quant_min: 0
+      quant_max: 255
