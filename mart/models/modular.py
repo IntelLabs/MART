@@ -62,6 +62,7 @@ class LitModular(LightningModule):
             "training": training_sequence,
             "validation": validation_sequence,
             "test": test_sequence,
+            None: training_sequence,  # use training sequence with losses by default.
         }
         self.model = SequentialDict(modules, sequences)
 

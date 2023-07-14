@@ -57,7 +57,8 @@ class SequentialDict(torch.nn.ModuleDict):
         self._sequences = {
             name: self.parse_sequence(sequence) for name, sequence in sequences.items()
         }
-        self._sequences[None] = self
+        # We intend to make training sequence as the default sequence.
+        # self._sequences[None] = self
 
     def parse_sequence(self, sequence):
         if sequence is None:
