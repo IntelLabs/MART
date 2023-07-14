@@ -162,10 +162,15 @@ class Adversary(pl.LightningModule):
             for group in optimizer.param_groups:
                 self.gradient_modifier(group["params"])
 
+    @property
+    def model(self):
+        # Hide model in a list, so that it won't be tampered by the inner Trainer.
+        return self._model[0]
+
     @silent()
     def forward(self, *, input, target, model):
         # What we need is a frozen model that returns (a dictionary of) logits, or losses.
-        self.model = model
+        self._model = [model]
 
         # Transform input so that it's easier to work with by adversary.
         input_transformed = self.transform(input)

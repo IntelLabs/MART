@@ -51,9 +51,8 @@ class AdversarialTraining(Callback):
 
         # FIXME: Directly pass batch instead of assuming it has a structure?
         input, target = batch
-        input_adv = adversary(input=input, target=target, model=pl_module)
 
-        # Replace the adversarial trainer with the original trainer.
-        pl_module.trainer = trainer
+        # TODO: We may need to do model.eval() if there's BN-like layers in the model.
+        input_adv = adversary(input=input, target=target, model=pl_module)
 
         return [input_adv, target]
