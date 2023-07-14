@@ -6,9 +6,7 @@
 
 import types
 
-from pytorch_lightning.callbacks import Callback
-
-from mart.models import LitModular
+from lightning.pytorch.callbacks import Callback
 
 __all__ = ["AdversarialTraining"]
 
@@ -16,6 +14,7 @@ __all__ = ["AdversarialTraining"]
 class AdversarialTraining(Callback):
     """Perturbs inputs to be adversarial."""
 
+    # TODO: training/validation/test or train/val/test
     def __init__(
         self, adversary=None, train_adversary=None, validation_adversary=None, test_adversary=None
     ):
@@ -37,32 +36,24 @@ class AdversarialTraining(Callback):
     def on_after_batch_transfer(self, pl_module, batch, dataloader_idx):
         batch = self._on_after_batch_transfer(batch, dataloader_idx)
 
-        # FIXME: Remove use of step
         trainer = pl_module.trainer
         if trainer.training:
             adversary = self.train_adversary
-            step = "training"
         elif trainer.validating:
             adversary = self.validation_adversary
-            step = "validation"
         elif trainer.testing:
             adversary = self.test_adversary
-            step = "test"
         else:
             return batch
 
-        # Create attacked model where the adversary executes before the model
-        # FIXME: Should we just use pl_module.training_step? Ideally we would not decompose batch
-        #        and instead pass batch directly to the underlying pl_module since it knows how to
-        #        interpret batch.
-        def attacked_model(input, **batch):
-            input_adv = adversary(input=input, **batch)
-            return pl_module(input=input_adv, **batch)
-
         # Move adversary to same device as pl_module and run attack
+        adversary.to(pl_module.device)
+
         # FIXME: Directly pass batch instead of assuming it has a structure?
         input, target = batch
-        adversary.to(pl_module.device)
-        input_adv = adversary(input=input, target=target, step=step, model=attacked_model)
+        input_adv = adversary(input=input, target=target, model=pl_module)
+
+        # Replace the adversarial trainer with the original trainer.
+        pl_module.trainer = trainer
 
         return [input_adv, target]

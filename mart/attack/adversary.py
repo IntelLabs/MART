@@ -101,6 +101,9 @@ class Adversary(pl.LightningModule):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
+        # TODO: Make this configurable. E.g. [0,1] <-> [0,255]
+        self.transform = self.untransform = lambda x: x
+
     @property
     def perturber(self) -> Perturber:
         # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint,
@@ -110,13 +113,26 @@ class Adversary(pl.LightningModule):
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
 
-    def training_step(self, batch, batch_idx):
-        # copy batch since we modify it and it is used internally
-        batch = batch.copy()
+    def get_input_adv(self, *, input, target, untransform=True):
+        perturbation = self.perturber(input=input, target=target)
+        input_adv = self.composer(perturbation, input=input, target=target)
 
-        # We need to evaluate the perturbation against the whole model, so call it normally to get a gain.
-        model = batch.pop("model")
-        outputs = model(**batch)
+        if untransform:
+            input_adv = self.untransform(input_adv)
+
+        return input_adv
+
+    def training_step(self, batch, batch_idx):
+        # TODO: We shouldn't need to copy because it is never changed?
+        # copy batch since we modify it and it is used internally
+        # batch = batch.copy()
+
+        # Compose un-transformed input_adv from batch["input"], then give to model for updated gain.
+        # Note: Only input and target are required by perturber.projector and composer.
+        input_adv = self.get_input_adv(**batch)
+
+        # A model that returns output dictionary.
+        outputs = self.model(input=input_adv, target=batch["target"])
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -150,35 +166,29 @@ class Adversary(pl.LightningModule):
                 self.gradient_modifier(group["params"])
 
     @silent()
-    def forward(self, *, model=None, **batch):
-        batch["model"] = model
+    def forward(self, *, input, target, model):
+        # What we need is a frozen model that returns (a dictionary of) logits, or losses.
+        self.model = model
 
-        # Adversary can live within a sequence of model. To signal the adversary should
-        # attack, one must pass a model to attack when calling the adversary. Since we
-        # do not know where the Adversary lives inside the model, we also need the
-        # remaining sequence to be able to get a loss.
-        if model:
-            self._attack(**batch)
-
-        perturbation = self.perturber(**batch)
-        input_adv = self.composer(perturbation, **batch)
-
-        # Enforce constraints after the attack optimization ends.
-        if model:
-            self.enforcer(input_adv, **batch)
-
-        return input_adv
-
-    def _attack(self, *, input, **batch):
-        batch["input"] = input
+        # Transform input so that it's easier to work with by adversary.
+        input_transformed = self.transform(input)
+        batch = {"input": input_transformed, "target": target}
 
         # Configure and reset perturbation for current inputs
-        self.perturber.configure_perturbation(input)
+        self.perturber.configure_perturbation(input_transformed)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
         self.attacker.fit_loop.max_epochs += 1
         self.attacker.fit(self, train_dataloaders=cycle([batch]))
+
+        # Get the transformed input_adv for enforcer checking.
+        input_adv_transformed = self.get_input_adv(untransform=False, **batch)
+        self.enforcer(input_adv_transformed, **batch)
+        # Un-transform to the same format as input.
+        input_adv = self.untransform(input_adv_transformed)
+
+        return input_adv
 
     @property
     def attacker(self):
