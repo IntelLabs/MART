@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /attack@callbacks.adversarial_training.adversary: classification_eps1.75_fgsm
+  - /attack@callbacks.adversarial_training.train_adversary: classification_eps1.75_fgsm
   - /attack@callbacks.adversarial_training.test_adversary: classification_eps2_pgd10_step1
   - override /datamodule: cifar10
   - override /model: classifier_cifar10_cnn
