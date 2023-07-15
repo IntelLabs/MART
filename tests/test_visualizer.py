@@ -24,7 +24,7 @@ def test_visualizer_run_end(input_data, target_data, perturbation, tmp_path):
         return result
 
     trainer = Mock()
-    model = Mock(return_value=perturb(input_list))
+    model = Mock(get_input_adv=Mock(return_value=perturb(input_list)))
     outputs = Mock()
     batch = {"input": input_list, "target": target_list}
     adversary = Mock(spec=Adversary, side_effect=perturb)
@@ -40,7 +40,7 @@ def test_visualizer_run_end(input_data, target_data, perturbation, tmp_path):
     # verify image file content
     perturbed_img = input_data + perturbation
     converter = ToPILImage()
-    expected_img = converter(perturbed_img / 255)
+    expected_img = converter(perturbed_img)
     expected_img.save(folder / "test_expected.jpg")
 
     stored_img = Image.open(expected_output_path)
