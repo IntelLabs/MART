@@ -136,9 +136,6 @@ class Adversary(pl.LightningModule):
         # Use CallWith to dispatch **outputs.
         gain = self.gain_fn(**outputs)
 
-        # Log original gain as a metric for LR scheduler to monitor, and show gain on progress bar.
-        self.log("gain", gain.sum(), prog_bar=True)
-
         # objective_fn is optional, because adversaries may never reach their objective.
         if self.objective_fn is not None:
             found = self.objective_fn(**outputs)
@@ -147,7 +144,13 @@ class Adversary(pl.LightningModule):
             if len(gain.shape) > 0:
                 gain = gain[~found]
 
-        return gain.sum()
+        if len(gain.shape) > 0:
+            gain = gain.sum()
+
+        # Log gain as a metric for LR scheduler to monitor, and show gain on progress bar.
+        self.log("gain", gain, prog_bar=True)
+
+        return gain
 
     def configure_gradient_clipping(
         self, optimizer, gradient_clip_val=None, gradient_clip_algorithm=None
