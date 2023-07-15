@@ -101,9 +101,6 @@ class Adversary(pl.LightningModule):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
-        # TODO: Make this configurable. E.g. [0,1] <-> [0,255]
-        self.transform = self.untransform = lambda x: x
-
     @property
     def perturber(self) -> Perturber:
         # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint,
@@ -113,13 +110,9 @@ class Adversary(pl.LightningModule):
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
 
-    def get_input_adv(self, *, input, target, untransform=True):
+    def get_input_adv(self, *, input, target):
         perturbation = self.perturber(input=input, target=target)
         input_adv = self.composer(perturbation, input=input, target=target)
-
-        if untransform:
-            input_adv = self.untransform(input_adv)
-
         return input_adv
 
     def training_step(self, batch, batch_idx):
@@ -132,7 +125,7 @@ class Adversary(pl.LightningModule):
         # What we need is a frozen model that returns (a dictionary of) logits, or losses.
         model = batch["model"]
 
-        # Compose un-transformed input_adv from batch["input"], then give to model for updated gain.
+        # Compose input_adv from input, then give to model for updated gain.
         input_adv = self.get_input_adv(input=input, target=target)
 
         # A model that returns output dictionary.
@@ -168,13 +161,10 @@ class Adversary(pl.LightningModule):
 
     @silent()
     def forward(self, *, input, target, model):
-        # Transform input so that it's easier to work with by adversary.
-        input_transformed = self.transform(input)
-
-        batch = {"input": input_transformed, "target": target, "model": model}
+        batch = {"input": input, "target": target, "model": model}
 
         # Configure and reset perturbation for current inputs
-        self.perturber.configure_perturbation(input_transformed)
+        self.perturber.configure_perturbation(input)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
@@ -182,11 +172,8 @@ class Adversary(pl.LightningModule):
         self.attacker.fit(self, train_dataloaders=cycle([batch]))
 
         # Get the transformed input_adv for enforcer checking.
-        input_adv_transformed = self.get_input_adv(input=input, target=target, untransform=False)
-        self.enforcer(input_adv_transformed, input=input, target=target)
-
-        # Un-transform to the same format as input.
-        input_adv = self.untransform(input_adv_transformed)
+        input_adv = self.get_input_adv(input=input, target=target)
+        self.enforcer(input_adv, input=input, target=target)
 
         return input_adv
 
