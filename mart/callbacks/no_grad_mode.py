@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-from pytorch_lightning.callbacks import Callback
+from lightning.pytorch.callbacks import Callback
 
 __all__ = ["ModelParamsNoGrad"]
 

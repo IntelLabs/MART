@@ -15,3 +15,5 @@ train_dataset:
 
 val_dataset: ${.train_dataset}
 test_dataset: ${.val_dataset}
+
+num_classes: ${.train_dataset.num_classes}

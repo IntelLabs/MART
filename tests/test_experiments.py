@@ -117,7 +117,7 @@ def test_imagenet_timm_experiment(classification_cfg, tmp_path):
         "++trainer.precision=32",
         "optimized_metric=training_metrics/acc",
         "++datamodule.train_dataset.image_size=[3,469,387]",
-        "++datamodule.train_dataset.num_classes=200",
+        "++datamodule.train_dataset.num_classes=1000",
     ] + overrides
     run_sh_command(command)
 
