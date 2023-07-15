@@ -6,6 +6,7 @@
 
 import os
 
+import torch
 from lightning.pytorch.callbacks import Callback
 from torchvision.transforms import ToPILImage
 
@@ -32,10 +33,12 @@ class PerturbedImageVisualizer(Callback):
 
     def on_train_end(self, trainer, model):
         # FIXME: We should really just save this to outputs instead of recomputing adv_input
-        adv_input = model(input=self.input, target=self.target)
+        with torch.no_grad():
+            # Get [0,1] input as untransform=True by default.
+            adv_input = model.get_input_adv(input=self.input, target=self.target)
 
         for img, tgt in zip(adv_input, self.target):
             fname = tgt["file_name"]
             fpath = os.path.join(self.folder, fname)
-            im = self.convert(img / 255)
+            im = self.convert(img)
             im.save(fpath)
