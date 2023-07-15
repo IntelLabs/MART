@@ -175,6 +175,7 @@ class Adversary(pl.LightningModule):
         # Transform input so that it's easier to work with by adversary.
         input_transformed = self.transform(input)
 
+        # Optimization loop only sees the transformed input in batches.
         batch = {"input": input_transformed, "target": target, "model": model}
 
         # Configure and reset perturbation for current inputs
