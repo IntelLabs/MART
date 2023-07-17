@@ -3,10 +3,11 @@ defaults:
 
 modules:
   preprocessor:
-    # no-op
+    # Use normalization parameters from timm
+    # https://github.com/huggingface/pytorch-image-models/blob/3d05c0e86f2f4c57bf495468aa3f8a7d3487c986/timm/data/constants.py#L3
     _target_: torchvision.transforms.Normalize
-    mean: 0
-    std: 1
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
 
   logits:
     _target_: timm.models.convnext.convnext_tiny
