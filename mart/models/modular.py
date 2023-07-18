@@ -62,7 +62,6 @@ class LitModular(LightningModule):
             "training": training_sequence,
             "validation": validation_sequence,
             "test": test_sequence,
-            None: training_sequence,  # use training sequence with losses by default.
         }
         self.model = SequentialDict(modules, sequences)
 
@@ -126,6 +125,12 @@ class LitModular(LightningModule):
 
     def forward(self, **kwargs):
         return self.model(**kwargs)
+
+    def attack_step(self, batch, batch_idx):
+        # Use the training sequence in attack.
+        input, target = batch
+        output = self(input=input, target=target, model=self.model, step="training")
+        return output
 
     #
     # Training
