@@ -1,7 +1,5 @@
 defaults:
   - adversary
-  - transform: to_pixel_range_255
-  - transform@untransform: to_pixel_range_1
   - perturber: default
   - perturber/initializer: uniform_lp
   - perturber/projector: linf_additive_range

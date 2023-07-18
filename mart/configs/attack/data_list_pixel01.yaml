@@ -1,0 +1,4 @@
+defaults:
+  - batch_converter: list
+  - batch_converter/transform: to_pixel_range_255
+  - batch_converter/transform@batch_converter.untransform: to_pixel_range_1
