@@ -10,6 +10,7 @@ defaults:
   - objective: zero_ap
   - enforcer: default
   - enforcer/constraints: [mask, pixel_range]
+  - batch_converter: tuple
 
 # Make a 5-step attack for the demonstration purpose.
 max_iters: 5

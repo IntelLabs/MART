@@ -54,56 +54,8 @@ class AdversarialTraining(Callback):
     def teardown(self, trainer, pl_module, stage=None):
         pl_module.on_after_batch_transfer = self._on_after_batch_transfer
 
-    def get_input_target_batcher(self, batch_orig):
-        if isinstance(batch_orig, tuple):
-            # Convert tuple to list
-            batch = list(batch_orig).copy()
-        else:
-            batch = batch_orig.copy()
-
-        batch_input_key = self.batch_input_key
-
-        # pop() works for both list and dict.
-        input = batch.pop(batch_input_key)
-
-        if isinstance(batch, list) and len(batch) == 1:
-            target = batch[0]
-
-            def batch_constructor(input, target):
-                batch = [target]
-                batch.insert(batch_input_key, input)
-                return batch
-
-        elif isinstance(batch, list) and len(batch) > 2:
-            target = batch.copy()
-
-            def batch_constructor(input, target):
-                batch = target.copy()
-                batch.insert(batch_input_key, input)
-                return batch
-
-        elif isinstance(batch, dict) and "target" in dict:
-            target = batch["target"]
-
-            def batch_constructor(input, target):
-                return {batch_input_key: input, "target": target}
-
-        elif isinstance(batch, dict) and "target" not in dict:
-            # Example in anomalib: dict_keys(['image_path', 'label', 'image', 'mask_path', 'mask'])
-            # image: NCHW;  label: N,
-            target = batch
-
-            def batch_constructor(input, target):
-                # Besides input and target, add others back to batch.
-                return target | {batch_input_key: input}
-
-        else:
-            raise NotImplementedError()
-
-        return input, target, batch_constructor
-
-    def wrap_model(self, model, batch_constructor, dataloader_idx):
-        """Make a model, such that output = model(input, target)."""
+    def wrap_model(self, model, dataloader_idx):
+        """Make a model, such that `output = model(batch)`."""
 
         # Consume dataloader_idx
         if hasattr(model, "attack_step"):
@@ -122,12 +74,7 @@ class AdversarialTraining(Callback):
         else:
             model_forward = model
 
-        def wrapped_model(*, input, target):
-            batch = batch_constructor(input, target)
-            output = model_forward(batch)
-            return output
-
-        return wrapped_model
+        return model_forward
 
     def on_after_batch_transfer(self, pl_module, batch, dataloader_idx):
         batch = self._on_after_batch_transfer(batch, dataloader_idx)
@@ -149,13 +96,12 @@ class AdversarialTraining(Callback):
         # Move adversary to same device as pl_module and run attack
         adversary.to(pl_module.device)
 
-        # FIXME: Directly pass batch instead of assuming it has a structure?
-        input, target, batch_constructor = self.get_input_target_batcher(batch)
-
-        # We also need to construct a batch for model during attack iterations.
-        model = self.wrap_model(pl_module, batch_constructor, dataloader_idx)
+        # We assume Adversary is not aware of PyTorch Lightning,
+        # so wrap the model as `output=model(batch)`.
+        model = self.wrap_model(pl_module, dataloader_idx)
 
         # TODO: We may need to do model.eval() if there's BN-like layers in the model.
-        input_adv = adversary(input=input, target=target, model=model)
+        # Directly pass batch instead of assuming it has a structure.
+        batch_adv = adversary(batch=batch, model=model)
 
-        return [input_adv, target]
+        return batch_adv

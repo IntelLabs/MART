@@ -42,6 +42,7 @@ class Adversary(pl.LightningModule):
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
+        batch_converter: Callable,
         **kwargs,
     ):
         """_summary_
@@ -55,6 +56,7 @@ class Adversary(pl.LightningModule):
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
+            batch_converter (Callable): Convert batch into convenient format and reverse.
         """
         super().__init__()
 
@@ -101,6 +103,8 @@ class Adversary(pl.LightningModule):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
+        self.batch_converter = batch_converter
+
     @property
     def perturber(self) -> Perturber:
         # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint,
@@ -120,16 +124,18 @@ class Adversary(pl.LightningModule):
         # copy batch since we modify it and it is used internally
         # batch = batch.copy()
 
-        input = batch["input"]
+        input_transformed = batch["input"]
         target = batch["target"]
         # What we need is a frozen model that returns (a dictionary of) logits, or losses.
         model = batch["model"]
 
-        # Compose input_adv from input, then give to model for updated gain.
-        input_adv = self.get_input_adv(input=input, target=target)
+        # Compose un-transformed input_adv from batch["input"], then give to model for updated gain.
+        input_adv_transformed = self.get_input_adv(input=input_transformed, target=target)
+        # Target model expects input in the original format.
+        batch_adv = self.batch_converter.revert(input_adv_transformed, target)
 
         # A model that returns output dictionary.
-        outputs = model(input=input_adv, target=target)
+        outputs = model(batch_adv)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -163,22 +169,29 @@ class Adversary(pl.LightningModule):
                 self.gradient_modifier(group["params"])
 
     @silent()
-    def forward(self, *, input, target, model):
-        batch = {"input": input, "target": target, "model": model}
+    def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
+        # Extract and transform input so that is convenient for Adversary.
+        input_transformed, target = self.batch_converter(batch)
+
+        # Optimization loop only sees the transformed input in batches.
+        batch_transformed = {"input": input_transformed, "target": target, "model": model}
 
         # Configure and reset perturbation for current inputs
-        self.perturber.configure_perturbation(input)
+        self.perturber.configure_perturbation(input_transformed)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
         self.attacker.fit_loop.max_epochs += 1
-        self.attacker.fit(self, train_dataloaders=cycle([batch]))
+        self.attacker.fit(self, train_dataloaders=cycle([batch_transformed]))
 
         # Get the transformed input_adv for enforcer checking.
-        input_adv = self.get_input_adv(input=input, target=target)
-        self.enforcer(input_adv, input=input, target=target)
+        input_adv_transformed = self.get_input_adv(input=input_transformed, target=target)
+        self.enforcer(input_adv_transformed, input=input_transformed, target=target)
 
-        return input_adv
+        # Revert to the original format of batch.
+        batch_adv = self.batch_converter.revert(input_adv_transformed, target)
+
+        return batch_adv
 
     @property
     def attacker(self):

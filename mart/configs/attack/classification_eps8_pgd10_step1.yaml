@@ -10,6 +10,7 @@ defaults:
   - objective: misclassification
   - enforcer: default
   - enforcer/constraints: [lp, pixel_range]
+  - batch_converter: list
 
 enforcer:
   constraints:
