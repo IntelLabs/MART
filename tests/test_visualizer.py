@@ -15,12 +15,15 @@ from mart.callbacks import PerturbedImageVisualizer
 
 def test_visualizer_run_end(input_data, target_data, perturbation, tmp_path):
     folder = tmp_path / "test"
-    input_list = [input_data]
+
+    # Convert to [0,255] space for adversary.
+    perturbation_255 = perturbation * 255
+    input_list = [input_data * 255]
     target_list = [target_data]
 
     # simulate an addition perturbation
     def perturb(input):
-        result = [sample + perturbation for sample in input]
+        result = [sample + perturbation_255 for sample in input]
         return result
 
     trainer = Mock()
