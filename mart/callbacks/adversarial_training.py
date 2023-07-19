@@ -26,7 +26,6 @@ class AdversarialTraining(Callback):
         train_adversary: Callable = None,
         validation_adversary: Callable = None,
         test_adversary: Callable = None,
-        batch_input_key: str | int = 0,
     ):
         """AdversaryConnector.
 
@@ -35,15 +34,12 @@ class AdversarialTraining(Callback):
             train_adversary (Callable, optional): _description_. Defaults to None.
             validation_adversary (Callable, optional): _description_. Defaults to None.
             test_adversary (Callable, optional): _description_. Defaults to None.
-            batch_input_key (str | int, optional): Input locator in a batch. Defaults to 0.
         """
         adversary = adversary or train_adversary
 
         self.train_adversary = train_adversary or adversary
         self.validation_adversary = validation_adversary or adversary
         self.test_adversary = test_adversary or adversary
-
-        self.batch_input_key = batch_input_key
 
     def setup(self, trainer, pl_module, stage=None):
         self._on_after_batch_transfer = pl_module.on_after_batch_transfer
