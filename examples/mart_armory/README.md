@@ -13,9 +13,9 @@ pip install 'git+https://github.com/IntelLabs/MART.git@example_armory_attack#egg
 NOT IMPLEMENTED YET.
 
 ```shell
-python -m mart.generate_adversary_config \
+python -m mart_armory.generate_attack_config \
 attack=[object_detection_mask_adversary,data_coco] \
-output=path/to/adversary.yaml
+output=path/to/attack.yaml
 ```
 
 2. Update the attack section in the Armory scenario configuration.
@@ -23,7 +23,7 @@ output=path/to/adversary.yaml
 ```json
 "attack": {
     "kwargs": {
-        "mart_adv_config_yaml": "path/to/adversary.yaml",
+        "mart_adv_config_yaml": "path/to/attack.yaml",
     },
     "module": "mart_armory",
     "name": "MartAttackObjectDetection",
