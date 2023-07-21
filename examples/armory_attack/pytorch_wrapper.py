@@ -69,7 +69,7 @@ class MartAttack:
         # Convert np.ndarray to torch.Tensor.
         # Specify a device to place PyTorch tensors.
         batch_pth = convert(batch_np, device=self.device)
-        batch_adv_pytorch = self.adversary(**batch_pth)
+        batch_adv_pytorch = self.adversary(batch_pth, model=self.model)
 
         # Convert torch.Tensor to np.ndarray.
         batch_adv_np = convert(batch_adv_pytorch)
