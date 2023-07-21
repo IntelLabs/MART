@@ -35,8 +35,6 @@ class AdversarialTraining(Callback):
             validation_adversary (Callable, optional): _description_. Defaults to None.
             test_adversary (Callable, optional): _description_. Defaults to None.
         """
-        adversary = adversary or train_adversary
-
         self.train_adversary = train_adversary or adversary
         self.validation_adversary = validation_adversary or adversary
         self.test_adversary = test_adversary or adversary
@@ -85,7 +83,7 @@ class AdversarialTraining(Callback):
         elif trainer.testing:
             adversary = self.test_adversary
 
-        # Skip if adversary is not defined for the phase train/validation/test.
+        # Skip if adversary is not defined for all phases train/validation/test.
         if adversary is None:
             return batch
 
