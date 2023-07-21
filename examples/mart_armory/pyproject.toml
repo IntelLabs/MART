@@ -1,0 +1,21 @@
+[project]
+name = "mart_armory"
+version = "0.0.1a0"
+description = "A wrapper for running MART attack in Armory."
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+  { name = "Intel Corporation", email = "weilin.xu@intel.com" },
+]
+
+requires-python = ">=3.9"
+
+dependencies = [
+    "mart@git+https://github.com/IntelLabs/MART.git@example_armory_attack",
+]
+
+[project.urls]
+Source = "https://github.com/IntelLabs/MART/tree/example_armory_attack/examples/mart_armory"
+
+[tool.setuptools.packages.find]
+include = ["mart_armory*"]
