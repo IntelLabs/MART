@@ -60,7 +60,8 @@ class MartAttack:
     def __init__(self, model, batch_converter, mart_adv_config_yaml):
         # TODO: Automatically search for torch.nn.Module within model.
         # Extract PyTorch model from an ART Estimator.
-        self.model = model._model
+        # Make the model accept batch as an argument parameter.
+        self.model = lambda batch: model._model(*batch)
         self.device = model.device
 
         self.batch_converter = batch_converter
@@ -68,6 +69,9 @@ class MartAttack:
         # Instantiate a MART adversary.
         adv_cfg = OmegaConf.load(mart_adv_config_yaml)
         self.adversary = hydra.utils.instantiate(adv_cfg)
+
+        # Move adversary to the same device.
+        self.adversary.to(self.device)
 
     def convert_batch_armory_to_torchvision(self, batch_armory_np):
         # np.ndarray -> torch.Tensor, on a device.
@@ -85,6 +89,10 @@ class MartAttack:
 
     def generate(self, **batch_armory_np):
         batch_tv_pth = self.convert_batch_armory_to_torchvision(batch_armory_np)
+
+        # FIXME: Convert perturbable_mask in conversion.
+        batch_tv_pth[1][0]["perturbable_mask"] = batch_tv_pth[1][0]["mask"].permute((2, 0, 1))
+
         batch_adv_tv_pth = self.adversary(batch=batch_tv_pth, model=self.model)
         batch_adv_armory_np = self.convert_batch_torchvision_to_armory(batch_adv_tv_pth)
 
