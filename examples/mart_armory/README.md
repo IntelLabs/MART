@@ -13,6 +13,7 @@ pip install 'git+https://github.com/IntelLabs/MART.git@example_armory_attack#egg
 ```shell
 python -m mart_armory.generate_attack_config \
 attack=[object_detection_mask_adversary,data_coco] \
+attack.objective=null \
 output=path_to_attack.yaml
 ```
 
@@ -20,10 +21,14 @@ output=path_to_attack.yaml
 
 ```json
 "attack": {
-    "kwargs": {
-        "mart_adv_config_yaml": "path/to/attack.yaml",
-    },
     "module": "mart_armory",
     "name": "MartAttackObjectDetection",
+    "kwargs": {
+        "mart_adv_config_yaml": "path/to/attack.yaml"
+    },
+    "knowledge": "white",
+    "use_label": true
 },
 ```
+
+Armory requires the argument `knowledge`. The statement `"use_label": true` gets `y` for the attack.
