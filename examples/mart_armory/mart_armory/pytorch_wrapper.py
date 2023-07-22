@@ -61,7 +61,7 @@ class MartAttack:
         # TODO: Automatically search for torch.nn.Module within model.
         # Extract PyTorch model from an ART Estimator.
         self.model = model._model
-        self.device = self.model.device
+        self.device = model.device
 
         self.batch_converter = batch_converter
 
