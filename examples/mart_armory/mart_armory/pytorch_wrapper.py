@@ -12,6 +12,8 @@ import torch
 from multimethod import multimethod
 from omegaconf import OmegaConf
 
+from mart.models.dual_mode import DualModeGeneralizedRCNN
+
 from .batch_converter import ObjectDetectionBatchConverter
 
 
@@ -52,10 +54,9 @@ class ModelWrapper(torch.nn.Module):
         super().__init__()
 
         # FIXME: We need an interface to modify the model, because the model only returns prediction in eval() model.
-        self.model = model
+        self.model = DualModeGeneralizedRCNN(model)
 
     def forward(self, batch):
-
         # Make the model accept batch as an argument parameter.
         output = self.model(*batch)
         return output
@@ -95,7 +96,8 @@ class MartAttack:
 
     def convert_batch_torchvision_to_armory(self, batch_tv_pth):
         # torchvision format -> armory format.
-        batch_armory_pth = self.batch_converter.revert(batch_tv_pth)
+        # Note: revert(input, target)
+        batch_armory_pth = self.batch_converter.revert(*batch_tv_pth)
         # torch.Tensor -> np.ndarray
         batch_armory_np = convert(batch_armory_pth)
         return batch_armory_np
@@ -103,8 +105,8 @@ class MartAttack:
     def generate(self, **batch_armory_np):
         batch_tv_pth = self.convert_batch_armory_to_torchvision(batch_armory_np)
 
-        # FIXME: Convert perturbable_mask in conversion.
-        batch_tv_pth[1][0]["perturbable_mask"] = batch_tv_pth[1][0]["mask"].permute((2, 0, 1))
+        # FIXME: Convert perturbable_mask somewhere else.
+        batch_tv_pth[1][0]["perturbable_mask"] = batch_tv_pth[1][0]["mask"].permute((2, 0, 1)) > 0
 
         batch_adv_tv_pth = self.adversary(batch=batch_tv_pth, model=self.model)
         batch_adv_armory_np = self.convert_batch_torchvision_to_armory(batch_adv_tv_pth)
