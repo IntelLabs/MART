@@ -47,6 +47,20 @@ def convert(obj, device=None):  # noqa: F811
     return obj
 
 
+class ModelWrapper(torch.nn.Module):
+    def __init__(self, model):
+        super().__init__()
+
+        # FIXME: We need an interface to modify the model, because the model only returns prediction in eval() model.
+        self.model = model
+
+    def forward(self, batch):
+
+        # Make the model accept batch as an argument parameter.
+        output = self.model(*batch)
+        return output
+
+
 class MartAttack:
     """A minimal wrapper to run PyTorch-based MART adversary in Armory against PyTorch-based
     models.
@@ -58,10 +72,9 @@ class MartAttack:
     """
 
     def __init__(self, model, batch_converter, mart_adv_config_yaml):
-        # TODO: Automatically search for torch.nn.Module within model.
         # Extract PyTorch model from an ART Estimator.
-        # Make the model accept batch as an argument parameter.
-        self.model = lambda batch: model._model(*batch)
+        # TODO: Automatically search for torch.nn.Module within model.
+        self.model = ModelWrapper(model._model)
         self.device = model.device
 
         self.batch_converter = batch_converter
