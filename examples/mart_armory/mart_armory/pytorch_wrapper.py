@@ -106,7 +106,9 @@ class MartAttack:
         batch_tv_pth = self.convert_batch_armory_to_torchvision(batch_armory_np)
 
         # FIXME: Convert perturbable_mask somewhere else.
-        batch_tv_pth[1][0]["perturbable_mask"] = batch_tv_pth[1][0]["mask"].permute((2, 0, 1)) > 0
+        batch_tv_pth[1][0]["perturbable_mask"] = (
+            batch_tv_pth[1][0]["mask"].permute((2, 0, 1)) / 255
+        )
 
         batch_adv_tv_pth = self.adversary(batch=batch_tv_pth, model=self.model)
         batch_adv_armory_np = self.convert_batch_torchvision_to_armory(batch_adv_tv_pth)
