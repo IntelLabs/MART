@@ -10,12 +10,10 @@ pip install 'git+https://github.com/IntelLabs/MART.git@example_armory_attack#egg
 
 1. Generate a YAML configuration of attack.
 
-NOT IMPLEMENTED YET.
-
 ```shell
 python -m mart_armory.generate_attack_config \
 attack=[object_detection_mask_adversary,data_coco] \
-output=path/to/attack.yaml
+output=path_to_attack.yaml
 ```
 
 2. Update the attack section in the Armory scenario configuration.
