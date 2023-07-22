@@ -18,17 +18,17 @@ from .batch_converter import ObjectDetectionBatchConverter
 # A recursive function to convert all np.ndarray in an object to torch.Tensor, or vice versa.
 @multimethod
 def convert(obj: dict, device=None):
-    return {key: convert(value) for key, value in obj.items()}
+    return {key: convert(value, device=device) for key, value in obj.items()}
 
 
 @multimethod
 def convert(obj: list, device=None):  # noqa: F811
-    return [convert(item) for item in obj]
+    return [convert(item, device=device) for item in obj]
 
 
 @multimethod
 def convert(obj: tuple, device=None):  # noqa: F811
-    return tuple(convert(obj))
+    return tuple(convert(obj, device=device))
 
 
 @multimethod
