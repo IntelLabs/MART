@@ -19,4 +19,7 @@ dependencies = [
 Source = "https://github.com/IntelLabs/MART/tree/example_armory_attack/examples/mart_armory"
 
 [tool.setuptools.packages.find]
-include = ["mart_armory*"]
+include = ["mart_armory*", "hydra_plugins*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml"]
