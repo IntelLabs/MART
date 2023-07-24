@@ -36,12 +36,12 @@ def main(cfg: DictConfig) -> float:
             "Please assemble an attack, e.g., `attack=[object_detection_mask_adversary,data_coco]`"
         )
     else:
-        print(OmegaConf.to_yaml(cfg.attack))
+        print(OmegaConf.to_yaml(cfg))
 
     if "output" not in cfg:
         print("You can output config as a yaml file by `output=path/to/file.yaml`")
     else:
-        OmegaConf.save(config=cfg.attack, f=cfg.output)
+        OmegaConf.save(config=cfg, f=cfg.output)
         print(f"Saved config to {cfg.output}")
 
 

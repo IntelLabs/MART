@@ -72,17 +72,18 @@ class MartAttack:
     4. Convert torch.Tensor back to np.ndarray.
     """
 
-    def __init__(self, model, batch_converter, mart_adv_config_yaml):
+    def __init__(self, model, mart_adv_config_yaml):
         # Extract PyTorch model from an ART Estimator.
         # TODO: Automatically search for torch.nn.Module within model.
         self.model = ModelWrapper(model._model)
         self.device = model.device
 
-        self.batch_converter = batch_converter
-
         # Instantiate a MART adversary.
         adv_cfg = OmegaConf.load(mart_adv_config_yaml)
-        self.adversary = hydra.utils.instantiate(adv_cfg)
+        adv = hydra.utils.instantiate(adv_cfg)
+
+        self.batch_converter = adv.batch_converter
+        self.adversary = adv.attack
 
         # Move adversary to the same device.
         self.adversary.to(self.device)
@@ -117,24 +118,3 @@ class MartAttack:
         input_key = self.batch_converter.input_key
         input_adv_np = batch_adv_armory_np[input_key]
         return input_adv_np
-
-
-class MartAttackObjectDetection(MartAttack):
-    def __init__(self, model, mart_adv_config_yaml):
-        batch_config = {
-            "input_key": "x",
-            "target_keys": {
-                "y": ["area", "boxes", "id", "image_id", "is_crowd", "labels"],
-                "y_patch_metadata": [
-                    "avg_patch_depth",
-                    "gs_coords",
-                    "mask",
-                    "max_depth_perturb_meters",
-                ],
-            },
-        }
-
-        batch_converter = ObjectDetectionBatchConverter(**batch_config)
-        super().__init__(
-            model=model, batch_converter=batch_converter, mart_adv_config_yaml=mart_adv_config_yaml
-        )
