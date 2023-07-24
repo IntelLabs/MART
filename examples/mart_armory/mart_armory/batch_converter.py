@@ -43,28 +43,28 @@ class ObjectDetectionBatchConverter(BatchConverter):
 
         target = tuple(target)
 
-        # TODO: Move to transform() that works on both input and target.
-        #   1. input permute
-        #   2. tuplize input
-        #   3. permute and scale target["mask"]
-        # NHWC -> NCHW, the PyTorch format.
-        input = input.permute((0, 3, 1, 2))
-        # NCHW -> tuple[CHW]
-        input = tuple(input)
+        # # TODO: Move to transform() that works on both input and target.
+        # #   1. input permute
+        # #   2. tuplize input
+        # #   3. permute and scale target["mask"]
+        # # NHWC -> NCHW, the PyTorch format.
+        # input = input.permute((0, 3, 1, 2))
+        # # NCHW -> tuple[CHW]
+        # input = tuple(input)
 
         return input, target
 
     def _revert(self, input: tuple[torch.Tensor], target: tuple[dict]) -> dict:
         batch = {}
 
-        # TODO: Move to untransform().
-        #   1. permute and scale target["mask"]
-        #   2. input stack
-        #   3. input permute
-        # tuple[CHW] -> NCHW
-        input = torch.stack(input)
-        # NCHW -> NHWC, the TensorFlow format used in ART.
-        input = input.permute((0, 2, 3, 1))
+        # # TODO: Move to untransform().
+        # #   1. permute and scale target["mask"]
+        # #   2. input stack
+        # #   3. input permute
+        # # tuple[CHW] -> NCHW
+        # input = torch.stack(input)
+        # # NCHW -> NHWC, the TensorFlow format used in ART.
+        # input = input.permute((0, 2, 3, 1))
 
         batch[self.input_key] = input
 
