@@ -76,3 +76,31 @@ class ObjectDetectionBatchConverter(BatchConverter):
                 batch[target_key].append(target_key_i)
 
         return batch
+
+
+class SelectKeyTransform:
+    def __init__(self, *, key, transform, rename=None):
+        self.key = key
+        self.transform = transform
+        self.rename = rename
+
+    def __call__(self, target: dict):
+        new_key = self.rename or self.key
+
+        target[new_key] = self.transform(target[self.key])
+        if self.rename is not None:
+            del target[self.key]
+
+        return target
+
+
+class Method:
+    def __init__(self, *args, name, **kwargs):
+        self.name = name
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, obj):
+        method = getattr(obj, self.name)
+        ret = method(*self.args, **self.kwargs)
+        return ret
