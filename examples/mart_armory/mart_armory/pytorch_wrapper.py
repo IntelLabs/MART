@@ -14,8 +14,6 @@ from omegaconf import OmegaConf
 
 from mart.models.dual_mode import DualModeGeneralizedRCNN
 
-from .batch_converter import ObjectDetectionBatchConverter
-
 
 # A recursive function to convert all np.ndarray in an object to torch.Tensor, or vice versa.
 @multimethod
@@ -49,12 +47,21 @@ def convert(obj, device=None):  # noqa: F811
     return obj
 
 
-class ModelWrapper(torch.nn.Module):
+class ArtRcnnModelWrapper(torch.nn.Module):
+    """Modify the model so that it is convenient to attack.
+
+    Common issues:
+        1. Make the model accept a single argument `output=model(batch)`;
+        2. Make the model return loss in eval mode;
+        3. Change non-differentiable operations.
+    """
+
     def __init__(self, model):
         super().__init__()
 
-        # FIXME: We need an interface to modify the model, because the model only returns prediction in eval() model.
-        self.model = DualModeGeneralizedRCNN(model)
+        # Extract PyTorch model from an ART Estimator.
+        # TODO: Automatically search for torch.nn.Module within model.
+        self.model = DualModeGeneralizedRCNN(model._model)
 
     def forward(self, batch):
         # Make the model accept batch as an argument parameter.
@@ -73,17 +80,16 @@ class MartAttack:
     """
 
     def __init__(self, model, mart_adv_config_yaml):
-        # Extract PyTorch model from an ART Estimator.
-        # TODO: Automatically search for torch.nn.Module within model.
-        self.model = ModelWrapper(model._model)
-        self.device = model.device
-
         # Instantiate a MART adversary.
         adv_cfg = OmegaConf.load(mart_adv_config_yaml)
         adv = hydra.utils.instantiate(adv_cfg)
 
         self.batch_converter = adv.batch_converter
         self.adversary = adv.attack
+        self.model_wrapper = adv.model_wrapper
+
+        self.model = self.model_wrapper(model)
+        self.device = model.device
 
         # Move adversary to the same device.
         self.adversary.to(self.device)

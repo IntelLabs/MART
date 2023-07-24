@@ -1,0 +1,2 @@
+_target_: mart_armory.pytorch_wrapper.ArtRcnnModelWrapper
+_partial_: true
