@@ -88,8 +88,8 @@ class MartAttack:
         self.adversary = adv.attack
         self.model_wrapper = adv.model_wrapper
 
-        self.model = self.model_wrapper(model)
         self.device = model.device
+        self.model = self.model_wrapper(model)
 
         # Move adversary to the same device.
         self.adversary.to(self.device)

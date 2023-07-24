@@ -3,9 +3,9 @@
 # specify here default training configuration
 defaults:
   - _self_
-  - attack: null
-  - batch_converter: null
-  - model_wrapper: null
+  - attack: ???
+  - batch_converter: ???
+  - model_wrapper: ???
   - override hydra/hydra_logging: disabled
   - override hydra/job_logging: disabled
 
