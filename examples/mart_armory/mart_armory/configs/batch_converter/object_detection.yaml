@@ -1,4 +1,5 @@
 _target_: mart_armory.batch_converter.ObjectDetectionBatchConverter
+_convert_: partial
 input_key: "x"
 target_keys:
   y: ["area", "boxes", "id", "image_id", "is_crowd", "labels"]
@@ -6,7 +7,6 @@ target_keys:
     ["avg_patch_depth", "gs_coords", "mask", "max_depth_perturb_meters"]
 transform:
   _target_: torchvision.transforms.Compose
-  _convert_: partial
   transforms: # NHWC -> NCHW, the PyTorch format.
     - _target_: torch.permute
       _partial_: true
@@ -15,7 +15,6 @@ transform:
       _partial_: true
 untransform:
   _target_: torchvision.transforms.Compose
-  _convert_: partial
   transforms: # NCHW -> NHWC, the TensorFlow format used in ART.
     - _target_: torch.stack
       _partial_: true
