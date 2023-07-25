@@ -33,4 +33,17 @@ output=path/to/attack.yaml
 },
 ```
 
-Armory requires the argument `knowledge`. The statement `"use_label": true` gets `y` for the attack.
+Note that Armory requires the argument `knowledge`. The statement `"use_label": true` gets `y` for the attack.
+
+Alternatively, we can use `jq` to update existing scenario json files, for example
+
+```bash
+cat scenario_configs/eval7/carla_overhead_object_detection/carla_obj_det_adversarialpatch_undefended.json \
+| jq 'del(.attack)' \
+| jq '.attack.knowledg="white"' \
+| jq '.attack.use_label=true' \
+| jq '.attack.module="mart_armory"' \
+| jq '.attack.name="MartAttack"' \
+| jq '.attack.kwargs.mart_adv_config_yaml="path/to/attack.yaml"' \
+> carla_obj_det_adversarialpatch_undefended_mart_attack.json
+```
