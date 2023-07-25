@@ -40,7 +40,7 @@ Alternatively, we can use `jq` to update existing scenario json files, for examp
 ```bash
 cat scenario_configs/eval7/carla_overhead_object_detection/carla_obj_det_adversarialpatch_undefended.json \
 | jq 'del(.attack)' \
-| jq '.attack.knowledg="white"' \
+| jq '.attack.knowledge="white"' \
 | jq '.attack.use_label=true' \
 | jq '.attack.module="mart_armory"' \
 | jq '.attack.name="MartAttack"' \
