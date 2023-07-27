@@ -18,23 +18,41 @@ __all__ = [
 
 
 class BatchConverter(abc.ABC):
-    def __init__(self, *, transform: Callable = None, untransform: Callable = None):
-        """_summary_
+    def __init__(
+        self,
+        *,
+        transform: Callable = None,
+        untransform: Callable = None,
+        target_transform: Callable = None,
+        target_untransform: Callable = None,
+    ):
+        """Convert batch into (input, target), and vice versa.
 
         Args:
             transform (Callable): Transform input into a convenient format, e.g. [0,1]->[0.255].
             untransform (Callable): Transform adversarial input in the convenient format back into the original format of input, e.g. [0,255]->[0,1].
+            target_transform (Callable): Transform target.
+            target_untransform (Callable): Untransform target.
         """
-        self.transform = transform if transform is not None else lambda x: x
-        self.untransform = untransform if untransform is not None else lambda x: x
+        self.transform = transform if isinstance(transform, Callable) else lambda x: x
+        self.untransform = untransform if isinstance(untransform, Callable) else lambda x: x
+
+        self.target_transform = (
+            target_transform if isinstance(target_transform, Callable) else lambda x: x
+        )
+        self.target_untransform = (
+            target_untransform if isinstance(target_untransform, Callable) else lambda x: x
+        )
 
     def __call__(self, batch):
         input, target = self._convert(batch)
         input_transformed = self.transform(input)
-        return input_transformed, target
+        target_transformed = self.target_transform(target)
+        return input_transformed, target_transformed
 
-    def revert(self, input_transformed, target):
+    def revert(self, input_transformed, target_transformed):
         input = self.untransform(input_transformed)
+        target = self.target_untransform(target_transformed)
         batch = self._revert(input, target)
         return batch
 

@@ -125,14 +125,16 @@ class Adversary(pl.LightningModule):
         # batch = batch.copy()
 
         input_transformed = batch["input"]
-        target = batch["target"]
+        target_transformed = batch["target"]
         # What we need is a frozen model that returns (a dictionary of) logits, or losses.
         model = batch["model"]
 
         # Compose un-transformed input_adv from batch["input"], then give to model for updated gain.
-        input_adv_transformed = self.get_input_adv(input=input_transformed, target=target)
+        input_adv_transformed = self.get_input_adv(
+            input=input_transformed, target=target_transformed
+        )
         # Target model expects input in the original format.
-        batch_adv = self.batch_converter.revert(input_adv_transformed, target)
+        batch_adv = self.batch_converter.revert(input_adv_transformed, target_transformed)
 
         # A model that returns output dictionary.
         outputs = model(batch_adv)
@@ -171,10 +173,14 @@ class Adversary(pl.LightningModule):
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
         # Extract and transform input so that is convenient for Adversary.
-        input_transformed, target = self.batch_converter(batch)
+        input_transformed, target_transformed = self.batch_converter(batch)
 
         # Optimization loop only sees the transformed input in batches.
-        batch_transformed = {"input": input_transformed, "target": target, "model": model}
+        batch_transformed = {
+            "input": input_transformed,
+            "target": target_transformed,
+            "model": model,
+        }
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input_transformed)
@@ -185,11 +191,13 @@ class Adversary(pl.LightningModule):
         self.attacker.fit(self, train_dataloaders=cycle([batch_transformed]))
 
         # Get the transformed input_adv for enforcer checking.
-        input_adv_transformed = self.get_input_adv(input=input_transformed, target=target)
-        self.enforcer(input_adv_transformed, input=input_transformed, target=target)
+        input_adv_transformed = self.get_input_adv(
+            input=input_transformed, target=target_transformed
+        )
+        self.enforcer(input_adv_transformed, input=input_transformed, target=target_transformed)
 
         # Revert to the original format of batch.
-        batch_adv = self.batch_converter.revert(input_adv_transformed, target)
+        batch_adv = self.batch_converter.revert(input_adv_transformed, target_transformed)
 
         return batch_adv
 
