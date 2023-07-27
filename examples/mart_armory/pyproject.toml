@@ -12,7 +12,6 @@ requires-python = ">=3.9"
 
 dependencies = [
   "mart@git+https://github.com/IntelLabs/MART.git@example_armory_attack",
-  "multimethod ~= 1.9.1",
 ]
 
 [project.urls]
