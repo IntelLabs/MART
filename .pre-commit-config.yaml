@@ -99,4 +99,4 @@ repos:
       - id: codespell
         args:
           - --skip=logs/**,data/**
-          - --ignore-words-list=abc,def,gard
+          - --ignore-words-list=abc,def,gard,fo
