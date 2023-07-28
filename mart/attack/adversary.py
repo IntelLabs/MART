@@ -175,7 +175,7 @@ class Adversary(pl.LightningModule):
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
         # Copy to keep the original batch.
         # Extract and transform input so that is convenient for Adversary.
-        input_transformed, target_transformed = self.batch_converter(batch.copy())
+        input_transformed, target_transformed = self.batch_converter(batch)
 
         # Optimization loop only sees the transformed input in batches.
         batch_transformed = {

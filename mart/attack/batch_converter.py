@@ -89,6 +89,8 @@ class DictBatchConverter(BatchConverter):
         self.rest = {}
 
     def _convert(self, batch):
+        # Make a copy because we don't want to break the original batch.
+        batch = batch.copy()
         input = batch.pop(self.input_key)
         if "target" in batch:
             target = batch["target"]
@@ -117,6 +119,8 @@ class ListBatchConverter(BatchConverter):
         self.target_size = None
 
     def _convert(self, batch: list):
+        # Make a copy because we don't want to break the original batch.
+        batch = batch.copy()
         input = batch.pop(self.input_key)
         self.target_size = len(batch)
 
