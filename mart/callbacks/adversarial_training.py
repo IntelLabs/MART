@@ -60,9 +60,9 @@ class AdversarialTraining(Callback):
 
         elif hasattr(model, "training_step"):
             # Monkey-patch model.log to avoid spamming.
-            @MonkeyPatch(model, "log", lambda *args, **kwargs: None)
             def model_forward(batch):
-                output = model.training_step(batch, dataloader_idx)
+                with MonkeyPatch(model, "log", lambda *args, **kwargs: None):
+                    output = model.training_step(batch, dataloader_idx)
                 return output
 
         else:
