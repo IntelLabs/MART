@@ -91,17 +91,20 @@ class DictBatchConverter(BatchConverter):
     def _convert(self, batch):
         input = batch.pop(self.input_key)
         if "target" in batch:
-            target = batch.pop("target")
+            target = batch["target"]
             self.rest = batch
         else:
             target = batch
         return input, target
 
     def _revert(self, input, target):
-        if self.rest is {}:
-            batch = {self.input_key: input} | target
+        if self.rest == {}:
+            batch = target
         else:
-            batch = {self.input_key: input, "target": target} | self.rest
+            batch = self.rest
+
+        # Input may have been changed.
+        batch[self.input_key] = input
 
         return batch
 
