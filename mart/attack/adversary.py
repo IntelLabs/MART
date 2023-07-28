@@ -15,6 +15,7 @@ import torch
 
 from mart.utils import silent
 
+from ..callbacks.adversarial_training import AdversarialTraining
 from ..optim import OptimizerFactory
 
 if TYPE_CHECKING:
@@ -220,6 +221,11 @@ class Adversary(pl.LightningModule):
             raise NotImplementedError
 
         self._attacker = self._attacker(accelerator=accelerator, devices=devices)
+
+        # Remove recursive adversarial training callback from lightning.pytorch.callbacks_factory.
+        for callback in self._attacker.callbacks:
+            if isinstance(callback, AdversarialTraining):
+                self._attacker.callbacks.remove(callback)
 
         return self._attacker
 
