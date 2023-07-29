@@ -1,5 +1,5 @@
 defaults:
-  - default.yaml
+  - fiftyone
 
 train_dataset:
   _target_: mart.datamodules.fiftyone.FiftyOneDataset
@@ -11,9 +11,11 @@ train_dataset:
     _target_: mart.transforms.Compose
     transforms:
       - _target_: torchvision.transforms.ToTensor
+      # ConvertCocoPolysToMask must be prior to ConvertInstanceSegmentationToPerturbable.
       - _target_: mart.transforms.ConvertCocoPolysToMask
       - _target_: mart.transforms.RandomHorizontalFlip
         p: 0.5
+      - _target_: mart.transforms.ConvertInstanceSegmentationToPerturbable
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
@@ -35,9 +37,9 @@ val_dataset:
     _target_: mart.transforms.Compose
     transforms:
       - _target_: torchvision.transforms.ToTensor
+      # ConvertCocoPolysToMask must be prior to ConvertInstanceSegmentationToPerturbable.
       - _target_: mart.transforms.ConvertCocoPolysToMask
-      - _target_: mart.transforms.RandomHorizontalFlip
-        p: 0.5
+      - _target_: mart.transforms.ConvertInstanceSegmentationToPerturbable
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
@@ -59,9 +61,9 @@ test_dataset:
     _target_: mart.transforms.Compose
     transforms:
       - _target_: torchvision.transforms.ToTensor
+      # ConvertCocoPolysToMask must be prior to ConvertInstanceSegmentationToPerturbable.
       - _target_: mart.transforms.ConvertCocoPolysToMask
-      - _target_: mart.transforms.RandomHorizontalFlip
-        p: 0.5
+      - _target_: mart.transforms.ConvertInstanceSegmentationToPerturbable
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
@@ -72,8 +74,3 @@ test_dataset:
         zero_point: 0
         quant_min: 0
         quant_max: 255
-
-num_workers: 2
-collate_fn:
-  _target_: hydra.utils.get_method
-  path: mart.datamodules.coco.collate_fn

@@ -65,7 +65,6 @@ class FiftyOneDataset(VisionDataset_):
         self.classes = self.filtered_dataset.default_classes
         self.labels_map_rev = {c: i for i, c in enumerate(self.classes)}
 
-        self.filtered_dataset.shuffle()
         print(
             f"FiftyOne dataset {dataset_name}, with {len(self.ids)} samples, successfully loaded."
         )
@@ -76,10 +75,11 @@ class FiftyOneDataset(VisionDataset_):
         metadata = sample.metadata
         img = Image.open(sample.filepath).convert("RGB")
 
-        boxes = []
-        labels = []
-        area = []
-        iscrowd = []
+        target = {}
+        target["image_id"] = index
+        target["file_name"] = sample.filepath
+        target["annotations"] = []
+
         detections = sample[self.gt_field].detections
         for det in detections:
             category_id = self.labels_map_rev[det.label]
@@ -88,18 +88,14 @@ class FiftyOneDataset(VisionDataset_):
                 metadata,
                 category_id=category_id,
             )
-            x, y, w, h = coco_obj.bbox
-            boxes.append([x, y, x + w, y + h])
-            labels.append(coco_obj.category_id)
-            area.append(coco_obj.area)
-            iscrowd.append(coco_obj.iscrowd)
 
-        target = {}
-        target["image_id"] = torch.as_tensor([index])
-        target["boxes"] = torch.as_tensor(boxes, dtype=torch.float32)
-        target["labels"] = torch.as_tensor(labels, dtype=torch.int64)
-        target["area"] = torch.as_tensor(area, dtype=torch.float32)
-        target["iscrowd"] = torch.as_tensor(iscrowd, dtype=torch.int64)
+            coco_annotation = coco_obj.to_anno_dict()
+            # If the detection object has segmentation information, verify that the
+            # segmentation field is not empty
+            if coco_obj.segmentation is not None and len(coco_annotation["segmentation"]) == 0:
+                continue
+
+            target["annotations"].append(coco_annotation)
 
         if self.transforms is not None:
             img, target = self.transforms(img, target)
