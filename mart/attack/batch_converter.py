@@ -34,14 +34,18 @@ class BatchConverter(abc.ABC):
             target_transform (Callable): Transform target.
             target_untransform (Callable): Untransform target.
         """
-        self.transform = transform if isinstance(transform, Callable) else lambda x: x
-        self.untransform = untransform if isinstance(untransform, Callable) else lambda x: x
+
+        def no_op(x):
+            return x
+
+        self.transform = transform if isinstance(transform, Callable) else no_op
+        self.untransform = untransform if isinstance(untransform, Callable) else no_op
 
         self.target_transform = (
-            target_transform if isinstance(target_transform, Callable) else lambda x: x
+            target_transform if isinstance(target_transform, Callable) else no_op
         )
         self.target_untransform = (
-            target_untransform if isinstance(target_untransform, Callable) else lambda x: x
+            target_untransform if isinstance(target_untransform, Callable) else no_op
         )
 
     def __call__(self, batch):
