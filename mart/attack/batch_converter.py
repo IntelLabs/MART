@@ -25,6 +25,8 @@ class BatchConverter(abc.ABC):
         untransform: Callable = None,
         target_transform: Callable = None,
         target_untransform: Callable = None,
+        batch_transform: Callable = None,
+        batch_untransform: Callable = None,
     ):
         """Convert batch into (input, target), and vice versa.
 
@@ -35,7 +37,7 @@ class BatchConverter(abc.ABC):
             target_untransform (Callable): Untransform target.
         """
 
-        def no_op(x):
+        def no_op(x, device=None):
             return x
 
         self.transform = transform if isinstance(transform, Callable) else no_op
@@ -48,8 +50,14 @@ class BatchConverter(abc.ABC):
             target_untransform if isinstance(target_untransform, Callable) else no_op
         )
 
-    def __call__(self, batch):
-        input, target = self._convert(batch)
+        self.batch_transform = batch_transform if isinstance(batch_transform, Callable) else no_op
+        self.batch_untransform = (
+            batch_untransform if isinstance(batch_untransform, Callable) else no_op
+        )
+
+    def __call__(self, batch, device=None):
+        batch_transformed = self.batch_transform(batch, device=device)
+        input, target = self._convert(batch_transformed)
         input_transformed = self.transform(input)
         target_transformed = self.target_transform(target)
         return input_transformed, target_transformed
@@ -57,7 +65,8 @@ class BatchConverter(abc.ABC):
     def revert(self, input_transformed, target_transformed):
         input = self.untransform(input_transformed)
         target = self.target_untransform(target_transformed)
-        batch = self._revert(input, target)
+        batch_transformed = self._revert(input, target)
+        batch = self.batch_untransform(batch_transformed)
         return batch
 
     @abc.abstractclassmethod
