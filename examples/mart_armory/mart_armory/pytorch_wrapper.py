@@ -6,46 +6,11 @@
 
 from __future__ import annotations
 
-from functools import singledispatch
-
 import hydra
-import numpy as np
 import torch
 from omegaconf import OmegaConf
 
 from mart.models.dual_mode import DualModeGeneralizedRCNN
-
-
-# A recursive function to convert all np.ndarray in an object to torch.Tensor, or vice versa.
-@singledispatch
-def convert(obj, device=None):
-    """All other types, no change."""
-    return obj
-
-
-@convert.register
-def _(obj: dict, device=None):
-    return {key: convert(value, device=device) for key, value in obj.items()}
-
-
-@convert.register
-def _(obj: list, device=None):
-    return [convert(item, device=device) for item in obj]
-
-
-@convert.register
-def _(obj: tuple, device=None):
-    return tuple(convert(obj, device=device))
-
-
-@convert.register
-def _(obj: np.ndarray, device=None):
-    return torch.tensor(obj, device=device)
-
-
-@convert.register
-def _(obj: torch.Tensor, device=None):
-    return obj.detach().cpu().numpy()
 
 
 class ArtRcnnModelWrapper(torch.nn.Module):
@@ -97,17 +62,15 @@ class MartAttack:
 
     def convert_batch_armory_to_torchvision(self, batch_armory_np):
         # np.ndarray -> torch.Tensor, on a device.
-        batch_armory_pth = convert(batch_armory_np, device=self.device)
         # armory format -> torchvision format.
-        batch_tv_pth = self.batch_converter(batch_armory_pth)
+        batch_tv_pth = self.batch_converter(batch_armory_np, device=self.device)
         return batch_tv_pth
 
     def convert_batch_torchvision_to_armory(self, batch_tv_pth):
         # torchvision format -> armory format.
         # Note: revert(input, target)
-        batch_armory_pth = self.batch_converter.revert(*batch_tv_pth)
         # torch.Tensor -> np.ndarray
-        batch_armory_np = convert(batch_armory_pth)
+        batch_armory_np = self.batch_converter.revert(*batch_tv_pth)
         return batch_armory_np
 
     def generate(self, **batch_armory_np):

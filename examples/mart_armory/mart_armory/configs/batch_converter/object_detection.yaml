@@ -62,3 +62,11 @@ target_untransform:
         - _target_: torch.permute
           _partial_: true
           dims: [1, 2, 0]
+
+batch_transform:
+  _target_: mart.transforms.tensor_array.convert
+  _partial_: true
+
+batch_untransform:
+  _target_: mart.transforms.tensor_array.convert
+  _partial_: true
