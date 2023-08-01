@@ -35,14 +35,11 @@ class MartAttack:
         self.adversary.to(self.device)
 
     def generate(self, **batch_armory_np):
-        # np.ndarray -> torch.Tensor, on a device.
-        # armory format -> torchvision format.
+        # Armory format -> torchvision format
         batch_tv_pth = self.batch_converter(batch_armory_np, device=self.device)
-
+        # Attack
         batch_adv_tv_pth = self.adversary(batch=batch_tv_pth, model=self.model)
-
-        # torchvision format -> armory format.
-        # torch.Tensor -> np.ndarray
+        # torchvision format -> Armory format
         batch_adv_armory_np = self.batch_converter.revert(*batch_adv_tv_pth)
 
         # Only return adversarial input in the original numpy format.

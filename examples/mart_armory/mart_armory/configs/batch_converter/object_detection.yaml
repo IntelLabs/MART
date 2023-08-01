@@ -8,6 +8,7 @@ target_keys:
     ["avg_patch_depth", "gs_coords", "mask", "max_depth_perturb_meters"]
 
 transform:
+  # armory format -> torchvision format.
   _target_: torchvision.transforms.Compose
   transforms: # NHWC -> NCHW, the PyTorch format.
     - _target_: torch.permute
@@ -17,6 +18,7 @@ transform:
       _partial_: true
 
 untransform:
+  # torchvision format -> armory format.
   _target_: torchvision.transforms.Compose
   transforms: # NCHW -> NHWC, the TensorFlow format used in ART.
     - _target_: torch.stack
@@ -64,9 +66,11 @@ target_untransform:
           dims: [1, 2, 0]
 
 batch_transform:
+  # np.ndarray -> torch.Tensor, on a device.
   _target_: mart.transforms.tensor_array.convert
   _partial_: true
 
 batch_untransform:
+  # torch.Tensor -> np.ndarray
   _target_: mart.transforms.tensor_array.convert
   _partial_: true
