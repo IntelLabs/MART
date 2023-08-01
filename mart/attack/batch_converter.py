@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+from __future__ import annotations
+
 import abc
 from typing import Callable
 
@@ -21,12 +23,12 @@ class BatchConverter(abc.ABC):
     def __init__(
         self,
         *,
-        transform: Callable = None,
-        untransform: Callable = None,
-        target_transform: Callable = None,
-        target_untransform: Callable = None,
-        batch_transform: Callable = None,
-        batch_untransform: Callable = None,
+        transform: Callable | None = None,
+        untransform: Callable | None = None,
+        target_transform: Callable | None = None,
+        target_untransform: Callable | None = None,
+        batch_transform: Callable | None = None,
+        batch_untransform: Callable | None = None,
     ):
         """Convert batch into (input, target), and vice versa.
 
@@ -35,38 +37,43 @@ class BatchConverter(abc.ABC):
             untransform (Callable): Transform adversarial input in the convenient format back into the original format of input, e.g. [0,255]->[0,1].
             target_transform (Callable): Transform target.
             target_untransform (Callable): Untransform target.
+            batch_transform (Callable): Transform batch before converting the batch.
+            batch_untransform (callable): Untransform batch after reverting the batch.
         """
 
-        def no_op(x, device=None):
-            return x
+        self.transform = transform
+        self.untransform = untransform
 
-        self.transform = transform if isinstance(transform, Callable) else no_op
-        self.untransform = untransform if isinstance(untransform, Callable) else no_op
+        self.target_transform = target_transform
+        self.target_untransform = target_untransform
 
-        self.target_transform = (
-            target_transform if isinstance(target_transform, Callable) else no_op
-        )
-        self.target_untransform = (
-            target_untransform if isinstance(target_untransform, Callable) else no_op
-        )
-
-        self.batch_transform = batch_transform if isinstance(batch_transform, Callable) else no_op
-        self.batch_untransform = (
-            batch_untransform if isinstance(batch_untransform, Callable) else no_op
-        )
+        self.batch_transform = batch_transform
+        self.batch_untransform = batch_untransform
 
     def __call__(self, batch, device=None):
-        batch_transformed = self.batch_transform(batch, device=device)
-        input, target = self._convert(batch_transformed)
-        input_transformed = self.transform(input)
-        target_transformed = self.target_transform(target)
-        return input_transformed, target_transformed
+        if self.batch_transform is not None:
+            batch = self.batch_transform(batch, device=device)
 
-    def revert(self, input_transformed, target_transformed):
-        input = self.untransform(input_transformed)
-        target = self.target_untransform(target_transformed)
-        batch_transformed = self._revert(input, target)
-        batch = self.batch_untransform(batch_transformed)
+        input, target = self._convert(batch)
+
+        if self.transform is not None:
+            input = self.transform(input)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+        return input, target
+
+    def revert(self, input, target):
+        if self.untransform is not None:
+            input = self.untransform(input)
+        if self.target_untransform is not None:
+            target = self.target_untransform(target)
+
+        batch = self._revert(input, target)
+
+        if self.batch_untransform is not None:
+            batch = self.batch_untransform(batch)
+
         return batch
 
     @abc.abstractclassmethod
@@ -102,19 +109,24 @@ class DictBatchConverter(BatchConverter):
         self.rest = {}
 
     def _convert(self, batch):
+        # Make a copy because we don't want to break the original batch.
+        batch = batch.copy()
         input = batch.pop(self.input_key)
         if "target" in batch:
-            target = batch.pop("target")
+            target = batch["target"]
             self.rest = batch
         else:
             target = batch
         return input, target
 
     def _revert(self, input, target):
-        if self.rest is {}:
-            batch = {self.input_key: input} | target
+        if self.rest == {}:
+            batch = target
         else:
-            batch = {self.input_key: input, "target": target} | self.rest
+            batch = self.rest
+
+        # Input may have been changed.
+        batch[self.input_key] = input
 
         return batch
 
@@ -127,6 +139,8 @@ class ListBatchConverter(BatchConverter):
         self.target_size = None
 
     def _convert(self, batch: list):
+        # Make a copy because we don't want to break the original batch.
+        batch = batch.copy()
         input = batch.pop(self.input_key)
         self.target_size = len(batch)
 

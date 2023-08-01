@@ -15,6 +15,7 @@ import torch
 
 from mart.utils import silent
 
+from ..callbacks.adversarial_training import AdversarialTraining
 from ..optim import OptimizerFactory
 
 if TYPE_CHECKING:
@@ -106,6 +107,7 @@ class Adversary(pl.LightningModule):
             assert self._attacker.limit_train_batches > 0
 
         self.batch_converter = batch_converter
+        self.model_transform = model_transform
 
         self.model_transform = (
             model_transform if isinstance(model_transform, Callable) else lambda x: x
@@ -178,16 +180,18 @@ class Adversary(pl.LightningModule):
 
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
+        # Copy to keep the original batch.
         # Extract and transform input so that is convenient for Adversary.
         input_transformed, target_transformed = self.batch_converter(batch)
 
-        model_transformed = self.model_transform(model)
+        if self.model_transform is not None:
+            model = self.model_transform(model)
 
         # Optimization loop only sees the transformed input in batches.
         batch_transformed = {
             "input": input_transformed,
             "target": target_transformed,
-            "model": model_transformed,
+            "model": model,
         }
 
         # Configure and reset perturbation for current inputs
@@ -228,6 +232,11 @@ class Adversary(pl.LightningModule):
             raise NotImplementedError
 
         self._attacker = self._attacker(accelerator=accelerator, devices=devices)
+
+        # Remove recursive adversarial training callback from lightning.pytorch.callbacks_factory.
+        for callback in self._attacker.callbacks:
+            if isinstance(callback, AdversarialTraining):
+                self._attacker.callbacks.remove(callback)
 
         return self._attacker
 
