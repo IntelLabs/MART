@@ -107,10 +107,7 @@ class Adversary(pl.LightningModule):
             assert self._attacker.limit_train_batches > 0
 
         self.batch_converter = batch_converter
-
-        self.model_transform = (
-            model_transform if isinstance(model_transform, Callable) else lambda x: x
-        )
+        self.model_transform = model_transform
 
     @property
     def perturber(self) -> Perturber:
@@ -183,13 +180,14 @@ class Adversary(pl.LightningModule):
         # Extract and transform input so that is convenient for Adversary.
         input_transformed, target_transformed = self.batch_converter(batch)
 
-        model_transformed = self.model_transform(model)
+        if self.model_transform is not None:
+            model = self.model_transform(model)
 
         # Optimization loop only sees the transformed input in batches.
         batch_transformed = {
             "input": input_transformed,
             "target": target_transformed,
-            "model": model_transformed,
+            "model": model,
         }
 
         # Configure and reset perturbation for current inputs
