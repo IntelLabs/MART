@@ -1,0 +1,7 @@
+defaults:
+  - perturber: default
+  - perturber/initializer: uniform
+  - /optimizer@optimizer: sgd
+
+optimizer:
+  lr: ${..lr}
