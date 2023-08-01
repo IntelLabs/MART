@@ -1,22 +1,13 @@
 defaults:
   - adversary
-  - perturber: default
-  - perturber/initializer: constant
-  - perturber/projector: mask_range
+  - pgd
+  - mask
   - composer: overlay
-  - /optimizer@optimizer: sgd
-  - gain: rcnn_training_loss
   - gradient_modifier: sign
+  - gain: rcnn_training_loss
   - objective: zero_ap
-  - enforcer: default
-  - enforcer/constraints: [mask, pixel_range]
 
 # Make a 5-step attack for the demonstration purpose.
 max_iters: 5
-
-optimizer:
-  lr: 55
-
-perturber:
-  initializer:
-    constant: 127
+eps: 255
+lr: 55
