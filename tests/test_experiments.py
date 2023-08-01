@@ -80,7 +80,7 @@ def test_cifar10_cnn_adv_experiment(classification_cfg, tmp_path):
         "-m",
         "experiment=CIFAR10_CNN_Adv",
         "hydra.sweep.dir=" + str(tmp_path),
-        "model.modules.input_adv_test.max_iters=10",
+        "callbacks.adversarial_training.test_adversary.max_iters=10",
         "optimized_metric=training_metrics/acc",
         "++datamodule.train_dataset.image_size=[3,32,32]",
         "++datamodule.train_dataset.num_classes=10",
