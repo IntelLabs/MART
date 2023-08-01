@@ -109,10 +109,6 @@ class Adversary(pl.LightningModule):
         self.batch_converter = batch_converter
         self.model_transform = model_transform
 
-        self.model_transform = (
-            model_transform if isinstance(model_transform, Callable) else lambda x: x
-        )
-
     @property
     def perturber(self) -> Perturber:
         # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint,
