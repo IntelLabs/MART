@@ -7,32 +7,7 @@
 from __future__ import annotations
 
 import hydra
-import torch
 from omegaconf import OmegaConf
-
-from mart.models.dual_mode import DualModeGeneralizedRCNN
-
-
-class ArtRcnnModelWrapper(torch.nn.Module):
-    """Modify the model so that it is convenient to attack.
-
-    Common issues:
-        1. Make the model accept a single argument `output=model(batch)`;
-        2. Make the model return loss in eval mode;
-        3. Change non-differentiable operations.
-    """
-
-    def __init__(self, model):
-        super().__init__()
-
-        # Extract PyTorch model from an ART Estimator.
-        # TODO: Automatically search for torch.nn.Module within model.
-        self.model = DualModeGeneralizedRCNN(model._model)
-
-    def forward(self, batch):
-        # Make the model accept batch as an argument parameter.
-        output = self.model(*batch)
-        return output
 
 
 class MartAttack:
@@ -52,10 +27,9 @@ class MartAttack:
 
         self.batch_converter = adv.batch_converter
         self.adversary = adv.attack
-        self.model_wrapper = adv.model_wrapper
 
+        self.model = model
         self.device = model.device
-        self.model = self.model_wrapper(model)
 
         # Move adversary to the same device.
         self.adversary.to(self.device)

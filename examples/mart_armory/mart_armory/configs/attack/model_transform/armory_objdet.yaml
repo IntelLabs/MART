@@ -1,0 +1,7 @@
+_target_: torchvision.transforms.Compose
+transforms:
+  - _target_: mart_armory.model_transform.Extract
+    attrib: "_model"
+  - _target_: mart.models.dual_mode.DualModeGeneralizedRCNN
+    _partial_: true
+  - _target_: mart_armory.model_transform.ListInputAsArgs
