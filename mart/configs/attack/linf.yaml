@@ -1,5 +1,4 @@
 defaults:
   - perturber/projector: linf_additive_range
-  - gradient_modifier: sign
   - enforcer: default
   - enforcer/constraints: lp
