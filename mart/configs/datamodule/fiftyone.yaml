@@ -69,6 +69,30 @@ test_dataset:
         quant_min: 0
         quant_max: 255
 
+predict_dataset:
+  _target_: mart.datamodules.fiftyone.FiftyOneDataset
+  dataset_name: ???
+  gt_field: ${..train_dataset.gt_field}
+  sample_tags: []
+  label_tags: []
+  transforms:
+    _target_: mart.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.ConvertCocoPolysToMask
+      - _target_: mart.transforms.RandomHorizontalFlip
+        p: 0.5
+      - _target_: mart.transforms.Denormalize
+        center: 0
+        scale: 255
+      - _target_: torch.fake_quantize_per_tensor_affine
+        _partial_: true
+        # (x/1+0).round().clamp(0, 255) * 1
+        scale: 1
+        zero_point: 0
+        quant_min: 0
+        quant_max: 255
+
 num_workers: 2
 collate_fn:
   _target_: hydra.utils.get_method

@@ -34,6 +34,8 @@ class LitModular(LightningModule):
         test_sequence=None,
         test_step_log=None,
         test_metrics=None,
+        predict_sequence=None,
+        predict_step_log=None,
         load_state_dict=None,
         output_loss_key="loss",
         output_preds_key="preds",
@@ -54,6 +56,8 @@ class LitModular(LightningModule):
             validation_sequence = [validation_sequence[key] for key in sorted(validation_sequence)]
         if isinstance(test_sequence, dict):
             test_sequence = [test_sequence[key] for key in sorted(test_sequence)]
+        if isinstance(predict_sequence, dict):
+            predict_sequence = [predict_sequence[key] for key in sorted(predict_sequence)]
 
         # *_step() functions make some assumptions about the type of Module it can call.
         # That is, injecting a nn.Module generally won't work, so better to hardcode SequentialDict.
@@ -62,6 +66,7 @@ class LitModular(LightningModule):
             "training": training_sequence,
             "validation": validation_sequence,
             "test": test_sequence,
+            "predict": predict_sequence,
         }
         self.model = SequentialDict(modules, sequences)
 
@@ -89,6 +94,11 @@ class LitModular(LightningModule):
             test_step_log = {item: item for item in test_step_log}
         self.test_step_log = test_step_log or {}
         self.test_metrics = test_metrics
+
+        # Be backwards compatible by turning list into dict where each item is its own key-value
+        if isinstance(predict_step_log, (list, tuple)):
+            predict_step_log = {item: item for item in predict_step_log}
+        self.predict_step_log = predict_step_log or {}
 
         # Load state dict for specified modules. We flatten it because Hydra
         # commandlines converts dotted paths to nested dictionaries.
@@ -203,6 +213,18 @@ class LitModular(LightningModule):
         self.test_metrics.reset()
 
         self.log_metrics(metrics, prefix="test_metrics")
+
+    #
+    # Predict
+    #
+    def predict_step(self, batch, batch_idx):
+        input, target = batch
+        pred = self(input=input, target=target, model=self.model, step="predict")
+
+        for log_name, output_key in self.predict_step_log.items():
+            self.log(f"predict/{log_name}", pred[output_key])
+
+        return pred
 
     #
     # Utilities

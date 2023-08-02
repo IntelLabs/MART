@@ -1,0 +1,4 @@
+fiftyone_prediction_adder:
+  _target_: mart.callbacks.FiftyOnePredictionAdder
+  output_dir: ${now:%Y-%m-%d}_${now:%H-%M-%S}
+  write_interval: "epoch"
