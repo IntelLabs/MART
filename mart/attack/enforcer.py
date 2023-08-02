@@ -54,7 +54,8 @@ class Lp(Constraint):
         self, eps: float, p: int | float = torch.inf, dim: int | None = None, keepdim: bool = False
     ):
         self.p = p
-        self.eps = eps
+        # Convert to tensor for torch.isclose().
+        self.eps = torch.tensor(eps)
         self.dim = dim
         self.keepdim = keepdim
 
