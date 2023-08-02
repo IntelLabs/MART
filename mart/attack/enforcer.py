@@ -62,7 +62,7 @@ class Lp(Constraint):
         perturbation = input_adv - input
         norm_vals = perturbation.norm(p=self.p, dim=self.dim, keepdim=self.keepdim)
         norm_max = norm_vals.max()
-        if norm_max > self.eps:
+        if norm_max > self.eps and not torch.isclose(self.eps, norm_max):
             raise ConstraintViolated(
                 f"L-{self.p} norm of perturbation exceeds {self.eps}, reaching {norm_max}"
             )
