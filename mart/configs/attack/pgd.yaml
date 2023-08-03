@@ -1,5 +1,4 @@
 defaults:
-  - perturber: default
   - perturber/initializer: uniform
   - /optimizer@optimizer: sgd
 
