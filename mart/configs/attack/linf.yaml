@@ -9,3 +9,6 @@ enforcer:
       p:
         _target_: builtins.float
         _args_: ["inf"]
+      eps: ${....eps}
+
+eps: ???

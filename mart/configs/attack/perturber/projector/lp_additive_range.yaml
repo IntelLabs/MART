@@ -1,5 +1,5 @@
 _target_: mart.attack.projector.LpAdditiveRangeProjector
 p: ???
-eps: ${...eps}
+eps: ???
 min: 0
 max: 255

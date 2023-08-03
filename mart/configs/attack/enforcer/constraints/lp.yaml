@@ -1,6 +1,6 @@
 lp:
   _target_: mart.attack.enforcer.Lp
-  eps: ${....eps}
+  eps: ???
   # p is inf by default.
   # p: ???
   # Calculate Lp over the CHW dimensions for images.

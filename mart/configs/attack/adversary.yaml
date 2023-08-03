@@ -11,6 +11,3 @@ gradient_modifier: null
 objective: null
 enforcer: ???
 attacker: null
-eps: ???
-lr: ???
-max_iters: ???

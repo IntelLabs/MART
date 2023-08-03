@@ -3,14 +3,18 @@ defaults:
   - perturber/initializer: constant
   - /optimizer@optimizer: sgd
 
+max_iters: 1
+eps: ???
+lr: ???
+
 optimizer:
   lr: ${..eps}
-
-max_iters: 1
 
 perturber:
   initializer:
     constant: 0
+  projector:
+    eps: ${...eps}
 
 # We can turn off progress bar for one-step attack.
 callbacks:
