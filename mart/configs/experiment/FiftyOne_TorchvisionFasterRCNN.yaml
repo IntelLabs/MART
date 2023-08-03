@@ -9,6 +9,7 @@ defaults:
         lr_monitor,
         fiftyone_prediction_adder,
         fiftyone_evaluate_detections,
+        fiftyone_mistakenness,
       ]
 
 task_name: "FiftyOne_TorchvisionFasterRCNN"

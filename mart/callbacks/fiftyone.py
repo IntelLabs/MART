@@ -14,10 +14,11 @@ from ..datamodules import FiftyOneDataset
 logger = logging.getLogger(__name__)
 try:
     import fiftyone as fo
+    import fiftyone.brain as fob
 except ImportError:
     logger.debug("fiftyone module is not installed!")
 
-__all__ = ["FiftyOneEvaluateDetections", "FiftyOnePredictionAdder"]
+__all__ = ["FiftyOneEvaluateDetections", "FiftyOneMistakenness", "FiftyOnePredictionAdder"]
 
 
 class FiftyOneEvaluateDetections(Callback):
@@ -46,6 +47,25 @@ class FiftyOneEvaluateDetections(Callback):
 
         # Print a classification report for the top-10 classes
         results.print_report(classes=classes_top10)
+
+
+class FiftyOneMistakenness(Callback):
+    def __init__(self, run_id: str, gt_field: str = "ground_truth_detections") -> None:
+        self.prediction_field = f"prediction_{run_id}"
+        self.gt_field = gt_field
+
+    def on_predict_start(self, trainer, pl_module):
+        self.predict_dataset = trainer.datamodule.predict_dataset
+        assert isinstance(self.predict_dataset, FiftyOneDataset)
+
+        # reset mistakenness fields
+        if self.predict_dataset.dataset.has_brain_run("mistakenness"):
+            self.predict_dataset.dataset.delete_brain_run("mistakenness")
+
+    def on_predict_end(self, trainer, pl_module):
+        fob.compute_mistakenness(
+            self.predict_dataset.filtered_dataset, self.prediction_field, label_field=self.gt_field
+        )
 
 
 class FiftyOnePredictionAdder(BasePredictionWriter):
