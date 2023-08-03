@@ -213,11 +213,6 @@ class Adversary(pl.LightningModule):
 
         self._attacker = self._attacker(accelerator=accelerator, devices=devices)
 
-        # Remove recursive adversarial training callback from lightning.pytorch.callbacks_factory.
-        for callback in self._attacker.callbacks:
-            if isinstance(callback, AdversarialTraining):
-                self._attacker.callbacks.remove(callback)
-
         return self._attacker
 
     def cpu(self):
