@@ -1,7 +1,8 @@
 defaults:
   - adversary
-  - pgd
+  - gradient_ascent
   - mask
+  - perturber/initializer: constant
   - composer: overlay
   - gradient_modifier: sign
   - gain: rcnn_training_loss
@@ -9,7 +10,6 @@ defaults:
 
 # Make a 5-step attack for the demonstration purpose.
 max_iters: 5
-eps: 255
 lr: 55
 
 # Start with grey perturbation in the overlay mode.
