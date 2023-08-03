@@ -11,3 +11,8 @@ defaults:
 max_iters: 5
 eps: 255
 lr: 55
+
+# Start with grey perturbation in the overlay mode.
+perturber:
+  initializer:
+    constant: 127
