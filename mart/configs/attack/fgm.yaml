@@ -4,7 +4,6 @@ defaults:
 
 max_iters: 1
 eps: ???
-lr: ???
 
 optimizer:
   lr: ${..eps}

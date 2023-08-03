@@ -1,11 +1,5 @@
 defaults:
-  - adversary
-  - pgd
-  - linf
-  - composer: additive
-  - gradient_modifier: sign
-  - gain: cross_entropy
-  - objective: misclassification
+  - classification_pgd_linf
 
 eps: 8
 lr: 1
