@@ -41,6 +41,9 @@ def main(cfg: DictConfig) -> float:
     if "output" not in cfg:
         print("You can output config as a yaml file by `output=path/to/file.yaml`")
     else:
+        folder = os.path.dirname(cfg.output)
+        if folder != "" and not os.path.isdir(folder):
+            os.makedirs(folder)
         OmegaConf.save(config=cfg, f=cfg.output)
         print(f"Saved config to {cfg.output}")
 
