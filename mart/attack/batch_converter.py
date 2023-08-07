@@ -12,7 +12,7 @@ from typing import Callable
 # TODO: Do we need to copy batch?
 
 __all__ = [
-    "TensorBatchConverter",
+    "InputOnlyBatchConverter",
     "DictBatchConverter",
     "ListBatchConverter",
     "TupleBatchConverter",
@@ -85,7 +85,7 @@ class BatchConverter(abc.ABC):
         pass
 
 
-class TensorBatchConverter(BatchConverter):
+class InputOnlyBatchConverter(BatchConverter):
     def _convert(self, batch):
         input = batch
         target = None
@@ -132,11 +132,11 @@ class DictBatchConverter(BatchConverter):
 
 
 class ListBatchConverter(BatchConverter):
-    def __init__(self, input_key: int = 0, **kwargs):
+    def __init__(self, input_key: int = 0, target_size: int | None = None, **kwargs):
         super().__init__(**kwargs)
 
         self.input_key = input_key
-        self.target_size = None
+        self.target_size = target_size
 
     def _convert(self, batch: list):
         # Make a copy because we don't want to break the original batch.

@@ -24,8 +24,8 @@ def test_with_model(input_data, target_data, perturbation):
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
-    batch = {"input": input_data, "target": target_data}
-    batch_converter = mart.attack.DictBatchConverter()
+    batch = (input_data, target_data)
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -38,7 +38,7 @@ def test_with_model(input_data, target_data, perturbation):
     )
 
     batch_adv = adversary(batch=batch, model=model)
-    output_data = batch_adv["input"]
+    output_data = batch_adv[0]
 
     # The enforcer is only called when model is not None.
     enforcer.assert_called_once()
@@ -62,7 +62,7 @@ def test_hidden_params():
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
-    batch_converter = mart.attack.DictBatchConverter()
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -94,8 +94,8 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
-    batch = {"input": input_data, "target": target_data}
-    batch_converter = mart.attack.DictBatchConverter()
+    batch = (input_data, target_data)
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -108,7 +108,7 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
     )
 
     batch_adv = adversary(batch=batch, model=model)
-    output_data = batch_adv["input"]
+    output_data = batch_adv[0]
 
     # Adversary will have no parameter even after forward is called, because we hide Perturber in a list.
     params = [p for p in adversary.parameters()]
@@ -129,7 +129,7 @@ def test_loading_perturbation_from_state_dict():
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
-    batch_converter = mart.attack.DictBatchConverter()
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -157,8 +157,8 @@ def test_perturbation(input_data, target_data, perturbation):
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
-    batch = {"input": input_data, "target": target_data}
-    batch_converter = mart.attack.DictBatchConverter()
+    batch = (input_data, target_data)
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -171,7 +171,7 @@ def test_perturbation(input_data, target_data, perturbation):
     )
 
     batch_adv = adversary(batch=batch, model=model)
-    output_data = batch_adv["input"]
+    output_data = batch_adv[0]
 
     # The enforcer is only called when model is not None.
     enforcer.assert_called_once()
@@ -206,8 +206,8 @@ def test_forward_with_model(input_data, target_data):
         projector=None,
     )
 
-    batch = {"input": input_data, "target": target_data}
-    batch_converter = mart.attack.DictBatchConverter()
+    batch = (input_data, target_data)
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -221,10 +221,10 @@ def test_forward_with_model(input_data, target_data):
     )
 
     def model(batch):
-        return {"logits": batch["input"]}
+        return {"logits": batch[0]}
 
     batch_adv = adversary(batch=batch, model=model)
-    input_adv = batch_adv["input"]
+    input_adv = batch_adv[0]
 
     perturbation = input_data - input_adv
 
@@ -236,7 +236,7 @@ def test_configure_optimizers():
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock()
-    batch_converter = mart.attack.DictBatchConverter()
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -258,7 +258,8 @@ def test_training_step(input_data, target_data, perturbation):
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor(1337))
     model = Mock(return_value={})
-    batch_converter = mart.attack.DictBatchConverter()
+    # Set target_size manually because the test bypasses the convert() step that reads target_size.
+    batch_converter = mart.attack.TupleBatchConverter(target_size=1)
 
     adversary = Adversary(
         perturber=perturber,
@@ -268,6 +269,7 @@ def test_training_step(input_data, target_data, perturbation):
         batch_converter=batch_converter,
     )
 
+    # The batch is reverted to a tuple inside training_step() before invoking the model.
     output = adversary.training_step(
         {"input": input_data, "target": target_data, "model": model}, 0
     )
@@ -282,7 +284,8 @@ def test_training_step_with_many_gain(input_data, target_data, perturbation):
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
     model = Mock(return_value={})
-    batch_converter = mart.attack.DictBatchConverter()
+    # Set target_size manually because the test bypasses the convert() step that reads target_size.
+    batch_converter = mart.attack.TupleBatchConverter(target_size=1)
 
     adversary = Adversary(
         perturber=perturber,
@@ -292,6 +295,7 @@ def test_training_step_with_many_gain(input_data, target_data, perturbation):
         batch_converter=batch_converter,
     )
 
+    # The batch is reverted to a tuple inside training_step() before invoking the model.
     output = adversary.training_step(
         {"input": input_data, "target": target_data, "model": model}, 0
     )
@@ -306,7 +310,8 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
     gain = Mock(return_value=torch.tensor([1234, 5678]))
     model = Mock(return_value={})
     objective = Mock(return_value=torch.tensor([True, False], dtype=torch.bool))
-    batch_converter = mart.attack.DictBatchConverter()
+    # Set target_size manually because the test bypasses the convert() step that reads target_size.
+    batch_converter = mart.attack.TupleBatchConverter(target_size=1)
 
     adversary = Adversary(
         perturber=perturber,
@@ -317,6 +322,7 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
         batch_converter=batch_converter,
     )
 
+    # The batch is reverted to a tuple inside training_step() before invoking the model.
     output = adversary.training_step(
         {"input": input_data, "target": target_data, "model": model}, 0
     )
@@ -334,7 +340,7 @@ def test_configure_gradient_clipping():
     )
     gradient_modifier = Mock()
     gain = Mock()
-    batch_converter = mart.attack.DictBatchConverter()
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,

@@ -1,5 +1,6 @@
 defaults:
   - /callbacks@callbacks: [progress_bar]
+  - model_transform: lightning
 
 _target_: mart.attack.Adversary
 _convert_: all
@@ -13,4 +14,3 @@ objective: null
 enforcer: ???
 attacker: null
 batch_converter: ???
-model_transform: null

@@ -59,7 +59,7 @@ class Adversary(pl.LightningModule):
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
             batch_converter (Callable): Convert batch into convenient format and reverse.
-            model_transform (Callable): Change model so that it works for Adversary.
+            model_transform (Callable): Transform a model before attack.
         """
         super().__init__()
 
@@ -133,7 +133,7 @@ class Adversary(pl.LightningModule):
         # What we need is a frozen model that returns (a dictionary of) logits, or losses.
         model = batch["model"]
 
-        # Compose un-transformed input_adv from batch["input"], then give to model for updated gain.
+        # Compose input_adv from input.
         input_adv_transformed = self.get_input_adv(
             input=input_transformed, target=target_transformed
         )
@@ -176,13 +176,13 @@ class Adversary(pl.LightningModule):
 
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
-        # Copy to keep the original batch.
         # Extract and transform input so that is convenient for Adversary.
         input_transformed, target_transformed = self.batch_converter(batch)
 
         if self.model_transform is not None:
             model = self.model_transform(model)
 
+        # Canonical form of batch in the adversary's optimization loop.
         # Optimization loop only sees the transformed input in batches.
         batch_transformed = {
             "input": input_transformed,
