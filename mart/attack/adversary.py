@@ -43,6 +43,7 @@ class Adversary(pl.LightningModule):
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
+        model_transform: Callable | None = None,
         **kwargs,
     ):
         """_summary_
@@ -101,6 +102,8 @@ class Adversary(pl.LightningModule):
             # the number of attack steps via limit_train_batches.
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
+
+        self.model_transform = model_transform
 
     @property
     def perturber(self) -> Perturber:
@@ -168,6 +171,9 @@ class Adversary(pl.LightningModule):
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
         input, target = batch
+
+        if self.model_transform is not None:
+            model = self.model_transform(model)
 
         # Optimization loop only sees the transformed input in batches.
         batch_transformed = {
