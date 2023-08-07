@@ -59,6 +59,7 @@ class Adversary(pl.LightningModule):
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
             batch_converter (Callable): Convert batch into convenient format and reverse.
+            model_transform (Callable): Transform a model before attack.
         """
         super().__init__()
 
