@@ -15,7 +15,7 @@ python -m mart_armory.generate_attack_config \
 batch_converter=object_detection \
 attack=[object_detection_mask_adversary,data_coco] \
 attack.objective=null \
-attack.model_transform=armory_objdet \
+attack/model_transform=armory_objdet \
 output=path/to/attack.yaml
 ```
 
@@ -45,5 +45,6 @@ cat scenario_configs/eval7/carla_overhead_object_detection/carla_obj_det_adversa
 | jq '.attack.module="mart_armory"' \
 | jq '.attack.name="MartAttack"' \
 | jq '.attack.kwargs.mart_adv_config_yaml="path/to/attack.yaml"' \
-> carla_obj_det_adversarialpatch_undefended_mart_attack.json
+| jq '.scenario.export_batches=true' \
+| CUDA_VISIBLE_DEVICES=0 armory run - --no-docker --use-gpu --gpus=1
 ```
