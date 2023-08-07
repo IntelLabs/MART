@@ -11,16 +11,22 @@ from omegaconf import OmegaConf
 
 
 class MartAttack:
-    """A minimal wrapper to run PyTorch-based MART adversary in Armory against PyTorch-based
-    models.
+    """A minimal wrapper to run MART adversary in Armory against PyTorch-based models.
 
-    1. Extract the PyTorch model from an ART Estimator;
-    2. Convert np.ndarray to torch.Tensor;
-    3. Run PyTorch-based MART adversary and get result as torch.Tensor;
-    4. Convert torch.Tensor back to np.ndarray.
+    1. Instantiate an adversary that runs attack in MART;
+    2. Instantiate batch_converter that turns Armory's numpy batch into the PyTorch batch;
+    3. The adversary.model_transform() extracts the PyTorch model from an ART Estimator and makes other changes to easier attack;
+    4. The adversary returns adversarial examples in the PyTorch format;
+    5. The batch_converter reverts the adversarial examples into the numpy format.
     """
 
     def __init__(self, model, mart_adv_config_yaml):
+        """_summary_
+
+        Args:
+            model (Callable): An ART Estimator that contains a PyTorch model.
+            mart_adv_config_yaml (str): File path to the adversary configuration.
+        """
         # Instantiate a MART adversary.
         adv_cfg = OmegaConf.load(mart_adv_config_yaml)
         adv = hydra.utils.instantiate(adv_cfg)
