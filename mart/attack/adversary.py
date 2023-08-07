@@ -57,6 +57,7 @@ class Adversary(pl.LightningModule):
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
+            model_transform (Callable): Transform a model before attack.
         """
         super().__init__()
 
