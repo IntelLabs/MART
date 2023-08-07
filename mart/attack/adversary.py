@@ -43,6 +43,7 @@ class Adversary(pl.LightningModule):
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
+        batch_converter: Callable,
         model_transform: Callable | None = None,
         **kwargs,
     ):
@@ -57,6 +58,7 @@ class Adversary(pl.LightningModule):
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
+            batch_converter (Callable): Convert batch into convenient format and reverse.
         """
         super().__init__()
 
@@ -103,6 +105,7 @@ class Adversary(pl.LightningModule):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
+        self.batch_converter = batch_converter
         self.model_transform = model_transform
 
     @property
@@ -124,15 +127,17 @@ class Adversary(pl.LightningModule):
         # copy batch since we modify it and it is used internally
         # batch = batch.copy()
 
-        input = batch["input"]
-        target = batch["target"]
+        input_transformed = batch["input"]
+        target_transformed = batch["target"]
         # What we need is a frozen model that returns (a dictionary of) logits, or losses.
         model = batch["model"]
 
-        # Compose input_adv from input, then give to model for updated gain.
-        input_adv = self.get_input_adv(input=input, target=target)
+        # Compose input_adv from input.
+        input_adv_transformed = self.get_input_adv(
+            input=input_transformed, target=target_transformed
+        )
         # Target model expects input in the original format.
-        batch_adv = (input_adv, target)
+        batch_adv = self.batch_converter.revert(input_adv_transformed, target_transformed)
 
         # A model that returns output dictionary.
         outputs = model(batch_adv)
@@ -170,32 +175,36 @@ class Adversary(pl.LightningModule):
 
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
-        input, target = batch
+        # Extract and transform input so that is convenient for Adversary.
+        input_transformed, target_transformed = self.batch_converter(batch)
 
         if self.model_transform is not None:
             model = self.model_transform(model)
 
+        # Canonical form of batch in the adversary's optimization loop.
         # Optimization loop only sees the transformed input in batches.
         batch_transformed = {
-            "input": input,
-            "target": target,
+            "input": input_transformed,
+            "target": target_transformed,
             "model": model,
         }
 
         # Configure and reset perturbation for current inputs
-        self.perturber.configure_perturbation(input)
+        self.perturber.configure_perturbation(input_transformed)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
         self.attacker.fit_loop.max_epochs += 1
         self.attacker.fit(self, train_dataloaders=cycle([batch_transformed]))
 
-        # Get the input_adv for enforcer checking.
-        input_adv = self.get_input_adv(input=input, target=target)
-        self.enforcer(input_adv, input=input, target=target)
+        # Get the transformed input_adv for enforcer checking.
+        input_adv_transformed = self.get_input_adv(
+            input=input_transformed, target=target_transformed
+        )
+        self.enforcer(input_adv_transformed, input=input_transformed, target=target_transformed)
 
         # Revert to the original format of batch.
-        batch_adv = (input_adv, target)
+        batch_adv = self.batch_converter.revert(input_adv_transformed, target_transformed)
 
         return batch_adv
 

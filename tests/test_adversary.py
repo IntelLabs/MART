@@ -25,6 +25,7 @@ def test_with_model(input_data, target_data, perturbation):
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
     batch = (input_data, target_data)
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -33,6 +34,7 @@ def test_with_model(input_data, target_data, perturbation):
         gain=gain,
         enforcer=enforcer,
         attacker=attacker,
+        batch_converter=batch_converter,
     )
 
     batch_adv = adversary(batch=batch, model=model)
@@ -60,6 +62,7 @@ def test_hidden_params():
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -68,6 +71,7 @@ def test_hidden_params():
         gain=gain,
         enforcer=enforcer,
         attacker=attacker,
+        batch_converter=batch_converter,
     )
 
     # Adversarial perturbation should not be updated by a regular training optimizer.
@@ -91,6 +95,7 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
     batch = (input_data, target_data)
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -99,6 +104,7 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
         gain=gain,
         enforcer=enforcer,
         attacker=attacker,
+        batch_converter=batch_converter,
     )
 
     batch_adv = adversary(batch=batch, model=model)
@@ -123,6 +129,7 @@ def test_loading_perturbation_from_state_dict():
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -131,6 +138,7 @@ def test_loading_perturbation_from_state_dict():
         gain=gain,
         enforcer=enforcer,
         attacker=attacker,
+        batch_converter=batch_converter,
     )
 
     # We should be able to load arbitrary state_dict, because Adversary ignores state_dict.
@@ -150,6 +158,7 @@ def test_perturbation(input_data, target_data, perturbation):
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
     batch = (input_data, target_data)
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -158,6 +167,7 @@ def test_perturbation(input_data, target_data, perturbation):
         gain=gain,
         enforcer=enforcer,
         attacker=attacker,
+        batch_converter=batch_converter,
     )
 
     batch_adv = adversary(batch=batch, model=model)
@@ -197,6 +207,7 @@ def test_forward_with_model(input_data, target_data):
     )
 
     batch = (input_data, target_data)
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -206,6 +217,7 @@ def test_forward_with_model(input_data, target_data):
         gradient_modifier=Sign(),
         enforcer=enforcer,
         max_iters=1,
+        batch_converter=batch_converter,
     )
 
     def model(batch):
@@ -224,12 +236,14 @@ def test_configure_optimizers():
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock()
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         gain=gain,
+        batch_converter=batch_converter,
     )
 
     adversary.configure_optimizers()
@@ -244,14 +258,18 @@ def test_training_step(input_data, target_data, perturbation):
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor(1337))
     model = Mock(return_value={})
+    # Set target_size manually because the test bypasses the convert() step that reads target_size.
+    batch_converter = mart.attack.TupleBatchConverter(target_size=1)
 
     adversary = Adversary(
         perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         gain=gain,
+        batch_converter=batch_converter,
     )
 
+    # The batch is reverted to a tuple inside training_step() before invoking the model.
     output = adversary.training_step(
         {"input": input_data, "target": target_data, "model": model}, 0
     )
@@ -266,14 +284,18 @@ def test_training_step_with_many_gain(input_data, target_data, perturbation):
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
     model = Mock(return_value={})
+    # Set target_size manually because the test bypasses the convert() step that reads target_size.
+    batch_converter = mart.attack.TupleBatchConverter(target_size=1)
 
     adversary = Adversary(
         perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         gain=gain,
+        batch_converter=batch_converter,
     )
 
+    # The batch is reverted to a tuple inside training_step() before invoking the model.
     output = adversary.training_step(
         {"input": input_data, "target": target_data, "model": model}, 0
     )
@@ -288,6 +310,8 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
     gain = Mock(return_value=torch.tensor([1234, 5678]))
     model = Mock(return_value={})
     objective = Mock(return_value=torch.tensor([True, False], dtype=torch.bool))
+    # Set target_size manually because the test bypasses the convert() step that reads target_size.
+    batch_converter = mart.attack.TupleBatchConverter(target_size=1)
 
     adversary = Adversary(
         perturber=perturber,
@@ -295,8 +319,10 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
         optimizer=optimizer,
         objective=objective,
         gain=gain,
+        batch_converter=batch_converter,
     )
 
+    # The batch is reverted to a tuple inside training_step() before invoking the model.
     output = adversary.training_step(
         {"input": input_data, "target": target_data, "model": model}, 0
     )
@@ -314,6 +340,7 @@ def test_configure_gradient_clipping():
     )
     gradient_modifier = Mock()
     gain = Mock()
+    batch_converter = mart.attack.TupleBatchConverter()
 
     adversary = Adversary(
         perturber=perturber,
@@ -321,6 +348,7 @@ def test_configure_gradient_clipping():
         optimizer=optimizer,
         gradient_modifier=gradient_modifier,
         gain=gain,
+        batch_converter=batch_converter,
     )
     # We need to mock a trainer since LightningModule does some checks
     adversary.trainer = Mock(gradient_clip_val=1.0, gradient_clip_algorithm="norm")
