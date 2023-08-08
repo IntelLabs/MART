@@ -1,6 +1,0 @@
-defaults:
-  - classification_pgd_linf
-
-eps: 8
-lr: 1
-max_iters: 10

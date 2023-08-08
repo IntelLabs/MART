@@ -1,4 +1,0 @@
-defaults:
-  - classification_fgsm_linf
-
-eps: 1.75

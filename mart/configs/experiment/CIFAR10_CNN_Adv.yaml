@@ -2,13 +2,21 @@
 
 defaults:
   - CIFAR10_CNN
-  - /attack@model.modules.input_adv_training: classification_eps1.75_fgsm
-  - /attack@model.modules.input_adv_test: classification_eps2_pgd10_step1
+  - /attack@model.modules.input_adv_training: classification_fgsm_linf
+  - /attack@model.modules.input_adv_test: classification_pgd_linf
 
 task_name: "CIFAR10_CNN_Adv"
 tags: ["adv", "fat"]
 
 model:
+  modules:
+    input_adv_training:
+      eps: 1.75
+    input_adv_test:
+      eps: 2
+      lr: 1
+      max_iters: 10
+
   training_sequence:
     seq005: input_adv_training
 
