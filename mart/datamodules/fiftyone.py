@@ -6,6 +6,7 @@
 
 import logging
 import os
+from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple
 
 import numpy as np
@@ -73,11 +74,12 @@ class FiftyOneDataset(VisionDataset_):
         sample_id = self.ids[index]
         sample = self.filtered_dataset[sample_id]
         metadata = sample.metadata
-        img = Image.open(sample.filepath).convert("RGB")
+        image_path = Path(sample.filepath)
+        img = Image.open(image_path).convert("RGB")
 
         target = {}
         target["image_id"] = index
-        target["file_name"] = sample.filepath
+        target["file_name"] = image_path.name
         target["annotations"] = []
 
         detections = sample[self.gt_field].detections
