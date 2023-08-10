@@ -8,8 +8,8 @@ defaults:
   - gain: rcnn_class_background
   - objective: object_detection_missed
 
-max_iters: 100
-lr: 3
+max_iters: ???
+lr: ???
 
 # Start with grey perturbation in the overlay mode.
 perturber:

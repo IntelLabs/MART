@@ -8,9 +8,8 @@ defaults:
   - gain: rcnn_training_loss
   - objective: zero_ap
 
-# Make a 5-step attack for the demonstration purpose.
-max_iters: 5
-lr: 55
+max_iters: ???
+lr: ???
 
 # Start with grey perturbation in the overlay mode.
 perturber:
