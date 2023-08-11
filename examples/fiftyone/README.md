@@ -8,65 +8,48 @@ This example shows how to use MART with the FiftyOne integration. FiftyOne is an
 pip install git+https://github.com/IntelLabs/MART.git[fiftyone]
 ```
 
-## How to run
+# FiftyOne commands to load (index) datasets.
 
-### Using the Dataset ZOO
+Use COCO-2017 as an example. Unfortunately, FiftyOne does not support person-keypoints annotations yet.
 
-- First, identify the dataset available in the [FiftyOne Dataset Zoo](https://docs.voxel51.com/user_guide/dataset_zoo/datasets.html). Take into account the the current implementation support COCO like datasets.
-
-- Run the following command to use the ZOO dataset in MART:
+## Download and load zoo datasets
 
 ```bash
-python -m mart experiment=COCO_TorchvisionFasterRCNN \
-    trainer.max_steps=5105 \
-    datamodule=fiftyone \
-    datamodule.train_dataset.dataset_name="coco-2017" \
-    datamodule.train_dataset.gt_field="ground_truth" \
-    +datamodule.train_dataset.label_types=["segmentations"] \
-    +datamodule.train_dataset.classes=["person","car","motorcycle"] \
-    +datamodule.train_dataset.split="train" \
-    +datamodule.train_dataset.max_samples=1000 \
-    datamodule.val_dataset.dataset_name="coco-2017" \
-    +datamodule.val_dataset.label_types=["segmentations"] \
-    +datamodule.val_dataset.classes=["person","car","motorcycle"] \
-    +datamodule.val_dataset.split="validation" \
-    +datamodule.val_dataset.max_samples=50 \
-    datamodule.test_dataset.dataset_name="coco-2017" \
-    +datamodule.test_dataset.label_types=["segmentations"] \
-    +datamodule.test_dataset.classes=["person","car","motorcycle"] \
-    +datamodule.test_dataset.split="validation" \
-    +datamodule.test_dataset.max_samples=50 \
-    +datamodule.test_dataset.shuffle=true
+fiftyone zoo datasets load \
+coco-2017 \
+-s train \
+-n coco-2017-instances-train \
+-k include_id=true label_types=detections,segmentations
+
+fiftyone zoo datasets load \
+coco-2017 \
+-s validation \
+-n coco-2017-instances-validation \
+-k include_id=true label_types=detections,segmentations
 ```
 
-To configure the dataset, consult the corresponding documentation to know the available config options (E.g. [coco-2017](https://docs.voxel51.com/user_guide/dataset_zoo/datasets.html#dataset-zoo-coco-2017))
-
-### Using a custom dataset
-
-- Add an existing dataset into FiftyOne by running the following command:
+## Load local datasets
 
 ```bash
 fiftyone datasets create \
-    --name <DATASET_NAME> \
-    --dataset-dir <PATH/TO/DATASET> \
-    --type fiftyone.types.COCODetectionDataset \
-    --kwargs \
-    data_path="<PATH/TO/DATA>" \
-    labels_path=<PATH/TO/ANNOTATIONS> \
-    persistent=true \
-    include_id=true
+--name coco-2017-instances-validation \
+--dataset-dir /path/to/datasets/coco/ \
+--type fiftyone.types.COCODetectionDataset \
+--kwargs \
+data_path="val2017" \
+labels_path=/path/to/datasets/coco/annotations/instances_val2017.json \
+persistent=true \
+include_id=true
 ```
 
-- Use the custom dataset in MART with this command:
+## Use the FiftyOne datamodule
 
-```bash
-python -m mart experiment=COCO_TorchvisionFasterRCNN \
-    datamodule=fiftyone \
-    datamodule.train_dataset.dataset_name="train_dataset" \
-    datamodule.val_dataset.dataset_name="test_dataset" \
-    datamodule.test_dataset.dataset_name="test_dataset" \
-    datamodule.train_dataset.sample_tags=["tag_name"] \
-    datamodule.train_dataset.label_tags=["tag_name_1","tag_name_2","tag_name_3"]
+```yaml
+datamodule:
+  train_dataset:
+    dataset_name: coco-2017-instances-train
+    gt_field: segmentations
+  val_dataset:
+    dataset_name: coco-2017-instances-validation
+    gt_field: segmentations
 ```
-
-Notice that in the above example is possible to filter samples and annotations by using the FiftyOne tags.
