@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 try:
     import fiftyone as fo
     import fiftyone.utils.coco as fouc
-    import fiftyone.zoo as foz
 except ImportError:
     logger.debug("fiftyone module is not installed!")
 
@@ -37,24 +36,19 @@ class FiftyOneDataset(VisionDataset_):
         transform: Optional[Callable] = None,
         target_transform: Optional[Callable] = None,
         transforms: Optional[Callable] = None,
-        *args,
-        **kwargs,
     ) -> None:
         super().__init__("", transforms, transform, target_transform)
 
         self.gt_field = gt_field
 
-        # load FiftyOne dataset
-        if dataset_name in fo.list_datasets():
-            self.dataset = fo.load_dataset(dataset_name)
-        elif dataset_name in foz.list_zoo_datasets():
-            self.dataset = foz.load_zoo_dataset(dataset_name, *args, **kwargs)
-        else:
-            raise Exception(
-                f"Dataset {dataset_name} does not exist. To create a FiftyOne dataset, used the CLI command: https://docs.voxel51.com/cli/index.html#create-datasets"
-            )
+        # Verify the FiftyOne
+        fo_datasets = fo.list_datasets()
+        assert (
+            dataset_name in fo_datasets
+        ), f"Dataset {dataset_name} does not exist. To create a FiftyOne dataset, used the CLI command: https://docs.voxel51.com/cli/index.html#create-datasets"
 
-        # verify FiftyOne ground truth field
+        # Load FiftyOne dataset
+        self.dataset = fo.load_dataset(dataset_name)
         self.dataset = self.dataset.exists(self.gt_field)
 
         # filter with tags
