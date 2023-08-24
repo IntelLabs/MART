@@ -2,9 +2,16 @@
 
 defaults:
   - COCO_TorchvisionFasterRCNN
-  - /attack@callbacks.adversarial_training.test_adversary: object_detection_mask_adversary
+  - /attack@callbacks.adversary_connector.test_adversary: object_detection_mask_adversary
   - override /datamodule: coco_perturbable_mask
-  - override /callbacks: [model_checkpoint, lr_monitor, adversarial_training]
+  - override /callbacks: [model_checkpoint, lr_monitor, adversary_connector]
 
 task_name: "COCO_TorchvisionFasterRCNN_Adv"
 tags: ["adv"]
+
+callbacks:
+  adversary_connector:
+    test_adversary:
+      # Make a 5-step attack for the demonstration purpose.
+      max_iters: 5
+      lr: 55

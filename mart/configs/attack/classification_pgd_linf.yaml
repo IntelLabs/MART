@@ -1,0 +1,13 @@
+defaults:
+  - adversary
+  - pgd
+  - linf
+  - composer: additive
+  - gradient_modifier: sign
+  - gain: cross_entropy
+  - objective: misclassification
+  - batch_converter: list
+
+eps: ???
+lr: ???
+max_iters: ???

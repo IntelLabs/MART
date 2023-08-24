@@ -5,4 +5,5 @@
 #
 
 from .coco import *
+from .fiftyone import *
 from .modular import *

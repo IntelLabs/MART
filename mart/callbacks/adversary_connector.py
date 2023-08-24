@@ -11,30 +11,30 @@ from typing import Callable
 
 from lightning.pytorch.callbacks import Callback
 
-__all__ = ["AdversarialTraining"]
+__all__ = ["AdversaryConnector"]
 
 
-class AdversarialTraining(Callback):
+class AdversaryConnector(Callback):
     """Perturbs inputs to be adversarial."""
 
-    # TODO: training/validation/test or train/val/test
     def __init__(
         self,
         adversary: Callable = None,
         train_adversary: Callable = None,
-        validation_adversary: Callable = None,
+        val_adversary: Callable = None,
         test_adversary: Callable = None,
     ):
-        """AdversaryConnector.
+        """A pl.Trainer callback which perturbs input to be adversarial in training/validation/test
+        phase.
 
         Args:
-            adversary (Callable, optional): _description_. Defaults to None.
-            train_adversary (Callable, optional): _description_. Defaults to None.
-            validation_adversary (Callable, optional): _description_. Defaults to None.
-            test_adversary (Callable, optional): _description_. Defaults to None.
+            adversary (Callable, optional): Adversary in the training/validation/test phase if not defined explicitly. Defaults to None.
+            train_adversary (Callable, optional): Adversary in the training phase. Defaults to None.
+            val_adversary (Callable, optional): Adversary in the validation phase. Defaults to None.
+            test_adversary (Callable, optional): Adversary in the test phase. Defaults to None.
         """
         self.train_adversary = train_adversary or adversary
-        self.validation_adversary = validation_adversary or adversary
+        self.val_adversary = val_adversary or adversary
         self.test_adversary = test_adversary or adversary
 
     def setup(self, trainer, pl_module, stage=None):
@@ -55,7 +55,7 @@ class AdversarialTraining(Callback):
         if trainer.training:
             adversary = self.train_adversary
         elif trainer.validating:
-            adversary = self.validation_adversary
+            adversary = self.val_adversary
         elif trainer.testing:
             adversary = self.test_adversary
 

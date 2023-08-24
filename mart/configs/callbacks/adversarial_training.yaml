@@ -1,6 +1,0 @@
-adversarial_training:
-  _target_: mart.callbacks.AdversarialTraining
-  adversary: null
-  train_adversary: null
-  validation_adversary: null
-  test_adversary: null

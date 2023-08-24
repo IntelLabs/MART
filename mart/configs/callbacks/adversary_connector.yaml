@@ -1,0 +1,6 @@
+adversary_connector:
+  _target_: mart.callbacks.AdversaryConnector
+  adversary: null
+  train_adversary: null
+  val_adversary: null
+  test_adversary: null
