@@ -33,8 +33,8 @@ class BatchConverter(abc.ABC):
         """Convert batch into (input, target), and vice versa.
 
         Args:
-            transform (Callable): Transform input into a convenient format, e.g. [0,1]->[0.255].
-            untransform (Callable): Transform adversarial input in the convenient format back into the original format of input, e.g. [0,255]->[0,1].
+            transform (Callable): Transform input into a convenient format, e.g. normalized_input->[0, 255].
+            untransform (Callable): Transform adversarial input in the convenient format back into the original format of input, e.g. [0,255]->normalized_input.
             target_transform (Callable): Transform target.
             target_untransform (Callable): Untransform target.
             batch_transform (Callable): Transform batch before converting the batch.
