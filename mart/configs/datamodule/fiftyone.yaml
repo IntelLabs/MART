@@ -80,8 +80,6 @@ predict_dataset:
     transforms:
       - _target_: torchvision.transforms.ToTensor
       - _target_: mart.transforms.ConvertCocoPolysToMask
-      - _target_: mart.transforms.RandomHorizontalFlip
-        p: 0.5
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
