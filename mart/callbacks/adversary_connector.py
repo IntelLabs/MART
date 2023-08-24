@@ -11,10 +11,10 @@ from typing import Callable
 
 from lightning.pytorch.callbacks import Callback
 
-__all__ = ["AdversarialTraining"]
+__all__ = ["AdversaryConnector"]
 
 
-class AdversarialTraining(Callback):
+class AdversaryConnector(Callback):
     """Perturbs inputs to be adversarial."""
 
     def __init__(

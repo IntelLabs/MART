@@ -15,7 +15,6 @@ import torch
 
 from mart.utils import silent
 
-from ..callbacks.adversarial_training import AdversarialTraining
 from ..optim import OptimizerFactory
 
 if TYPE_CHECKING:
