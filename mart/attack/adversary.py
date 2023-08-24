@@ -120,22 +120,17 @@ class Adversary(pl.LightningModule):
         return input_adv
 
     def training_step(self, batch, batch_idx):
-        # TODO: We shouldn't need to copy because it is never changed?
-        # copy batch since we modify it and it is used internally
-        # batch = batch.copy()
-
-        input = batch["input"]
-        target = batch["target"]
-        # What we need is a frozen model that returns (a dictionary of) logits, or losses.
-        model = batch["model"]
+        input, target = batch
 
         # Compose input_adv from input, then give to model for updated gain.
         input_adv = self.get_input_adv(input=input, target=target)
+
         # Target model expects input in the original format.
+        # TODO: We assume batch is a tuple, but it may be different for models outside MART. Add a reverse transform?
         batch_adv = (input_adv, target)
 
         # A model that returns output dictionary.
-        outputs = model(batch_adv)
+        outputs = self.model(batch_adv)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -168,19 +163,19 @@ class Adversary(pl.LightningModule):
             for group in optimizer.param_groups:
                 self.gradient_modifier(group["params"])
 
+    def configure_model(self, model):
+        self.model = model
+
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
+        # TODO: We may see different batch format when attacking models outside MART. Add a batch_transform?
         input, target = batch
 
         if self.model_transform is not None:
             model = self.model_transform(model)
 
-        # Optimization loop only sees the transformed input in batches.
-        batch_transformed = {
-            "input": input,
-            "target": target,
-            "model": model,
-        }
+        # Save the target model as a state in Adversary, so we can attack it later in self.training_step().
+        self.configure_model(model)
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input)
@@ -188,12 +183,13 @@ class Adversary(pl.LightningModule):
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
         self.attacker.fit_loop.max_epochs += 1
-        self.attacker.fit(self, train_dataloaders=cycle([batch_transformed]))
+        self.attacker.fit(self, train_dataloaders=cycle([batch]))
 
         # Get the input_adv for enforcer checking.
         input_adv = self.get_input_adv(input=input, target=target)
         self.enforcer(input_adv, input=input, target=target)
 
+        # TODO: We assume batch is a tuple, but it may be different for models outside MART. Add a reverse transform?
         # Revert to the original format of batch.
         batch_adv = (input_adv, target)
 
