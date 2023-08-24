@@ -9,6 +9,12 @@ task_name: "COCO_TorchvisionFasterRCNN_Adv"
 tags: ["adv"]
 
 model:
+  modules:
+    input_adv_test:
+      # Make a 5-step attack for the demonstration purpose.
+      max_iters: 5
+      lr: 55
+
   test_sequence:
     seq005: input_adv_test
 
