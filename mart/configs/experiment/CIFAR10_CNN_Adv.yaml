@@ -1,8 +1,8 @@
 # @package _global_
 
 defaults:
-  - /attack@callbacks.adversary_connector.train_adversary: classification_eps1.75_fgsm
-  - /attack@callbacks.adversary_connector.test_adversary: classification_eps2_pgd10_step1
+  - /attack@callbacks.adversary_connector.train_adversary: classification_fgsm_linf
+  - /attack@callbacks.adversary_connector.test_adversary: classification_pgd_linf
   - override /datamodule: cifar10
   - override /model: classifier_cifar10_cnn
   - override /metric: accuracy
@@ -18,6 +18,14 @@ callbacks:
   model_checkpoint:
     monitor: "validation_metrics/acc"
     mode: "max"
+
+  adversary_connector:
+    train_adversary:
+      eps: 1.75
+    test_adversary:
+      eps: 2
+      lr: 1
+      max_iters: 10
 
 trainer:
   # 50K training images, batch_size=128, drop_last, 15 epochs.

@@ -1,0 +1,9 @@
+defaults:
+  - /optimizer@optimizer: sgd
+
+max_iters: ???
+lr: ???
+
+optimizer:
+  maximize: True
+  lr: ${..lr}

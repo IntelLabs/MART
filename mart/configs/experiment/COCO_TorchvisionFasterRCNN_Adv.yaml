@@ -8,3 +8,10 @@ defaults:
 
 task_name: "COCO_TorchvisionFasterRCNN_Adv"
 tags: ["adv"]
+
+callbacks:
+  adversary_connector:
+    test_adversary:
+      # Make a 5-step attack for the demonstration purpose.
+      max_iters: 5
+      lr: 55

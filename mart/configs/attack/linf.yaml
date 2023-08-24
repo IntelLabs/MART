@@ -1,0 +1,15 @@
+defaults:
+  - perturber: default
+  - perturber/projector: linf_additive_range
+  - enforcer: default
+  - enforcer/constraints: lp
+
+enforcer:
+  constraints:
+    lp:
+      p:
+        _target_: builtins.float
+        _args_: ["inf"]
+      eps: ${....eps}
+
+eps: ???
