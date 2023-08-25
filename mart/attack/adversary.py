@@ -114,8 +114,8 @@ class Adversary(pl.LightningModule):
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
 
-    def training_step(self, batch, batch_idx):
-        input, target = batch
+    def training_step(self, batch_and_model, batch_idx):
+        input, target, model = batch_and_model
 
         # Compose input_adv from input, then give to model for updated gain.
         perturbation = self.perturber(input=input, target=target)
@@ -126,7 +126,7 @@ class Adversary(pl.LightningModule):
         batch_adv = (input_adv, target)
 
         # A model that returns output dictionary.
-        outputs = self.model(batch_adv)
+        outputs = model(batch_adv)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -159,18 +159,16 @@ class Adversary(pl.LightningModule):
             for group in optimizer.param_groups:
                 self.gradient_modifier(group["params"])
 
-    def configure_model(self, model):
-        if self.model_transform is not None:
-            model = self.model_transform(model)
-        self.model = model
-
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
         # TODO: We may see different batch format when attacking models outside MART. Add a batch_transform?
         input, target = batch
 
-        # Save the target model as a state in Adversary, so we can attack it later in self.training_step().
-        self.configure_model(model)
+        if self.model_transform is not None:
+            model = self.model_transform(model)
+
+        # The attack needs access to the model at every iteration.
+        batch_and_model = (input, target, model)
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input)
@@ -178,7 +176,7 @@ class Adversary(pl.LightningModule):
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
         self.attacker.fit_loop.max_epochs += 1
-        self.attacker.fit(self, train_dataloaders=cycle([batch]))
+        self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
 
         # Get the input_adv for enforcer checking.
         perturbation = self.perturber(input=input, target=target)
