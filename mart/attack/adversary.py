@@ -160,15 +160,14 @@ class Adversary(pl.LightningModule):
                 self.gradient_modifier(group["params"])
 
     def configure_model(self, model):
+        if self.model_transform is not None:
+            model = self.model_transform(model)
         self.model = model
 
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
         # TODO: We may see different batch format when attacking models outside MART. Add a batch_transform?
         input, target = batch
-
-        if self.model_transform is not None:
-            model = self.model_transform(model)
 
         # Save the target model as a state in Adversary, so we can attack it later in self.training_step().
         self.configure_model(model)
