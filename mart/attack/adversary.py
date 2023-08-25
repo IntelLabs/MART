@@ -16,6 +16,7 @@ import torch
 from mart.utils import silent
 
 from ..optim import OptimizerFactory
+from ..utils import MonkeyPatch
 
 if TYPE_CHECKING:
     from .composer import Composer
@@ -117,30 +118,27 @@ class Adversary(pl.LightningModule):
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
 
-    def get_input_adv(self, *, input, target):
-        perturbation = self.perturber(input=input, target=target)
-        input_adv = self.composer(perturbation, input=input, target=target)
-        return input_adv
+    def training_step(self, batch_and_model, batch_idx):
+        input_transformed, target_transformed, model = batch_and_model
 
-    def training_step(self, batch, batch_idx):
-        # TODO: We shouldn't need to copy because it is never changed?
-        # copy batch since we modify it and it is used internally
-        # batch = batch.copy()
-
-        input_transformed = batch["input"]
-        target_transformed = batch["target"]
-        # What we need is a frozen model that returns (a dictionary of) logits, or losses.
-        model = batch["model"]
-
-        # Compose input_adv from input.
-        input_adv_transformed = self.get_input_adv(
-            input=input_transformed, target=target_transformed
+        # Compose input_adv from input, then give to model for updated gain.
+        perturbation = self.perturber(input=input_transformed, target=target_transformed)
+        input_adv_transformed = self.composer(
+            perturbation, input=input_transformed, target=target_transformed
         )
+
         # Target model expects input in the original format.
         batch_adv = self.batch_converter.revert(input_adv_transformed, target_transformed)
 
         # A model that returns output dictionary.
-        outputs = model(batch_adv)
+        if hasattr(model, "attack_step"):
+            outputs = model.attack_step(batch_adv, batch_idx)
+        elif hasattr(model, "training_step"):
+            # Disable logging if we have to reuse training_step() of the target model.
+            with MonkeyPatch(model, "log", lambda *args, **kwargs: None):
+                outputs = model.training_step(batch_adv, batch_idx)
+        else:
+            outputs = model(batch_adv)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -178,16 +176,10 @@ class Adversary(pl.LightningModule):
         # Extract and transform input so that is convenient for Adversary.
         input_transformed, target_transformed = self.batch_converter(batch)
 
-        if self.model_transform is not None:
-            model = self.model_transform(model)
-
+        # The attack needs access to the model at every iteration.
         # Canonical form of batch in the adversary's optimization loop.
         # Optimization loop only sees the transformed input in batches.
-        batch_transformed = {
-            "input": input_transformed,
-            "target": target_transformed,
-            "model": model,
-        }
+        batch_transformed_and_model = (input_transformed, target_transformed, model)
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input_transformed)
@@ -195,11 +187,12 @@ class Adversary(pl.LightningModule):
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
         self.attacker.fit_loop.max_epochs += 1
-        self.attacker.fit(self, train_dataloaders=cycle([batch_transformed]))
+        self.attacker.fit(self, train_dataloaders=cycle([batch_transformed_and_model]))
 
         # Get the transformed input_adv for enforcer checking.
-        input_adv_transformed = self.get_input_adv(
-            input=input_transformed, target=target_transformed
+        perturbation = self.perturber(input=input_transformed, target=target_transformed)
+        input_adv_transformed = self.composer(
+            perturbation, input=input_transformed, target=target_transformed
         )
         self.enforcer(input_adv_transformed, input=input_transformed, target=target_transformed)
 

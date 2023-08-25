@@ -257,7 +257,7 @@ def test_training_step(input_data, target_data, perturbation):
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor(1337))
-    model = Mock(return_value={})
+    model = Mock(spec="__call__", return_value={})
     # Set target_size manually because the test bypasses the convert() step that reads target_size.
     batch_converter = mart.attack.TupleBatchConverter(target_size=1)
 
@@ -269,10 +269,7 @@ def test_training_step(input_data, target_data, perturbation):
         batch_converter=batch_converter,
     )
 
-    # The batch is reverted to a tuple inside training_step() before invoking the model.
-    output = adversary.training_step(
-        {"input": input_data, "target": target_data, "model": model}, 0
-    )
+    output = adversary.training_step((input_data, target_data, model), 0)
 
     gain.assert_called_once()
     assert output == 1337
@@ -283,7 +280,7 @@ def test_training_step_with_many_gain(input_data, target_data, perturbation):
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
-    model = Mock(return_value={})
+    model = Mock(spec="__call__", return_value={})
     # Set target_size manually because the test bypasses the convert() step that reads target_size.
     batch_converter = mart.attack.TupleBatchConverter(target_size=1)
 
@@ -295,10 +292,7 @@ def test_training_step_with_many_gain(input_data, target_data, perturbation):
         batch_converter=batch_converter,
     )
 
-    # The batch is reverted to a tuple inside training_step() before invoking the model.
-    output = adversary.training_step(
-        {"input": input_data, "target": target_data, "model": model}, 0
-    )
+    output = adversary.training_step((input_data, target_data, model), 0)
 
     assert output == 1234 + 5678
 
@@ -308,7 +302,8 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
-    model = Mock(return_value={})
+    # The model has no attack_step() or training_step().
+    model = Mock(spec="__call__", return_value={})
     objective = Mock(return_value=torch.tensor([True, False], dtype=torch.bool))
     # Set target_size manually because the test bypasses the convert() step that reads target_size.
     batch_converter = mart.attack.TupleBatchConverter(target_size=1)
@@ -322,10 +317,7 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
         batch_converter=batch_converter,
     )
 
-    # The batch is reverted to a tuple inside training_step() before invoking the model.
-    output = adversary.training_step(
-        {"input": input_data, "target": target_data, "model": model}, 0
-    )
+    output = adversary.training_step((input_data, target_data, model), 0)
 
     assert output == 5678
 
