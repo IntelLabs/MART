@@ -43,7 +43,6 @@ class Adversary(pl.LightningModule):
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
-        model_transform: Callable | None = None,
         **kwargs,
     ):
         """_summary_
@@ -57,7 +56,6 @@ class Adversary(pl.LightningModule):
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
-            model_transform (Callable): Transform a model before attack.
         """
         super().__init__()
 
@@ -103,8 +101,6 @@ class Adversary(pl.LightningModule):
             # the number of attack steps via limit_train_batches.
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
-
-        self.model_transform = model_transform
 
     @property
     def perturber(self) -> Perturber:
@@ -171,9 +167,6 @@ class Adversary(pl.LightningModule):
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
         # TODO: We may see different batch format when attacking models outside MART. Add a batch_transform?
         input, target = batch
-
-        if self.model_transform is not None:
-            model = self.model_transform(model)
 
         # The attack needs access to the model at every iteration.
         batch_and_model = (input, target, model)
