@@ -24,7 +24,7 @@ def test_visualizer_run_end(input_data, target_data, perturbation, tmp_path):
         return result
 
     trainer = Mock()
-    model = Mock(get_input_adv=Mock(return_value=perturb(input_list)))
+    model = Mock(composer=Mock(return_value=perturb(input_list)))
     outputs = Mock()
     batch = {"input": input_list, "target": target_list}
     adversary = Mock(spec=Adversary, side_effect=perturb)
