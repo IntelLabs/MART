@@ -16,6 +16,7 @@ import torch
 from mart.utils import silent
 
 from ..optim import OptimizerFactory
+from ..utils import MonkeyPatch
 
 if TYPE_CHECKING:
     from .composer import Composer
@@ -126,7 +127,14 @@ class Adversary(pl.LightningModule):
         batch_adv = (input_adv, target)
 
         # A model that returns output dictionary.
-        outputs = model(batch_adv)
+        if hasattr(model, "attack_step"):
+            outputs = model.attack_step(batch_adv, batch_idx)
+        elif hasattr(model, "training_step"):
+            # Disable logging if we have to reuse training_step() of the target model.
+            with MonkeyPatch(model, "log", lambda *args, **kwargs: None):
+                outputs = model.training_step(batch_adv, batch_idx)
+        else:
+            outputs = model(batch_adv)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.

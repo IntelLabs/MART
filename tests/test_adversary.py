@@ -243,7 +243,8 @@ def test_training_step(input_data, target_data, perturbation):
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor(1337))
-    model = Mock(return_value={})
+    # The model has no attack_step() or training_step().
+    model = Mock(spec="__call__", return_value={})
 
     adversary = Adversary(
         perturber=perturber,
@@ -263,7 +264,8 @@ def test_training_step_with_many_gain(input_data, target_data, perturbation):
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
-    model = Mock(return_value={})
+    # The model has no attack_step() or training_step().
+    model = Mock(spec="__call__", return_value={})
 
     adversary = Adversary(
         perturber=perturber,
@@ -282,7 +284,8 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
-    model = Mock(return_value={})
+    # The model has no attack_step() or training_step().
+    model = Mock(spec="__call__", return_value={})
     objective = Mock(return_value=torch.tensor([True, False], dtype=torch.bool))
 
     adversary = Adversary(
