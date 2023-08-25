@@ -114,16 +114,12 @@ class Adversary(pl.LightningModule):
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
 
-    def get_input_adv(self, *, input, target):
-        perturbation = self.perturber(input=input, target=target)
-        input_adv = self.composer(perturbation, input=input, target=target)
-        return input_adv
-
     def training_step(self, batch, batch_idx):
         input, target = batch
 
         # Compose input_adv from input, then give to model for updated gain.
-        input_adv = self.get_input_adv(input=input, target=target)
+        perturbation = self.perturber(input=input, target=target)
+        input_adv = self.composer(perturbation, input=input, target=target)
 
         # Target model expects input in the original format.
         # TODO: We assume batch is a tuple, but it may be different for models outside MART. Add a reverse transform?
@@ -186,7 +182,8 @@ class Adversary(pl.LightningModule):
         self.attacker.fit(self, train_dataloaders=cycle([batch]))
 
         # Get the input_adv for enforcer checking.
-        input_adv = self.get_input_adv(input=input, target=target)
+        perturbation = self.perturber(input=input, target=target)
+        input_adv = self.composer(perturbation, input=input, target=target)
         self.enforcer(input_adv, input=input, target=target)
 
         # TODO: We assume batch is a tuple, but it may be different for models outside MART. Add a reverse transform?
