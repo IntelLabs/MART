@@ -115,8 +115,8 @@ class Adversary(pl.LightningModule):
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
 
-    def training_step(self, batch_and_model, batch_idx):
-        input_transformed, target_transformed, model = batch_and_model
+    def training_step(self, batch_transformed_and_model, batch_idx):
+        input_transformed, target_transformed, model = batch_transformed_and_model
 
         # Compose input_adv from input, then give to model for updated gain.
         perturbation = self.perturber(input=input_transformed, target=target_transformed)
@@ -170,12 +170,12 @@ class Adversary(pl.LightningModule):
 
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
-        # Extract and transform input so that is convenient for Adversary.
+        # Extract and transform input/target so that is convenient for Adversary.
         input_transformed, target_transformed = self.batch_converter(batch)
 
-        # The attack needs access to the model at every iteration.
         # Canonical form of batch in the adversary's optimization loop.
-        # Optimization loop only sees the transformed input in batches.
+        # We only see the transformed input/target in the attack optimization loop.
+        # The attack also needs access to the model at every iteration.
         batch_transformed_and_model = (input_transformed, target_transformed, model)
 
         # Configure and reset perturbation for current inputs
