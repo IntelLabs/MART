@@ -44,7 +44,6 @@ class Adversary(pl.LightningModule):
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
         batch_converter: Callable,
-        model_transform: Callable | None = None,
         **kwargs,
     ):
         """_summary_
@@ -59,7 +58,6 @@ class Adversary(pl.LightningModule):
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
             batch_converter (Callable): Convert batch into convenient format and reverse.
-            model_transform (Callable): Transform a model before attack.
         """
         super().__init__()
 
@@ -107,7 +105,6 @@ class Adversary(pl.LightningModule):
             assert self._attacker.limit_train_batches > 0
 
         self.batch_converter = batch_converter
-        self.model_transform = model_transform
 
     @property
     def perturber(self) -> Perturber:
