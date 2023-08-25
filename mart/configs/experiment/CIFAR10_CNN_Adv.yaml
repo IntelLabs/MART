@@ -1,31 +1,44 @@
 # @package _global_
 
 defaults:
-  - CIFAR10_CNN
-  - /attack@model.modules.input_adv_training: classification_fgsm_linf
-  - /attack@model.modules.input_adv_test: classification_pgd_linf
+  - /attack@callbacks.adversary_connector.train_adversary: classification_fgsm_linf
+  - /attack@callbacks.adversary_connector.test_adversary: classification_pgd_linf
+  - override /datamodule: cifar10
+  - override /model: classifier_cifar10_cnn
+  - override /metric: accuracy
+  - override /optimization: super_convergence
+  - override /callbacks: [model_checkpoint, lr_monitor, adversary_connector]
 
 task_name: "CIFAR10_CNN_Adv"
 tags: ["adv", "fat"]
 
-model:
-  modules:
-    input_adv_training:
+optimized_metric: "test_metrics/acc"
+
+callbacks:
+  model_checkpoint:
+    monitor: "validation_metrics/acc"
+    mode: "max"
+
+  adversary_connector:
+    train_adversary:
       eps: 1.75
-    input_adv_test:
+    test_adversary:
       eps: 2
       lr: 1
       max_iters: 10
 
-  training_sequence:
-    seq005: input_adv_training
+trainer:
+  # 50K training images, batch_size=128, drop_last, 15 epochs.
+  max_steps: 5850
+  precision: 32
 
-    seq010:
-      preprocessor:
-        _call_with_args_: ["input_adv_training"]
+datamodule:
+  ims_per_batch: 128
+  world_size: 1
+  num_workers: 8
 
-  test_sequence:
-    seq005: input_adv_test
-
-    seq010:
-      preprocessor: ["input_adv_test"]
+model:
+  optimizer:
+    lr: 0.1
+    momentum: 0.9
+    weight_decay: 1e-4

@@ -16,6 +16,7 @@ import torch
 from mart.utils import silent
 
 from ..optim import OptimizerFactory
+from ..utils import MonkeyPatch
 
 if TYPE_CHECKING:
     from .composer import Composer
@@ -110,13 +111,26 @@ class Adversary(pl.LightningModule):
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
 
-    def training_step(self, batch, batch_idx):
-        # copy batch since we modify it and it is used internally
-        batch = batch.copy()
+    def training_step(self, batch_and_model, batch_idx):
+        input, target, model = batch_and_model
 
-        # We need to evaluate the perturbation against the whole model, so call it normally to get a gain.
-        model = batch.pop("model")
-        outputs = model(**batch)
+        # Compose input_adv from input, then give to model for updated gain.
+        perturbation = self.perturber(input=input, target=target)
+        input_adv = self.composer(perturbation, input=input, target=target)
+
+        # Target model expects input in the original format.
+        # TODO: We assume batch is a tuple, but it may be different for models outside MART. Add a reverse transform?
+        batch_adv = (input_adv, target)
+
+        # A model that returns output dictionary.
+        if hasattr(model, "attack_step"):
+            outputs = model.attack_step(batch_adv, batch_idx)
+        elif hasattr(model, "training_step"):
+            # Disable logging if we have to reuse training_step() of the target model.
+            with MonkeyPatch(model, "log", lambda *args, **kwargs: None):
+                outputs = model.training_step(batch_adv, batch_idx)
+        else:
+            outputs = model(batch_adv)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -150,28 +164,12 @@ class Adversary(pl.LightningModule):
                 self.gradient_modifier(group["params"])
 
     @silent()
-    def forward(self, *, model=None, sequence=None, **batch):
-        batch["model"] = model
-        batch["sequence"] = sequence
+    def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
+        # TODO: We may see different batch format when attacking models outside MART. Add a batch_transform?
+        input, target = batch
 
-        # Adversary lives within a sequence of model. To signal the adversary should attack, one
-        # must pass a model to attack when calling the adversary. Since we do not know where the
-        # Adversary lives inside the model, we also need the remaining sequence to be able to
-        # get a loss.
-        if model and sequence:
-            self._attack(**batch)
-
-        perturbation = self.perturber(**batch)
-        input_adv = self.composer(perturbation, **batch)
-
-        # Enforce constraints after the attack optimization ends.
-        if model and sequence:
-            self.enforcer(input_adv, **batch)
-
-        return input_adv
-
-    def _attack(self, *, input, **batch):
-        batch["input"] = input
+        # The attack needs access to the model at every iteration.
+        batch_and_model = (input, target, model)
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input)
@@ -179,7 +177,18 @@ class Adversary(pl.LightningModule):
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
         self.attacker.fit_loop.max_epochs += 1
-        self.attacker.fit(self, train_dataloaders=cycle([batch]))
+        self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
+
+        # Get the input_adv for enforcer checking.
+        perturbation = self.perturber(input=input, target=target)
+        input_adv = self.composer(perturbation, input=input, target=target)
+        self.enforcer(input_adv, input=input, target=target)
+
+        # TODO: We assume batch is a tuple, but it may be different for models outside MART. Add a reverse transform?
+        # Revert to the original format of batch.
+        batch_adv = (input_adv, target)
+
+        return batch_adv
 
     @property
     def attacker(self):
