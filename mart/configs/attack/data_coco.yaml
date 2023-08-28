@@ -1,3 +1,4 @@
+# Scale pixel input in the range of [0,1] to [0,255] for Adversary.
 defaults:
   - batch_c15n: tuple
   - batch_c15n/transform@batch_c15n.transform.transforms: range_1to255
