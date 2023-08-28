@@ -115,27 +115,25 @@ class Adversary(pl.LightningModule):
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
 
-    def training_step(self, batch_transformed_and_model, batch_idx):
-        input_transformed, target_transformed, model = batch_transformed_and_model
+    def training_step(self, batch_and_model, batch_idx):
+        input, target, model = batch_and_model
 
         # Compose input_adv from input, then give to model for updated gain.
-        perturbation = self.perturber(input=input_transformed, target=target_transformed)
-        input_adv_transformed = self.composer(
-            perturbation, input=input_transformed, target=target_transformed
-        )
+        perturbation = self.perturber(input=input, target=target)
+        input_adv = self.composer(perturbation, input=input, target=target)
 
         # Target model expects input in the original format.
-        batch_adv = self.batch_c15n.revert(input_adv_transformed, target_transformed)
+        batch_adv_orig = self.batch_c15n.revert(input_adv, target)
 
         # A model that returns output dictionary.
         if hasattr(model, "attack_step"):
-            outputs = model.attack_step(batch_adv, batch_idx)
+            outputs = model.attack_step(batch_adv_orig, batch_idx)
         elif hasattr(model, "training_step"):
             # Disable logging if we have to reuse training_step() of the target model.
             with MonkeyPatch(model, "log", lambda *args, **kwargs: None):
-                outputs = model.training_step(batch_adv, batch_idx)
+                outputs = model.training_step(batch_adv_orig, batch_idx)
         else:
-            outputs = model(batch_adv)
+            outputs = model(batch_adv_orig)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -170,33 +168,31 @@ class Adversary(pl.LightningModule):
 
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
-        # Extract and transform input/target so that is convenient for Adversary.
-        input_transformed, target_transformed = self.batch_c15n(batch)
+        # Extract and canonicalize input/target so that is convenient for Adversary.
+        input, target = self.batch_c15n(batch)
 
         # Canonical form of batch in the adversary's optimization loop.
-        # We only see the transformed input/target in the attack optimization loop.
+        # We only see the canonicalized input/target in the attack optimization loop.
         # The attack also needs access to the model at every iteration.
-        batch_transformed_and_model = (input_transformed, target_transformed, model)
+        batch_and_model = (input, target, model)
 
         # Configure and reset perturbation for current inputs
-        self.perturber.configure_perturbation(input_transformed)
+        self.perturber.configure_perturbation(input)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
         self.attacker.fit_loop.max_epochs += 1
-        self.attacker.fit(self, train_dataloaders=cycle([batch_transformed_and_model]))
+        self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
 
-        # Get the transformed input_adv for enforcer checking.
-        perturbation = self.perturber(input=input_transformed, target=target_transformed)
-        input_adv_transformed = self.composer(
-            perturbation, input=input_transformed, target=target_transformed
-        )
-        self.enforcer(input_adv_transformed, input=input_transformed, target=target_transformed)
+        # Get the canonicalized input_adv for enforcer checking.
+        perturbation = self.perturber(input=input, target=target)
+        input_adv = self.composer(perturbation, input=input, target=target)
+        self.enforcer(input_adv, input=input, target=target)
 
         # Revert to the original format of batch.
-        batch_adv = self.batch_c15n.revert(input_adv_transformed, target_transformed)
+        batch_adv_orig = self.batch_c15n.revert(input_adv, target)
 
-        return batch_adv
+        return batch_adv_orig
 
     @property
     def attacker(self):
