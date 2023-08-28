@@ -43,7 +43,7 @@ class Adversary(pl.LightningModule):
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
-        batch_converter: Callable,
+        batch_c15n: Callable,
         **kwargs,
     ):
         """_summary_
@@ -57,7 +57,7 @@ class Adversary(pl.LightningModule):
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
-            batch_converter (Callable): Convert batch into convenient format and reverse.
+            batch_c15n (Callable): Canonicalize batch into convenient format and revert to the original format.
         """
         super().__init__()
 
@@ -104,7 +104,7 @@ class Adversary(pl.LightningModule):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
-        self.batch_converter = batch_converter
+        self.batch_c15n = batch_c15n
 
     @property
     def perturber(self) -> Perturber:
@@ -125,7 +125,7 @@ class Adversary(pl.LightningModule):
         )
 
         # Target model expects input in the original format.
-        batch_adv = self.batch_converter.revert(input_adv_transformed, target_transformed)
+        batch_adv = self.batch_c15n.revert(input_adv_transformed, target_transformed)
 
         # A model that returns output dictionary.
         if hasattr(model, "attack_step"):
@@ -171,7 +171,7 @@ class Adversary(pl.LightningModule):
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
         # Extract and transform input/target so that is convenient for Adversary.
-        input_transformed, target_transformed = self.batch_converter(batch)
+        input_transformed, target_transformed = self.batch_c15n(batch)
 
         # Canonical form of batch in the adversary's optimization loop.
         # We only see the transformed input/target in the attack optimization loop.
@@ -194,7 +194,7 @@ class Adversary(pl.LightningModule):
         self.enforcer(input_adv_transformed, input=input_transformed, target=target_transformed)
 
         # Revert to the original format of batch.
-        batch_adv = self.batch_converter.revert(input_adv_transformed, target_transformed)
+        batch_adv = self.batch_c15n.revert(input_adv_transformed, target_transformed)
 
         return batch_adv
 

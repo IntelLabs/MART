@@ -7,6 +7,7 @@ defaults:
   - gradient_modifier: sign
   - gain: rcnn_class_background
   - objective: object_detection_missed
+  - batch_c15n: tuple
 
 max_iters: ???
 lr: ???

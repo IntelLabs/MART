@@ -9,17 +9,15 @@ from __future__ import annotations
 import abc
 from typing import Callable
 
-# TODO: Do we need to copy batch?
-
 __all__ = [
-    "InputOnlyBatchConverter",
-    "DictBatchConverter",
-    "ListBatchConverter",
-    "TupleBatchConverter",
+    "InputOnlyBatchC15n",
+    "DictBatchC15n",
+    "ListBatchC15n",
+    "TupleBatchC15n",
 ]
 
 
-class BatchConverter(abc.ABC):
+class BatchC15n(abc.ABC):
     def __init__(
         self,
         *,
@@ -30,7 +28,7 @@ class BatchConverter(abc.ABC):
         batch_transform: Callable | None = None,
         batch_untransform: Callable | None = None,
     ):
-        """Convert batch into (input, target), and vice versa.
+        """Convert original batch into (input, target), and vice versa.
 
         Args:
             transform (Callable): Transform input into a convenient format, e.g. normalized_input->[0, 255].
@@ -85,7 +83,7 @@ class BatchConverter(abc.ABC):
         pass
 
 
-class InputOnlyBatchConverter(BatchConverter):
+class InputOnlyBatchC15n(BatchC15n):
     def _convert(self, batch):
         input = batch
         target = None
@@ -96,7 +94,7 @@ class InputOnlyBatchConverter(BatchConverter):
         return batch
 
 
-class DictBatchConverter(BatchConverter):
+class DictBatchC15n(BatchC15n):
     def __init__(self, input_key: str = "input", **kwargs):
         """_summary_
 
@@ -131,7 +129,7 @@ class DictBatchConverter(BatchConverter):
         return batch
 
 
-class ListBatchConverter(BatchConverter):
+class ListBatchC15n(BatchC15n):
     def __init__(self, input_key: int = 0, target_size: int | None = None, **kwargs):
         super().__init__(**kwargs)
 
@@ -161,7 +159,7 @@ class ListBatchConverter(BatchConverter):
         return batch
 
 
-class TupleBatchConverter(ListBatchConverter):
+class TupleBatchC15n(ListBatchC15n):
     def _convert(self, batch: tuple):
         batch_list = list(batch)
         input, target = super()._convert(batch_list)

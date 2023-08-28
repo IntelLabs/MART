@@ -1,4 +1,4 @@
 # We expect the original batch looks like `(input, target)` with the default parameters.
-_target_: mart.attack.batch_converter.TupleBatchConverter
+_target_: mart.attack.batch_c15n.TupleBatchC15n
 input_key: 0
 target_size: 1
