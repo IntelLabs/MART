@@ -1,0 +1,17 @@
+defaults:
+  - perturber/initializer: uniform
+  - /optimizer@optimizer: sgd
+
+max_iters: ???
+eps: ???
+lr: ???
+
+optimizer:
+  lr: ${..lr}
+
+perturber:
+  initializer:
+    min: ${negate:${...eps}}
+    max: ${...eps}
+  projector:
+    eps: ${...eps}

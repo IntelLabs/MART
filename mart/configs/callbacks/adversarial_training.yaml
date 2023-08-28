@@ -1,3 +1,0 @@
-adversarial_training:
-  _target_: mart.callbacks.AdversarialTraining
-  # adversary: ???

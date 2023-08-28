@@ -4,56 +4,74 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+from __future__ import annotations
+
 import abc
 from typing import Callable
 
-# TODO: Do we need to copy batch?
-
 __all__ = [
-    "TensorBatchConverter",
-    "DictBatchConverter",
-    "ListBatchConverter",
-    "TupleBatchConverter",
+    "InputOnlyBatchC15n",
+    "DictBatchC15n",
+    "ListBatchC15n",
+    "TupleBatchC15n",
 ]
 
 
-class BatchConverter(abc.ABC):
+class BatchC15n(abc.ABC):
     def __init__(
         self,
         *,
-        transform: Callable = None,
-        untransform: Callable = None,
-        target_transform: Callable = None,
-        target_untransform: Callable = None,
+        transform: Callable | None = None,
+        untransform: Callable | None = None,
+        target_transform: Callable | None = None,
+        target_untransform: Callable | None = None,
+        batch_transform: Callable | None = None,
+        batch_untransform: Callable | None = None,
     ):
-        """Convert batch into (input, target), and vice versa.
+        """Convert original batch into (input, target), and vice versa.
 
         Args:
-            transform (Callable): Transform input into a convenient format, e.g. [0,1]->[0.255].
-            untransform (Callable): Transform adversarial input in the convenient format back into the original format of input, e.g. [0,255]->[0,1].
+            transform (Callable): Transform input into a convenient format, e.g. normalized_input->[0, 255].
+            untransform (Callable): Transform adversarial input in the convenient format back into the original format of input, e.g. [0,255]->normalized_input.
             target_transform (Callable): Transform target.
             target_untransform (Callable): Untransform target.
+            batch_transform (Callable): Transform batch before converting the batch.
+            batch_untransform (callable): Untransform batch after reverting the batch.
         """
-        self.transform = transform if isinstance(transform, Callable) else lambda x: x
-        self.untransform = untransform if isinstance(untransform, Callable) else lambda x: x
 
-        self.target_transform = (
-            target_transform if isinstance(target_transform, Callable) else lambda x: x
-        )
-        self.target_untransform = (
-            target_untransform if isinstance(target_untransform, Callable) else lambda x: x
-        )
+        self.transform = transform
+        self.untransform = untransform
 
-    def __call__(self, batch):
+        self.target_transform = target_transform
+        self.target_untransform = target_untransform
+
+        self.batch_transform = batch_transform
+        self.batch_untransform = batch_untransform
+
+    def __call__(self, batch, device=None):
+        if self.batch_transform is not None:
+            batch = self.batch_transform(batch, device=device)
+
         input, target = self._convert(batch)
-        input_transformed = self.transform(input)
-        target_transformed = self.target_transform(target)
-        return input_transformed, target_transformed
 
-    def revert(self, input_transformed, target_transformed):
-        input = self.untransform(input_transformed)
-        target = self.target_untransform(target_transformed)
+        if self.transform is not None:
+            input = self.transform(input)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+        return input, target
+
+    def revert(self, input, target):
+        if self.untransform is not None:
+            input = self.untransform(input)
+        if self.target_untransform is not None:
+            target = self.target_untransform(target)
+
         batch = self._revert(input, target)
+
+        if self.batch_untransform is not None:
+            batch = self.batch_untransform(batch)
+
         return batch
 
     @abc.abstractclassmethod
@@ -65,7 +83,7 @@ class BatchConverter(abc.ABC):
         pass
 
 
-class TensorBatchConverter(BatchConverter):
+class InputOnlyBatchC15n(BatchC15n):
     def _convert(self, batch):
         input = batch
         target = None
@@ -76,7 +94,7 @@ class TensorBatchConverter(BatchConverter):
         return batch
 
 
-class DictBatchConverter(BatchConverter):
+class DictBatchC15n(BatchC15n):
     def __init__(self, input_key: str = "input", **kwargs):
         """_summary_
 
@@ -111,12 +129,12 @@ class DictBatchConverter(BatchConverter):
         return batch
 
 
-class ListBatchConverter(BatchConverter):
-    def __init__(self, input_key: int = 0, **kwargs):
+class ListBatchC15n(BatchC15n):
+    def __init__(self, input_key: int = 0, target_size: int | None = None, **kwargs):
         super().__init__(**kwargs)
 
         self.input_key = input_key
-        self.target_size = None
+        self.target_size = target_size
 
     def _convert(self, batch: list):
         # Make a copy because we don't want to break the original batch.
@@ -141,7 +159,7 @@ class ListBatchConverter(BatchConverter):
         return batch
 
 
-class TupleBatchConverter(ListBatchConverter):
+class TupleBatchC15n(ListBatchC15n):
     def _convert(self, batch: tuple):
         batch_list = list(batch)
         input, target = super()._convert(batch_list)

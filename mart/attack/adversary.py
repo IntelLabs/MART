@@ -15,8 +15,8 @@ import torch
 
 from mart.utils import silent
 
-from ..callbacks.adversarial_training import AdversarialTraining
 from ..optim import OptimizerFactory
+from ..utils import MonkeyPatch
 
 if TYPE_CHECKING:
     from .composer import Composer
@@ -43,7 +43,7 @@ class Adversary(pl.LightningModule):
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
-        batch_converter: Callable,
+        batch_c15n: Callable,
         **kwargs,
     ):
         """_summary_
@@ -57,7 +57,7 @@ class Adversary(pl.LightningModule):
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
-            batch_converter (Callable): Convert batch into convenient format and reverse.
+            batch_c15n (Callable): Canonicalize batch into convenient format and revert to the original format.
         """
         super().__init__()
 
@@ -104,7 +104,7 @@ class Adversary(pl.LightningModule):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
-        self.batch_converter = batch_converter
+        self.batch_c15n = batch_c15n
 
     @property
     def perturber(self) -> Perturber:
@@ -115,30 +115,25 @@ class Adversary(pl.LightningModule):
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
 
-    def get_input_adv(self, *, input, target):
+    def training_step(self, batch_and_model, batch_idx):
+        input, target, model = batch_and_model
+
+        # Compose input_adv from input, then give to model for updated gain.
         perturbation = self.perturber(input=input, target=target)
         input_adv = self.composer(perturbation, input=input, target=target)
-        return input_adv
 
-    def training_step(self, batch, batch_idx):
-        # TODO: We shouldn't need to copy because it is never changed?
-        # copy batch since we modify it and it is used internally
-        # batch = batch.copy()
-
-        input_transformed = batch["input"]
-        target_transformed = batch["target"]
-        # What we need is a frozen model that returns (a dictionary of) logits, or losses.
-        model = batch["model"]
-
-        # Compose un-transformed input_adv from batch["input"], then give to model for updated gain.
-        input_adv_transformed = self.get_input_adv(
-            input=input_transformed, target=target_transformed
-        )
         # Target model expects input in the original format.
-        batch_adv = self.batch_converter.revert(input_adv_transformed, target_transformed)
+        batch_adv_orig = self.batch_c15n.revert(input_adv, target)
 
         # A model that returns output dictionary.
-        outputs = model(batch_adv)
+        if hasattr(model, "attack_step"):
+            outputs = model.attack_step(batch_adv_orig, batch_idx)
+        elif hasattr(model, "training_step"):
+            # Disable logging if we have to reuse training_step() of the target model.
+            with MonkeyPatch(model, "log", lambda *args, **kwargs: None):
+                outputs = model.training_step(batch_adv_orig, batch_idx)
+        else:
+            outputs = model(batch_adv_orig)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -173,35 +168,31 @@ class Adversary(pl.LightningModule):
 
     @silent()
     def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
-        # Copy to keep the original batch.
-        # Extract and transform input so that is convenient for Adversary.
-        input_transformed, target_transformed = self.batch_converter(batch)
+        # Extract and canonicalize input/target so that is convenient for Adversary.
+        input, target = self.batch_c15n(batch)
 
-        # Optimization loop only sees the transformed input in batches.
-        batch_transformed = {
-            "input": input_transformed,
-            "target": target_transformed,
-            "model": model,
-        }
+        # Canonical form of batch in the adversary's optimization loop.
+        # We only see the canonicalized input/target in the attack optimization loop.
+        # The attack also needs access to the model at every iteration.
+        batch_and_model = (input, target, model)
 
         # Configure and reset perturbation for current inputs
-        self.perturber.configure_perturbation(input_transformed)
+        self.perturber.configure_perturbation(input)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
         self.attacker.fit_loop.max_epochs += 1
-        self.attacker.fit(self, train_dataloaders=cycle([batch_transformed]))
+        self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
 
-        # Get the transformed input_adv for enforcer checking.
-        input_adv_transformed = self.get_input_adv(
-            input=input_transformed, target=target_transformed
-        )
-        self.enforcer(input_adv_transformed, input=input_transformed, target=target_transformed)
+        # Get the canonicalized input_adv for enforcer checking.
+        perturbation = self.perturber(input=input, target=target)
+        input_adv = self.composer(perturbation, input=input, target=target)
+        self.enforcer(input_adv, input=input, target=target)
 
         # Revert to the original format of batch.
-        batch_adv = self.batch_converter.revert(input_adv_transformed, target_transformed)
+        batch_adv_orig = self.batch_c15n.revert(input_adv, target)
 
-        return batch_adv
+        return batch_adv_orig
 
     @property
     def attacker(self):
@@ -222,11 +213,6 @@ class Adversary(pl.LightningModule):
             raise NotImplementedError
 
         self._attacker = self._attacker(accelerator=accelerator, devices=devices)
-
-        # Remove recursive adversarial training callback from lightning.pytorch.callbacks_factory.
-        for callback in self._attacker.callbacks:
-            if isinstance(callback, AdversarialTraining):
-                self._attacker.callbacks.remove(callback)
 
         return self._attacker
 
