@@ -37,7 +37,8 @@ def test_with_model(input_data, target_data, perturbation):
         batch_c15n=batch_c15n,
     )
 
-    batch_adv = adversary(batch=batch, model=model)
+    adversary.fit(batch=batch, model=model)
+    batch_adv = adversary.forward(batch=batch)
     output_data = batch_adv[0]
 
     # The enforcer is only called when model is not None.
@@ -107,7 +108,8 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
         batch_c15n=batch_c15n,
     )
 
-    batch_adv = adversary(batch=batch, model=model)
+    adversary.fit(batch=batch, model=model)
+    batch_adv = adversary.forward(batch=batch)
     output_data = batch_adv[0]
 
     # Adversary will have no parameter even after forward is called, because we hide Perturber in a list.
@@ -170,7 +172,8 @@ def test_perturbation(input_data, target_data, perturbation):
         batch_c15n=batch_c15n,
     )
 
-    batch_adv = adversary(batch=batch, model=model)
+    adversary.fit(batch=batch, model=model)
+    batch_adv = adversary.forward(batch=batch)
     output_data = batch_adv[0]
 
     # The enforcer is only called when model is not None.
@@ -223,7 +226,8 @@ def test_forward_with_model(input_data, target_data):
     def model(batch):
         return {"logits": batch[0]}
 
-    batch_adv = adversary(batch=batch, model=model)
+    adversary.fit(batch=batch, model=model)
+    batch_adv = adversary.forward(batch=batch)
     input_adv = batch_adv[0]
 
     perturbation = input_data - input_adv

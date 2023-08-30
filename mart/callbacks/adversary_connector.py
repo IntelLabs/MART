@@ -67,6 +67,7 @@ class AdversaryConnector(Callback):
         adversary.to(pl_module.device)
 
         # Directly pass batch instead of assuming it has a structure.
-        batch_adv = adversary(batch=batch, model=pl_module)
+        adversary.fit(batch=batch, model=pl_module)
+        batch_adv = adversary.forward(batch=batch)
 
         return batch_adv
