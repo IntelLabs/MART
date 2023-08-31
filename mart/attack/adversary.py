@@ -118,8 +118,8 @@ class Adversary(pl.LightningModule):
     def training_step(self, batch_and_model, batch_idx):
         batch, model = batch_and_model
 
-        # We just compose adversarial examples but not enforce the threat model until after fit().
-        batch_adv = self.forward(batch=batch, enforce=False)
+        # Compose adversarial examples.
+        batch_adv = self.forward(batch=batch)
 
         # A model that returns output dictionary.
         if hasattr(model, "attack_step"):
@@ -178,7 +178,7 @@ class Adversary(pl.LightningModule):
         self.attacker.fit_loop.max_epochs += 1
         self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
 
-    def forward(self, *, batch, enforce=True):
+    def forward(self, *, batch):
         """Compose adversarial examples and revert to the original input format."""
         input, target = self.batch_c15n(batch)
 
@@ -186,8 +186,7 @@ class Adversary(pl.LightningModule):
         perturbation = self.perturber(input=input, target=target)
         input_adv = self.composer(perturbation, input=input, target=target)
 
-        if enforce:
-            self.enforcer(input_adv, input=input, target=target)
+        self.enforcer(input_adv, input=input, target=target)
 
         # Target model expects input in the original format.
         batch_adv = self.batch_c15n.revert(input_adv, target)
