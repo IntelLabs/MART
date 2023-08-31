@@ -3,7 +3,7 @@
 defaults:
   - COCO_TorchvisionFasterRCNN
   - /attack@callbacks.adversary_connector.test_adversary: object_detection_mask_adversary
-  - /attack/batch_c15n@callbacks.adversary_connector.batch_c15n: tuple
+  - /batch_c15n@callbacks.adversary_connector.batch_c15n: tuple
   - override /datamodule: coco_perturbable_mask
   - override /callbacks: [model_checkpoint, lr_monitor, adversary_connector]
 
