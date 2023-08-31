@@ -115,7 +115,7 @@ class Adversary(pl.LightningModule):
         input, target, model = batch_and_model
 
         # Compose adversarial examples.
-        input_adv, target_adv = self.forward(input=input, target=target)
+        input_adv, target_adv = self.forward(input, target)
 
         # A model that returns output dictionary.
         outputs = model(input_adv, target_adv)
@@ -164,7 +164,7 @@ class Adversary(pl.LightningModule):
         self.attacker.fit_loop.max_epochs += 1
         self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
 
-    def forward(self, *, input, target):
+    def forward(self, input, target):
         """Compose adversarial examples and revert to the original input format."""
         # Get the canonicalized input_adv for enforcer checking.
         perturbation = self.perturber(input=input, target=target)

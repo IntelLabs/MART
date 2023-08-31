@@ -89,7 +89,7 @@ class AdversaryConnector(Callback):
         input, target = self.batch_c15n(batch)
 
         adversary.fit(input=input, target=target, model=model)
-        input_adv, target_adv = adversary(input=input, target=target)
+        input_adv, target_adv = adversary(input, target)
 
         # Revert to the original batch format.
         batch_adv = self.batch_c15n.revert(input_adv, target_adv)
