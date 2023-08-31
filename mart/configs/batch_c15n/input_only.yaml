@@ -1,1 +1,1 @@
-_target_: mart.attack.batch_c15n.InputOnlyBatchC15n
+_target_: mart.transforms.InputOnlyBatchC15n
