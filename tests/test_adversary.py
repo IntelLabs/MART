@@ -257,6 +257,7 @@ def test_configure_optimizers():
 
 
 def test_training_step(input_data, target_data, perturbation):
+    batch = (input_data, target_data)
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
@@ -273,13 +274,14 @@ def test_training_step(input_data, target_data, perturbation):
         batch_c15n=batch_c15n,
     )
 
-    output = adversary.training_step((input_data, target_data, model), 0)
+    output = adversary.training_step((batch, model), 0)
 
     gain.assert_called_once()
     assert output == 1337
 
 
 def test_training_step_with_many_gain(input_data, target_data, perturbation):
+    batch = (input_data, target_data)
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
@@ -296,12 +298,13 @@ def test_training_step_with_many_gain(input_data, target_data, perturbation):
         batch_c15n=batch_c15n,
     )
 
-    output = adversary.training_step((input_data, target_data, model), 0)
+    output = adversary.training_step((batch, model), 0)
 
     assert output == 1234 + 5678
 
 
 def test_training_step_with_objective(input_data, target_data, perturbation):
+    batch = (input_data, target_data)
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
@@ -321,7 +324,7 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
         batch_c15n=batch_c15n,
     )
 
-    output = adversary.training_step((input_data, target_data, model), 0)
+    output = adversary.training_step((batch, model), 0)
 
     assert output == 5678
 

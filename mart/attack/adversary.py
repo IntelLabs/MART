@@ -116,11 +116,10 @@ class Adversary(pl.LightningModule):
         return self.optimizer(self.perturber)
 
     def training_step(self, batch_and_model, batch_idx):
-        input, target, model = batch_and_model
+        batch, model = batch_and_model
 
-        # Target model expects input in the original format.
         # We just compose adversarial examples but not enforce the threat model until after fit().
-        batch_adv = self.forward(input=input, target=target, enforce=False)
+        batch_adv = self.forward(batch=batch, enforce=False)
 
         # A model that returns output dictionary.
         if hasattr(model, "attack_step"):
@@ -165,13 +164,11 @@ class Adversary(pl.LightningModule):
 
     @silent()
     def fit(self, *, batch: torch.Tensor | list | dict, model: Callable):
-        # Extract and canonicalize input/target so that is convenient for Adversary.
-        input, target = self.batch_c15n(batch)
-
-        # Canonical form of batch in the adversary's optimization loop.
-        # We only see the canonicalized input/target in the attack optimization loop.
+        # Extract and canonicalize input for initializing perturbation.
+        # TODO: Get rid of batch_c15n() here by converting perturbation to UninitializedParameter.
+        input, _target = self.batch_c15n(batch)
         # The attack also needs access to the model at every iteration.
-        batch_and_model = (input, target, model)
+        batch_and_model = (batch, model)
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input)
@@ -181,10 +178,9 @@ class Adversary(pl.LightningModule):
         self.attacker.fit_loop.max_epochs += 1
         self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
 
-    def forward(self, *, batch=None, input=None, target=None, enforce=True):
+    def forward(self, *, batch, enforce=True):
         """Compose adversarial examples and revert to the original input format."""
-        if batch is not None:
-            input, target = self.batch_c15n(batch)
+        input, target = self.batch_c15n(batch)
 
         # Get the canonicalized input_adv for enforcer checking.
         perturbation = self.perturber(input=input, target=target)
