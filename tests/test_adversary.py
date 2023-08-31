@@ -34,7 +34,7 @@ def test_with_model(input_data, target_data, perturbation):
         attacker=attacker,
     )
 
-    adversary.fit(input=input_data, target=target_data, model=model)
+    adversary.fit(input_data, target_data, model=model)
     input_adv, target_adv = adversary(input_data, target_data)
     output_data = input_adv
 
@@ -100,7 +100,7 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
         attacker=attacker,
     )
 
-    adversary.fit(input=input_data, target=target_data, model=model)
+    adversary.fit(input_data, target_data, model=model)
     input_adv, target_adv = adversary(input_data, target_data)
     output_data = input_adv
 
@@ -159,7 +159,7 @@ def test_perturbation(input_data, target_data, perturbation):
         attacker=attacker,
     )
 
-    adversary.fit(input=input_data, target=target_data, model=model)
+    adversary.fit(input_data, target_data, model=model)
     input_adv, target_adv = adversary(input_data, target_data)
     output_data = input_adv
 
@@ -209,7 +209,7 @@ def test_forward_with_model(input_data, target_data):
     def model(input, target):
         return {"logits": input}
 
-    adversary.fit(input=input_data, target=target_data, model=model)
+    adversary.fit(input_data, target_data, model=model)
     input_adv, target_adv = adversary(input_data, target_data)
 
     perturbation = input_data - input_adv

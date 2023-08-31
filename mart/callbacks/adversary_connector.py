@@ -88,7 +88,7 @@ class AdversaryConnector(Callback):
         # Canonicalize the batch to work with Adversary.
         input, target = self.batch_c15n(batch)
 
-        adversary.fit(input=input, target=target, model=model)
+        adversary.fit(input, target, model=model)
         input_adv, target_adv = adversary(input, target)
 
         # Revert to the original batch format.

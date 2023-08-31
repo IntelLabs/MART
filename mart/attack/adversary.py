@@ -152,7 +152,7 @@ class Adversary(pl.LightningModule):
                 self.gradient_modifier(group["params"])
 
     @silent()
-    def fit(self, *, input, target, model: Callable):
+    def fit(self, input, target, *, model: Callable):
         # The attack also needs access to the model at every iteration.
         batch_and_model = (input, target, model)
 
