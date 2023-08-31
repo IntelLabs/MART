@@ -3,6 +3,7 @@
 defaults:
   - /attack@callbacks.adversary_connector.train_adversary: classification_fgsm_linf
   - /attack@callbacks.adversary_connector.test_adversary: classification_pgd_linf
+  - /attack/batch_c15n@callbacks.adversary_connector.batch_c15n: list
   - override /datamodule: cifar10
   - override /model: classifier_cifar10_cnn
   - override /metric: accuracy

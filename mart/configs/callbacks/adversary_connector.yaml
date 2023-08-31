@@ -4,3 +4,4 @@ adversary_connector:
   train_adversary: null
   val_adversary: null
   test_adversary: null
+  batch_c15n: ???
