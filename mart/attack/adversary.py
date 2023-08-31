@@ -165,8 +165,7 @@ class Adversary(pl.LightningModule):
         self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
 
     def forward(self, input, target):
-        """Compose adversarial examples and revert to the original input format."""
-        # Get the canonicalized input_adv for enforcer checking.
+        """Compose adversarial examples and enforce the threat model."""
         perturbation = self.perturber(input=input, target=target)
         input_adv = self.composer(perturbation, input=input, target=target)
 
