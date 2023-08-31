@@ -7,6 +7,7 @@ defaults:
   - gradient_modifier: sign
   - gain: cross_entropy
   - objective: misclassification
+  - batch_c15n: list
 
 eps: ???
 lr: ???
