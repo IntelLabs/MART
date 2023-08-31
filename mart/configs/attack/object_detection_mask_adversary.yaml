@@ -8,7 +8,6 @@ defaults:
   - gradient_modifier: sign
   - gain: rcnn_training_loss
   - objective: zero_ap
-  - batch_c15n: tuple
 
 max_iters: ???
 lr: ???
