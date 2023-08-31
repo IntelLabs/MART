@@ -43,6 +43,7 @@ class Adversary(pl.LightningModule):
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
+        batch_c15n: Callable,
         **kwargs,
     ):
         """_summary_
@@ -56,6 +57,7 @@ class Adversary(pl.LightningModule):
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
+            batch_c15n (Callable): Canonicalize batch into convenient format and revert to the original format.
         """
         super().__init__()
 
@@ -102,6 +104,8 @@ class Adversary(pl.LightningModule):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
+        self.batch_c15n = batch_c15n
+
     @property
     def perturber(self) -> Perturber:
         # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint,
@@ -112,15 +116,10 @@ class Adversary(pl.LightningModule):
         return self.optimizer(self.perturber)
 
     def training_step(self, batch_and_model, batch_idx):
-        input, target, model = batch_and_model
+        batch, model = batch_and_model
 
-        # Compose input_adv from input, then give to model for updated gain.
-        perturbation = self.perturber(input=input, target=target)
-        input_adv = self.composer(perturbation, input=input, target=target)
-
-        # Target model expects input in the original format.
-        # TODO: We assume batch is a tuple, but it may be different for models outside MART. Add a reverse transform?
-        batch_adv = (input_adv, target)
+        # Compose adversarial examples.
+        batch_adv = self.forward(batch=batch)
 
         # A model that returns output dictionary.
         if hasattr(model, "attack_step"):
@@ -164,12 +163,12 @@ class Adversary(pl.LightningModule):
                 self.gradient_modifier(group["params"])
 
     @silent()
-    def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
-        # TODO: We may see different batch format when attacking models outside MART. Add a batch_transform?
-        input, target = batch
-
-        # The attack needs access to the model at every iteration.
-        batch_and_model = (input, target, model)
+    def fit(self, *, batch: torch.Tensor | list | dict, model: Callable):
+        # Extract and canonicalize input for initializing perturbation.
+        # TODO: Get rid of batch_c15n() here by converting perturbation to UninitializedParameter.
+        input, _target = self.batch_c15n(batch)
+        # The attack also needs access to the model at every iteration.
+        batch_and_model = (batch, model)
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input)
@@ -179,15 +178,19 @@ class Adversary(pl.LightningModule):
         self.attacker.fit_loop.max_epochs += 1
         self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
 
-        # Get the input_adv for enforcer checking.
+    def forward(self, *, batch):
+        """Compose adversarial examples and revert to the original input format."""
+        input, target = self.batch_c15n(batch)
+
+        # Get the canonicalized input_adv for enforcer checking.
         perturbation = self.perturber(input=input, target=target)
         input_adv = self.composer(perturbation, input=input, target=target)
-        self.enforcer(input_adv, input=input, target=target)
 
-        # TODO: We assume batch is a tuple, but it may be different for models outside MART. Add a reverse transform?
-        # Revert to the original format of batch.
-        batch_adv = (input_adv, target)
+        if self.enforcer is not None:
+            self.enforcer(input_adv, input=input, target=target)
 
+        # Target model expects input in the original format.
+        batch_adv = self.batch_c15n.revert(input_adv, target)
         return batch_adv
 
     @property
