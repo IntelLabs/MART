@@ -186,7 +186,8 @@ class Adversary(pl.LightningModule):
         perturbation = self.perturber(input=input, target=target)
         input_adv = self.composer(perturbation, input=input, target=target)
 
-        self.enforcer(input_adv, input=input, target=target)
+        if self.enforcer is not None:
+            self.enforcer(input_adv, input=input, target=target)
 
         # Target model expects input in the original format.
         batch_adv = self.batch_c15n.revert(input_adv, target)
