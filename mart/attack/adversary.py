@@ -43,7 +43,6 @@ class Adversary(pl.LightningModule):
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
-        batch_c15n: Callable,
         **kwargs,
     ):
         """_summary_
@@ -57,7 +56,6 @@ class Adversary(pl.LightningModule):
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
-            batch_c15n (Callable): Canonicalize batch into convenient format and revert to the original format.
         """
         super().__init__()
 
@@ -104,8 +102,6 @@ class Adversary(pl.LightningModule):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
-        self.batch_c15n = batch_c15n
-
     @property
     def perturber(self) -> Perturber:
         # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint,
@@ -116,20 +112,13 @@ class Adversary(pl.LightningModule):
         return self.optimizer(self.perturber)
 
     def training_step(self, batch_and_model, batch_idx):
-        batch, model = batch_and_model
+        input, target, model = batch_and_model
 
         # Compose adversarial examples.
-        batch_adv = self.forward(batch=batch)
+        input_adv, target_adv = self.forward(input, target)
 
         # A model that returns output dictionary.
-        if hasattr(model, "attack_step"):
-            outputs = model.attack_step(batch_adv, batch_idx)
-        elif hasattr(model, "training_step"):
-            # Disable logging if we have to reuse training_step() of the target model.
-            with MonkeyPatch(model, "log", lambda *args, **kwargs: None):
-                outputs = model.training_step(batch_adv, batch_idx)
-        else:
-            outputs = model(batch_adv)
+        outputs = model(input_adv, target_adv)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -163,12 +152,9 @@ class Adversary(pl.LightningModule):
                 self.gradient_modifier(group["params"])
 
     @silent()
-    def fit(self, *, batch: torch.Tensor | list | dict, model: Callable):
-        # Extract and canonicalize input for initializing perturbation.
-        # TODO: Get rid of batch_c15n() here by converting perturbation to UninitializedParameter.
-        input, _target = self.batch_c15n(batch)
+    def fit(self, input, target, *, model: Callable):
         # The attack also needs access to the model at every iteration.
-        batch_and_model = (batch, model)
+        batch_and_model = (input, target, model)
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input)
@@ -178,20 +164,15 @@ class Adversary(pl.LightningModule):
         self.attacker.fit_loop.max_epochs += 1
         self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
 
-    def forward(self, *, batch):
-        """Compose adversarial examples and revert to the original input format."""
-        input, target = self.batch_c15n(batch)
-
-        # Get the canonicalized input_adv for enforcer checking.
+    def forward(self, input, target):
+        """Compose adversarial examples and enforce the threat model."""
         perturbation = self.perturber(input=input, target=target)
         input_adv = self.composer(perturbation, input=input, target=target)
 
         if self.enforcer is not None:
             self.enforcer(input_adv, input=input, target=target)
 
-        # Target model expects input in the original format.
-        batch_adv = self.batch_c15n.revert(input_adv, target)
-        return batch_adv
+        return input_adv, target
 
     @property
     def attacker(self):

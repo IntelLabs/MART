@@ -24,8 +24,6 @@ def test_with_model(input_data, target_data, perturbation):
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
-    batch = (input_data, target_data)
-    batch_c15n = mart.attack.TupleBatchC15n()
 
     adversary = Adversary(
         perturber=perturber,
@@ -34,12 +32,11 @@ def test_with_model(input_data, target_data, perturbation):
         gain=gain,
         enforcer=enforcer,
         attacker=attacker,
-        batch_c15n=batch_c15n,
     )
 
-    adversary.fit(batch=batch, model=model)
-    batch_adv = adversary(batch=batch)
-    output_data = batch_adv[0]
+    adversary.fit(input_data, target_data, model=model)
+    input_adv, target_adv = adversary(input_data, target_data)
+    output_data = input_adv
 
     # The enforcer is only called when model is not None.
     enforcer.assert_called_once()
@@ -63,7 +60,6 @@ def test_hidden_params():
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
-    batch_c15n = mart.attack.TupleBatchC15n()
 
     adversary = Adversary(
         perturber=perturber,
@@ -72,7 +68,6 @@ def test_hidden_params():
         gain=gain,
         enforcer=enforcer,
         attacker=attacker,
-        batch_c15n=batch_c15n,
     )
 
     # Adversarial perturbation should not be updated by a regular training optimizer.
@@ -95,8 +90,6 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
-    batch = (input_data, target_data)
-    batch_c15n = mart.attack.TupleBatchC15n()
 
     adversary = Adversary(
         perturber=perturber,
@@ -105,12 +98,11 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
         gain=gain,
         enforcer=enforcer,
         attacker=attacker,
-        batch_c15n=batch_c15n,
     )
 
-    adversary.fit(batch=batch, model=model)
-    batch_adv = adversary(batch=batch)
-    output_data = batch_adv[0]
+    adversary.fit(input_data, target_data, model=model)
+    input_adv, target_adv = adversary(input_data, target_data)
+    output_data = input_adv
 
     # Adversary will have no parameter even after forward is called, because we hide Perturber in a list.
     params = [p for p in adversary.parameters()]
@@ -131,7 +123,6 @@ def test_loading_perturbation_from_state_dict():
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
-    batch_c15n = mart.attack.TupleBatchC15n()
 
     adversary = Adversary(
         perturber=perturber,
@@ -140,7 +131,6 @@ def test_loading_perturbation_from_state_dict():
         gain=gain,
         enforcer=enforcer,
         attacker=attacker,
-        batch_c15n=batch_c15n,
     )
 
     # We should be able to load arbitrary state_dict, because Adversary ignores state_dict.
@@ -159,8 +149,6 @@ def test_perturbation(input_data, target_data, perturbation):
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
-    batch = (input_data, target_data)
-    batch_c15n = mart.attack.TupleBatchC15n()
 
     adversary = Adversary(
         perturber=perturber,
@@ -169,12 +157,11 @@ def test_perturbation(input_data, target_data, perturbation):
         gain=gain,
         enforcer=enforcer,
         attacker=attacker,
-        batch_c15n=batch_c15n,
     )
 
-    adversary.fit(batch=batch, model=model)
-    batch_adv = adversary(batch=batch)
-    output_data = batch_adv[0]
+    adversary.fit(input_data, target_data, model=model)
+    input_adv, target_adv = adversary(input_data, target_data)
+    output_data = input_adv
 
     # The enforcer is only called when model is not None.
     enforcer.assert_called_once()
@@ -209,9 +196,6 @@ def test_forward_with_model(input_data, target_data):
         projector=None,
     )
 
-    batch = (input_data, target_data)
-    batch_c15n = mart.attack.TupleBatchC15n()
-
     adversary = Adversary(
         perturber=perturber,
         composer=composer,
@@ -220,15 +204,13 @@ def test_forward_with_model(input_data, target_data):
         gradient_modifier=Sign(),
         enforcer=enforcer,
         max_iters=1,
-        batch_c15n=batch_c15n,
     )
 
-    def model(batch):
-        return {"logits": batch[0]}
+    def model(input, target):
+        return {"logits": input}
 
-    adversary.fit(batch=batch, model=model)
-    batch_adv = adversary(batch=batch)
-    input_adv = batch_adv[0]
+    adversary.fit(input_data, target_data, model=model)
+    input_adv, target_adv = adversary(input_data, target_data)
 
     perturbation = input_data - input_adv
 
@@ -245,14 +227,12 @@ def test_configure_optimizers():
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock()
-    batch_c15n = mart.attack.TupleBatchC15n()
 
     adversary = Adversary(
         perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         gain=gain,
-        batch_c15n=batch_c15n,
     )
 
     adversary.configure_optimizers()
@@ -262,54 +242,47 @@ def test_configure_optimizers():
 
 
 def test_training_step(input_data, target_data, perturbation):
-    batch = (input_data, target_data)
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor(1337))
     model = Mock(spec="__call__", return_value={})
     # Set target_size manually because the test bypasses the convert() step that reads target_size.
-    batch_c15n = mart.attack.TupleBatchC15n(target_size=1)
 
     adversary = Adversary(
         perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         gain=gain,
-        batch_c15n=batch_c15n,
     )
 
-    output = adversary.training_step((batch, model), 0)
+    output = adversary.training_step((input_data, target_data, model), 0)
 
     gain.assert_called_once()
     assert output == 1337
 
 
 def test_training_step_with_many_gain(input_data, target_data, perturbation):
-    batch = (input_data, target_data)
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
     model = Mock(spec="__call__", return_value={})
     # Set target_size manually because the test bypasses the convert() step that reads target_size.
-    batch_c15n = mart.attack.TupleBatchC15n(target_size=1)
 
     adversary = Adversary(
         perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         gain=gain,
-        batch_c15n=batch_c15n,
     )
 
-    output = adversary.training_step((batch, model), 0)
+    output = adversary.training_step((input_data, target_data, model), 0)
 
     assert output == 1234 + 5678
 
 
 def test_training_step_with_objective(input_data, target_data, perturbation):
-    batch = (input_data, target_data)
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
@@ -318,7 +291,6 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
     model = Mock(spec="__call__", return_value={})
     objective = Mock(return_value=torch.tensor([True, False], dtype=torch.bool))
     # Set target_size manually because the test bypasses the convert() step that reads target_size.
-    batch_c15n = mart.attack.TupleBatchC15n(target_size=1)
 
     adversary = Adversary(
         perturber=perturber,
@@ -326,10 +298,9 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
         optimizer=optimizer,
         objective=objective,
         gain=gain,
-        batch_c15n=batch_c15n,
     )
 
-    output = adversary.training_step((batch, model), 0)
+    output = adversary.training_step((input_data, target_data, model), 0)
 
     assert output == 5678
 
@@ -344,7 +315,6 @@ def test_configure_gradient_clipping():
     )
     gradient_modifier = Mock()
     gain = Mock()
-    batch_c15n = mart.attack.TupleBatchC15n()
 
     adversary = Adversary(
         perturber=perturber,
@@ -352,7 +322,6 @@ def test_configure_gradient_clipping():
         optimizer=optimizer,
         gradient_modifier=gradient_modifier,
         gain=gain,
-        batch_c15n=batch_c15n,
     )
     # We need to mock a trainer since LightningModule does some checks
     adversary.trainer = Mock(gradient_clip_val=1.0, gradient_clip_algorithm="norm")
