@@ -34,16 +34,19 @@ def test_adversary_connector_callback(input_data, target_data, perturbation):
         enable_checkpointing=False,
     )
 
-    # Call attack_step()
+    # Call attack_step() if defined, instead of training_step()
     # `model` must be a `LightningModule`
     model_attack = LightningModule()
     # Trick PL that test_step is overridden.
     model_attack.test_step = Mock(wraps=lambda *args: None)
     model_attack.attack_step = Mock(wraps=lambda *args: None)
+    model_attack.training_step = Mock(wraps=lambda *args: None)
     trainer.test(model_attack, dataloaders=cycle([batch]))
     model_attack.attack_step.assert_called_once()
+    # training_step is not called when there is attack_step.
+    model_attack.training_step.assert_not_called()
 
-    # Call training_step()
+    # Call training_step(), because attack_step() is not defined.
     model_training = LightningModule()
     model_training.test_step = Mock(wraps=lambda *args: None)
     model_training.training_step = Mock(wraps=lambda *args: None)
