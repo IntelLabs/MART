@@ -77,12 +77,11 @@ class AdversaryConnector(Callback):
 
             if hasattr(pl_module, "attack_step"):
                 outputs = pl_module.attack_step(batch, dataloader_idx)
-            elif hasattr(pl_module, "training_step"):
+            else:
+                # LightningModule must have "training_step".
                 # Disable logging if we have to reuse training_step() of the target model.
                 with MonkeyPatch(pl_module, "log", lambda *args, **kwargs: None):
                     outputs = pl_module.training_step(batch, dataloader_idx)
-            else:
-                outputs = pl_module(batch)
             return outputs
 
         # Canonicalize the batch to work with Adversary.
