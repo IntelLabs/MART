@@ -8,10 +8,10 @@ from functools import reduce
 
 import torch
 
-from mart.attack.batch_converter import BatchConverter
+from mart.transforms.batch_c15n import BatchC15n
 
 
-class ObjectDetectionBatchConverter(BatchConverter):
+class ObjectDetectionBatchConverter(BatchC15n):
     def __init__(
         self,
         input_key: str = "x",
