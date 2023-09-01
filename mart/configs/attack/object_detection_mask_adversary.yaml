@@ -1,23 +1,17 @@
 defaults:
   - adversary
-  - perturber: default
+  - gradient_ascent
+  - mask
   - perturber/initializer: constant
-  - perturber/projector: mask_range
   - composer: overlay
-  - /optimizer@optimizer: sgd
-  - gain: rcnn_training_loss
   - gradient_modifier: sign
+  - gain: rcnn_training_loss
   - objective: zero_ap
-  - enforcer: default
-  - enforcer/constraints: [mask, pixel_range]
-  - batch_converter: tuple
 
-# Make a 5-step attack for the demonstration purpose.
-max_iters: 5
+max_iters: ???
+lr: ???
 
-optimizer:
-  lr: 55
-
+# Start with grey perturbation in the overlay mode.
 perturber:
   initializer:
     constant: 127

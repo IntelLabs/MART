@@ -15,8 +15,8 @@ import torch
 
 from mart.utils import silent
 
-from ..callbacks.adversarial_training import AdversarialTraining
 from ..optim import OptimizerFactory
+from ..utils import MonkeyPatch
 
 if TYPE_CHECKING:
     from .composer import Composer
@@ -43,8 +43,6 @@ class Adversary(pl.LightningModule):
         objective: Objective | None = None,
         enforcer: Enforcer | None = None,
         attacker: pl.Trainer | None = None,
-        batch_converter: Callable,
-        model_transform: Callable | None = None,
         **kwargs,
     ):
         """_summary_
@@ -58,8 +56,6 @@ class Adversary(pl.LightningModule):
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
             enforcer (Enforcer): A Callable that enforce constraints on the adversarial input.
             attacker (Trainer): A PyTorch-Lightning Trainer object used to fit the perturbation.
-            batch_converter (Callable): Convert batch into convenient format and reverse.
-            model_transform (Callable): Transform a model before attack.
         """
         super().__init__()
 
@@ -106,9 +102,6 @@ class Adversary(pl.LightningModule):
             assert self._attacker.max_epochs == 0
             assert self._attacker.limit_train_batches > 0
 
-        self.batch_converter = batch_converter
-        self.model_transform = model_transform
-
     @property
     def perturber(self) -> Perturber:
         # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint,
@@ -118,30 +111,14 @@ class Adversary(pl.LightningModule):
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
 
-    def get_input_adv(self, *, input, target):
-        perturbation = self.perturber(input=input, target=target)
-        input_adv = self.composer(perturbation, input=input, target=target)
-        return input_adv
+    def training_step(self, batch_and_model, batch_idx):
+        input, target, model = batch_and_model
 
-    def training_step(self, batch, batch_idx):
-        # TODO: We shouldn't need to copy because it is never changed?
-        # copy batch since we modify it and it is used internally
-        # batch = batch.copy()
-
-        input_transformed = batch["input"]
-        target_transformed = batch["target"]
-        # What we need is a frozen model that returns (a dictionary of) logits, or losses.
-        model = batch["model"]
-
-        # Compose input_adv from input.
-        input_adv_transformed = self.get_input_adv(
-            input=input_transformed, target=target_transformed
-        )
-        # Target model expects input in the original format.
-        batch_adv = self.batch_converter.revert(input_adv_transformed, target_transformed)
+        # Compose adversarial examples.
+        input_adv, target_adv = self.forward(input, target)
 
         # A model that returns output dictionary.
-        outputs = model(batch_adv)
+        outputs = model(input_adv, target_adv)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -175,39 +152,27 @@ class Adversary(pl.LightningModule):
                 self.gradient_modifier(group["params"])
 
     @silent()
-    def forward(self, *, batch: torch.Tensor | list | dict, model: Callable):
-        # Extract and transform input so that is convenient for Adversary.
-        input_transformed, target_transformed = self.batch_converter(batch)
-
-        if self.model_transform is not None:
-            model = self.model_transform(model)
-
-        # Canonical form of batch in the adversary's optimization loop.
-        # Optimization loop only sees the transformed input in batches.
-        batch_transformed = {
-            "input": input_transformed,
-            "target": target_transformed,
-            "model": model,
-        }
+    def fit(self, input, target, *, model: Callable):
+        # The attack also needs access to the model at every iteration.
+        batch_and_model = (input, target, model)
 
         # Configure and reset perturbation for current inputs
-        self.perturber.configure_perturbation(input_transformed)
+        self.perturber.configure_perturbation(input)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
         self.attacker.fit_loop.max_epochs += 1
-        self.attacker.fit(self, train_dataloaders=cycle([batch_transformed]))
+        self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
 
-        # Get the transformed input_adv for enforcer checking.
-        input_adv_transformed = self.get_input_adv(
-            input=input_transformed, target=target_transformed
-        )
-        self.enforcer(input_adv_transformed, input=input_transformed, target=target_transformed)
+    def forward(self, input, target):
+        """Compose adversarial examples and enforce the threat model."""
+        perturbation = self.perturber(input=input, target=target)
+        input_adv = self.composer(perturbation, input=input, target=target)
 
-        # Revert to the original format of batch.
-        batch_adv = self.batch_converter.revert(input_adv_transformed, target_transformed)
+        if self.enforcer is not None:
+            self.enforcer(input_adv, input=input, target=target)
 
-        return batch_adv
+        return input_adv, target
 
     @property
     def attacker(self):
