@@ -1,5 +1,0 @@
-# Scale pixel input in the range of [0,1] to [0,255] for Adversary.
-defaults:
-  - list
-  - transform: range_1to255
-  - transform@untransform: range_255to1
