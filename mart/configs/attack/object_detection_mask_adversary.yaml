@@ -2,7 +2,6 @@ defaults:
   - adversary
   - gradient_ascent
   - mask
-  - data_coco
   - perturber/initializer: constant
   - composer: overlay
   - gradient_modifier: sign
