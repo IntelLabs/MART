@@ -1,6 +1,5 @@
 from .adversary import *
 from .adversary_wrapper import *
-from .batch_c15n import *
 from .composer import *
 from .enforcer import *
 from .gain import *
