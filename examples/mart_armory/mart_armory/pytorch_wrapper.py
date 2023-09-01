@@ -52,7 +52,7 @@ class MartAttack:
         input, target = self.batch_c15n(batch_tv_pth)
         self.adversary.fit(input, target, model=self.model)
         input_adv, target_adv = self.adversary(input, target)
-        batch_adv_tv_pth = self.batch_c15n(input_adv, target_adv)
+        batch_adv_tv_pth = self.batch_c15n.revert(input_adv, target_adv)
 
         # torchvision format -> Armory format
         batch_adv_armory_np = self.batch_converter.revert(*batch_adv_tv_pth)
