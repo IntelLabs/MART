@@ -13,9 +13,10 @@ pip install 'git+https://github.com/IntelLabs/MART.git@example_armory_attack#egg
 ```shell
 python -m mart_armory.generate_attack_config \
 batch_converter=object_detection \
-attack=[object_detection_mask_adversary,data_coco] \
+batch_c15n=data_coco \
+attack=[object_detection_mask_adversary] \
 attack.objective=null \
-attack/model_transform=armory_objdet \
+model_transform=armory_objdet \
 output=path/to/attack.yaml
 ```
 

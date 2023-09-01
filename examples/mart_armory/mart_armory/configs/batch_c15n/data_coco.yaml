@@ -1,0 +1,10 @@
+defaults:
+  - tuple
+  - transform@transform.transforms: pixel_1to255
+  - transform@untransform.transforms: pixel_255to1
+
+transform:
+  _target_: mart.transforms.TupleTransforms
+
+untransform:
+  _target_: mart.transforms.TupleTransforms

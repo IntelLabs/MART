@@ -32,19 +32,28 @@ class MartAttack:
         adv = hydra.utils.instantiate(adv_cfg)
 
         self.batch_converter = adv.batch_converter
+        self.batch_c15n = adv.batch_c15n
+        self.model_transform = adv.model_transform
         self.adversary = adv.attack
 
-        self.model = model
         self.device = model.device
 
         # Move adversary to the same device.
         self.adversary.to(self.device)
 
+        # model_transform
+        self.model = self.model_transform(model)
+
     def generate(self, **batch_armory_np):
         # Armory format -> torchvision format
         batch_tv_pth = self.batch_converter(batch_armory_np, device=self.device)
+
         # Attack
-        batch_adv_tv_pth = self.adversary(batch=batch_tv_pth, model=self.model)
+        input, target = self.batch_c15n(batch_tv_pth)
+        self.adversary.fit(input, target, model=self.model)
+        input_adv, target_adv = self.adversary(input, target)
+        batch_adv_tv_pth = self.batch_c15n(input_adv, target_adv)
+
         # torchvision format -> Armory format
         batch_adv_armory_np = self.batch_converter.revert(*batch_adv_tv_pth)
 

@@ -5,6 +5,8 @@ defaults:
   - _self_
   - attack: ???
   - batch_converter: ???
+  - batch_c15n: ???
+  - model_transform: ???
   - override hydra/hydra_logging: disabled
   - override hydra/job_logging: disabled
 
