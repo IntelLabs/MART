@@ -82,7 +82,7 @@ class AdversaryConnector(Callback):
                 with MonkeyPatch(pl_module, "log", lambda *args, **kwargs: None):
                     outputs = pl_module.training_step(batch, dataloader_idx)
             else:
-                outputs = model(batch)
+                outputs = pl_module(batch)
             return outputs
 
         # Canonicalize the batch to work with Adversary.
