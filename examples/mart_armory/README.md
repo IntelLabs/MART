@@ -16,6 +16,8 @@ batch_converter=object_detection \
 batch_c15n=data_coco \
 attack=[object_detection_mask_adversary] \
 attack.objective=null \
+attack.max_iters=10 \
+attack.lr=26 \
 model_transform=armory_objdet \
 output=path/to/attack.yaml
 ```

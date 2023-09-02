@@ -6,19 +6,9 @@
 
 # Modify a model so that it is convenient to attack.
 # Common issues:
-#     1. Make the model accept a single argument `output=model(batch)`;
+#     1. Make the model accept non-keyword argument `output=model(input, target)`;
 #     2. Make the model return loss in eval mode;
 #     3. Change non-differentiable operations.
-
-
-class ListInputAsArgs:
-    """Make a model expand input as non-keyword arguments."""
-
-    def __call__(self, model):
-        def forward(batch):
-            return model(*batch)
-
-        return forward
 
 
 class Extract:
