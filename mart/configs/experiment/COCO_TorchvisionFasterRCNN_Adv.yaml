@@ -2,15 +2,16 @@
 
 defaults:
   - COCO_TorchvisionFasterRCNN
-  - /attack@model.modules.input_adv_test: object_detection_mask_adversary
+  - /attack@callbacks.adversary_connector.test_adversary: object_detection_mask_adversary
   - override /datamodule: coco_perturbable_mask
+  - override /callbacks: [model_checkpoint, lr_monitor, adversary_connector]
 
 task_name: "COCO_TorchvisionFasterRCNN_Adv"
 tags: ["adv"]
 
-model:
-  test_sequence:
-    seq005: input_adv_test
-
-    seq010:
-      preprocessor: ["input_adv_test"]
+callbacks:
+  adversary_connector:
+    test_adversary:
+      # Make a 5-step attack for the demonstration purpose.
+      max_iters: 5
+      lr: 55

@@ -1,0 +1,5 @@
+defaults:
+  - perturber: default
+  - perturber/projector: mask_range
+  - enforcer: default
+  - enforcer/constraints: [mask, pixel_range]

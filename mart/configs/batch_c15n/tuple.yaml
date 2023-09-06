@@ -1,0 +1,4 @@
+# We expect the original batch looks like `(input, target)` with the default parameters.
+_target_: mart.transforms.TupleBatchC15n
+input_key: 0
+target_size: 1

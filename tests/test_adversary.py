@@ -9,42 +9,13 @@ from unittest.mock import Mock
 
 import pytest
 import torch
-from pytorch_lightning.utilities.exceptions import MisconfigurationException
+from lightning.pytorch.utilities.exceptions import MisconfigurationException
 from torch.optim import SGD
 
 import mart
 from mart.attack import Adversary, Composer, Perturber
 from mart.attack.gradient_modifier import Sign
 from mart.attack.initializer import Constant
-
-
-def test_adversary(input_data, target_data, perturbation):
-    perturber = Mock(spec=Perturber, return_value=perturbation)
-    composer = mart.attack.composer.Additive()
-    gain = Mock()
-    enforcer = Mock()
-    attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
-
-    adversary = Adversary(
-        perturber=perturber,
-        composer=composer,
-        optimizer=None,
-        gain=gain,
-        enforcer=enforcer,
-        attacker=attacker,
-    )
-
-    output_data = adversary(input=input_data, target=target_data)
-
-    # The enforcer and attacker should only be called when model is not None.
-    enforcer.assert_not_called()
-    attacker.fit.assert_not_called()
-    assert attacker.fit_loop.max_epochs == 0
-
-    perturber.assert_called_once()
-    gain.assert_not_called()
-
-    torch.testing.assert_close(output_data, input_data + perturbation)
 
 
 def test_with_model(input_data, target_data, perturbation):
@@ -54,7 +25,6 @@ def test_with_model(input_data, target_data, perturbation):
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
-    sequence = Mock()
 
     adversary = Adversary(
         perturber=perturber,
@@ -65,7 +35,9 @@ def test_with_model(input_data, target_data, perturbation):
         attacker=attacker,
     )
 
-    output_data = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
+    adversary.fit(input_data, target_data, model=model)
+    input_adv, target_adv = adversary(input_data, target_data)
+    output_data = input_adv
 
     # The enforcer is only called when model is not None.
     enforcer.assert_called_once()
@@ -79,7 +51,7 @@ def test_with_model(input_data, target_data, perturbation):
     torch.testing.assert_close(output_data, input_data + perturbation)
 
 
-def test_hidden_params(input_data, target_data, perturbation):
+def test_hidden_params():
     initializer = Mock()
     composer = mart.attack.composer.Additive()
     projector = Mock()
@@ -89,8 +61,6 @@ def test_hidden_params(input_data, target_data, perturbation):
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
-    model = Mock()
-    sequence = Mock()
 
     adversary = Adversary(
         perturber=perturber,
@@ -100,8 +70,6 @@ def test_hidden_params(input_data, target_data, perturbation):
         enforcer=enforcer,
         attacker=attacker,
     )
-
-    # output_data = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
 
     # Adversarial perturbation should not be updated by a regular training optimizer.
     params = [p for p in adversary.parameters()]
@@ -123,7 +91,6 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
-    sequence = Mock()
 
     adversary = Adversary(
         perturber=perturber,
@@ -134,7 +101,9 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
         attacker=attacker,
     )
 
-    output_data = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
+    adversary.fit(input_data, target_data, model=model)
+    input_adv, target_adv = adversary(input_data, target_data)
+    output_data = input_adv
 
     # Adversary will have no parameter even after forward is called, because we hide Perturber in a list.
     params = [p for p in adversary.parameters()]
@@ -181,7 +150,6 @@ def test_perturbation(input_data, target_data, perturbation):
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
     model = Mock()
-    sequence = Mock()
 
     adversary = Adversary(
         perturber=perturber,
@@ -192,15 +160,17 @@ def test_perturbation(input_data, target_data, perturbation):
         attacker=attacker,
     )
 
-    _ = adversary(input=input_data, target=target_data, model=model, sequence=sequence)
-    output_data = adversary(input=input_data, target=target_data)
+    adversary.fit(input_data, target_data, model=model)
+    input_adv, target_adv = adversary(input_data, target_data)
+    output_data = input_adv
 
     # The enforcer is only called when model is not None.
     enforcer.assert_called_once()
     attacker.fit.assert_called_once()
 
-    # Once with model and sequence and once without
-    assert perturber.call_count == 2
+    # Perturber is called once for generating initial input_adv.
+    # The fit() doesn't run because max_epochs=0.
+    assert perturber.call_count == 1
 
     torch.testing.assert_close(output_data, input_data + perturbation)
 
@@ -234,20 +204,18 @@ def test_forward_with_model(input_data, target_data):
         max_iters=1,
     )
 
-    def model(input, target, model=None, **kwargs):
-        return {"logits": adversary(input=input, target=target)}
+    def model(input, target):
+        return {"logits": input}
 
-    sequence = Mock()
-
-    adversary(input=input_data, target=target_data, model=model, sequence=sequence)
-    input_adv = adversary(input=input_data, target=target_data)
+    adversary.fit(input_data, target_data, model=model)
+    input_adv, target_adv = adversary(input_data, target_data)
 
     perturbation = input_data - input_adv
 
     torch.testing.assert_close(perturbation.unique(), torch.Tensor([-1, 0, 1]))
 
 
-def test_configure_optimizers(input_data, target_data):
+def test_configure_optimizers():
     perturber = Mock()
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
@@ -266,12 +234,13 @@ def test_configure_optimizers(input_data, target_data):
     gain.assert_not_called()
 
 
-def test_training_step(input_data, target_data):
-    perturber = Mock()
+def test_training_step(input_data, target_data, perturbation):
+    perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor(1337))
-    model = Mock(return_value={})
+    model = Mock(spec="__call__", return_value={})
+    # Set target_size manually because the test bypasses the convert() step that reads target_size.
 
     adversary = Adversary(
         perturber=perturber,
@@ -280,20 +249,19 @@ def test_training_step(input_data, target_data):
         gain=gain,
     )
 
-    output = adversary.training_step(
-        {"input": input_data, "target": target_data, "model": model}, 0
-    )
+    output = adversary.training_step((input_data, target_data, model), 0)
 
     gain.assert_called_once()
     assert output == 1337
 
 
-def test_training_step_with_many_gain(input_data, target_data):
-    perturber = Mock()
+def test_training_step_with_many_gain(input_data, target_data, perturbation):
+    perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
-    model = Mock(return_value={})
+    model = Mock(spec="__call__", return_value={})
+    # Set target_size manually because the test bypasses the convert() step that reads target_size.
 
     adversary = Adversary(
         perturber=perturber,
@@ -302,20 +270,20 @@ def test_training_step_with_many_gain(input_data, target_data):
         gain=gain,
     )
 
-    output = adversary.training_step(
-        {"input": input_data, "target": target_data, "model": model}, 0
-    )
+    output = adversary.training_step((input_data, target_data, model), 0)
 
     assert output == 1234 + 5678
 
 
-def test_training_step_with_objective(input_data, target_data):
-    perturber = Mock()
+def test_training_step_with_objective(input_data, target_data, perturbation):
+    perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Additive()
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
-    model = Mock(return_value={})
+    # The model has no attack_step() or training_step().
+    model = Mock(spec="__call__", return_value={})
     objective = Mock(return_value=torch.tensor([True, False], dtype=torch.bool))
+    # Set target_size manually because the test bypasses the convert() step that reads target_size.
 
     adversary = Adversary(
         perturber=perturber,
@@ -325,9 +293,7 @@ def test_training_step_with_objective(input_data, target_data):
         gain=gain,
     )
 
-    output = adversary.training_step(
-        {"input": input_data, "target": target_data, "model": model}, 0
-    )
+    output = adversary.training_step((input_data, target_data, model), 0)
 
     assert output == 5678
 
@@ -353,7 +319,7 @@ def test_configure_gradient_clipping():
     # We need to mock a trainer since LightningModule does some checks
     adversary.trainer = Mock(gradient_clip_val=1.0, gradient_clip_algorithm="norm")
 
-    adversary.configure_gradient_clipping(optimizer, 0)
+    adversary.configure_gradient_clipping(optimizer)
 
     # Once for each parameter in the optimizer
     assert gradient_modifier.call_count == 2

@@ -6,9 +6,9 @@
 
 from typing import Any
 
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import TQDMProgressBar
-from pytorch_lightning.utilities.rank_zero import rank_zero_only
+import lightning.pytorch as pl
+from lightning.pytorch.callbacks import TQDMProgressBar
+from lightning.pytorch.utilities.rank_zero import rank_zero_only
 
 __all__ = ["ProgressBar"]
 
@@ -41,8 +41,6 @@ class ProgressBar(TQDMProgressBar):
     def on_train_epoch_start(self, trainer: pl.Trainer, *_: Any) -> None:
         super().on_train_epoch_start(trainer)
 
-        # So that it does not display negative rate.
-        self.main_progress_bar.initial = 0
         # So that it does not display Epoch n.
         rank_id = rank_zero_only.rank
-        self.main_progress_bar.set_description(f"Attack@rank{rank_id}")
+        self.train_progress_bar.set_description(f"Attack@rank{rank_id}")

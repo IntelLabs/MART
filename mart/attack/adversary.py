@@ -10,12 +10,13 @@ from functools import partial
 from itertools import cycle
 from typing import TYPE_CHECKING, Any, Callable
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import torch
 
 from mart.utils import silent
 
 from ..optim import OptimizerFactory
+from ..utils import MonkeyPatch
 
 if TYPE_CHECKING:
     from .composer import Composer
@@ -110,13 +111,14 @@ class Adversary(pl.LightningModule):
     def configure_optimizers(self):
         return self.optimizer(self.perturber)
 
-    def training_step(self, batch, batch_idx):
-        # copy batch since we modify it and it is used internally
-        batch = batch.copy()
+    def training_step(self, batch_and_model, batch_idx):
+        input, target, model = batch_and_model
 
-        # We need to evaluate the perturbation against the whole model, so call it normally to get a gain.
-        model = batch.pop("model")
-        outputs = model(**batch)
+        # Compose adversarial examples.
+        input_adv, target_adv = self.forward(input, target)
+
+        # A model that returns output dictionary.
+        outputs = model(input_adv, target_adv)
 
         # FIXME: This should really be just `return outputs`. But this might require a new sequence?
         # FIXME: Everything below here should live in the model as modules.
@@ -140,40 +142,19 @@ class Adversary(pl.LightningModule):
         return gain
 
     def configure_gradient_clipping(
-        self, optimizer, optimizer_idx, gradient_clip_val=None, gradient_clip_algorithm=None
+        self, optimizer, gradient_clip_val=None, gradient_clip_algorithm=None
     ):
         # Configuring gradient clipping in pl.Trainer is still useful, so use it.
-        super().configure_gradient_clipping(
-            optimizer, optimizer_idx, gradient_clip_val, gradient_clip_algorithm
-        )
+        super().configure_gradient_clipping(optimizer, gradient_clip_val, gradient_clip_algorithm)
 
         if self.gradient_modifier:
             for group in optimizer.param_groups:
                 self.gradient_modifier(group)
 
     @silent()
-    def forward(self, *, model=None, sequence=None, **batch):
-        batch["model"] = model
-        batch["sequence"] = sequence
-
-        # Adversary lives within a sequence of model. To signal the adversary should attack, one
-        # must pass a model to attack when calling the adversary. Since we do not know where the
-        # Adversary lives inside the model, we also need the remaining sequence to be able to
-        # get a loss.
-        if model and sequence:
-            self._attack(**batch)
-
-        perturbation = self.perturber(**batch)
-        input_adv = self.composer(perturbation, **batch)
-
-        # Enforce constraints after the attack optimization ends.
-        if model and sequence:
-            self.enforcer(input_adv, **batch)
-
-        return input_adv
-
-    def _attack(self, *, input, **batch):
-        batch["input"] = input
+    def fit(self, input, target, *, model: Callable):
+        # The attack also needs access to the model at every iteration.
+        batch_and_model = (input, target, model)
 
         # Configure and reset perturbation for current inputs
         self.perturber.configure_perturbation(input)
@@ -181,7 +162,17 @@ class Adversary(pl.LightningModule):
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
         self.attacker.fit_loop.max_epochs += 1
-        self.attacker.fit(self, train_dataloaders=cycle([batch]))
+        self.attacker.fit(self, train_dataloaders=cycle([batch_and_model]))
+
+    def forward(self, input, target):
+        """Compose adversarial examples and enforce the threat model."""
+        perturbation = self.perturber(input=input, target=target)
+        input_adv = self.composer(perturbation, input=input, target=target)
+
+        if self.enforcer is not None:
+            self.enforcer(input_adv, input=input, target=target)
+
+        return input_adv, target
 
     @property
     def attacker(self):
@@ -195,7 +186,8 @@ class Adversary(pl.LightningModule):
 
         elif self.device.type == "cpu":
             accelerator = "cpu"
-            devices = None
+            # Lightning Fabric: `devices` selected with `CPUAccelerator` should be an int > 0
+            devices = 1
 
         else:
             raise NotImplementedError

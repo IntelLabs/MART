@@ -1,4 +1,4 @@
-_target_: pytorch_lightning.Trainer
+_target_: lightning.pytorch.Trainer
 
 default_root_dir: ${paths.output_dir}
 
@@ -14,3 +14,6 @@ devices: 1
 # set True to to ensure deterministic results
 # makes training slower but gives more reproducibility than just setting seeds
 deterministic: False
+
+# Disable PyTorch inference mode in val/test/predict, because we may run back-propagation for adversary.
+inference_mode: False

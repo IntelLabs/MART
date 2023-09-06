@@ -6,7 +6,8 @@
 
 import os
 
-from pytorch_lightning.callbacks import Callback
+import torch
+from lightning.pytorch.callbacks import Callback
 from torchvision.transforms import ToPILImage
 
 __all__ = ["PerturbedImageVisualizer"]
@@ -32,7 +33,9 @@ class PerturbedImageVisualizer(Callback):
 
     def on_train_end(self, trainer, model):
         # FIXME: We should really just save this to outputs instead of recomputing adv_input
-        adv_input = model(input=self.input, target=self.target)
+        with torch.no_grad():
+            perturbation = model.perturber(input=self.input, target=self.target)
+            adv_input = model.composer(perturbation, input=self.input, target=self.target)
 
         for img, tgt in zip(adv_input, self.target):
             fname = tgt["file_name"]

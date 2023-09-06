@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from pytorch_lightning.callbacks import Callback
-from pytorch_lightning.utilities import grad_norm
+from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.utilities import grad_norm
 
 __all__ = ["GradientMonitor"]
 
