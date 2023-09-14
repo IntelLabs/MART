@@ -31,9 +31,15 @@ class MartAttack:
         adv_cfg = OmegaConf.load(mart_adv_config_yaml)
         adv = hydra.utils.instantiate(adv_cfg)
 
-        self.batch_converter = adv.batch_converter
-        self.batch_c15n = adv.batch_c15n
+        # Transform the ART estimator to an attackable PyTorch model.
         self.model_transform = adv.model_transform
+
+        # Convert the Armory batch to a form that is expected by the target PyTorch model.
+        self.batch_converter = adv.batch_converter
+
+        # Canonicalize batches for the Adversary.
+        self.batch_c15n = adv.batch_c15n
+
         self.adversary = adv.attack
 
         self.device = model.device
@@ -49,6 +55,7 @@ class MartAttack:
         batch_tv_pth = self.batch_converter(batch_armory_np, device=self.device)
 
         # Attack
+        # Canonicalize input and target for the adversary, and revert it at the end.
         input, target = self.batch_c15n(batch_tv_pth)
         self.adversary.fit(input, target, model=self.model)
         input_adv, target_adv = self.adversary(input, target)
