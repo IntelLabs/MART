@@ -30,6 +30,11 @@ def generate(
             for key in output_node.split("."):
                 cfg = cfg[key]
 
+        # Create folders for output if necessary.
+        folder = os.path.dirname(export_name)
+        if folder != "" and not os.path.isdir(folder):
+            os.makedirs(folder)
+
         OmegaConf.save(config=cfg, f=export_name)
         print(f"Config file saved to {export_name}")
 
