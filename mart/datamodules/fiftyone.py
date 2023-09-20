@@ -17,6 +17,7 @@ from torchvision.datasets import VisionDataset as VisionDataset_
 logger = logging.getLogger(__name__)
 try:
     # Disable the FiftyOne tracker due to the privacy concern.
+    # Users should delete the following line if they intend to be tracked.
     os.environ["FIFTYONE_DO_NOT_TRACK"] = "1"
     import fiftyone as fo
     import fiftyone.utils.coco as fouc
