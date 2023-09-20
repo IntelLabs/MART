@@ -26,6 +26,9 @@ class OptimizerFactory:
         self.bias_decay = kwargs.pop("bias_decay", weight_decay)
         self.norm_decay = kwargs.pop("norm_decay", weight_decay)
         self.optimizer = optimizer
+
+        # Separate modality-wise params from kwargs, because optimizers do not recognize them.
+        self.modality_wise_params = kwargs.pop("modality_wise", {})
         self.kwargs = kwargs
 
     def __call__(self, module):
@@ -61,14 +64,16 @@ class OptimizerFactory:
 
         params = []
 
-        # Set modality-aware params.
+        # Set modality-aware weight params.
         if len(modality_params) > 0:
             for modality, param in modality_params.items():
                 # Take notes of modality for gradient modifier later.
                 # Add modality-specific optim params.
-                params.append(
-                    {"params": param, "modality": modality} | self.kwargs.pop(modality, {})
-                )
+                if modality in self.modality_wise_params:
+                    modality_params = self.modality_wise_params[modality]
+                else:
+                    modality_params = {}
+                params.append({"params": param, "modality": modality} | modality_params)
 
         # Set decay for bias and norm parameters
         if len(weight_params) > 0:
