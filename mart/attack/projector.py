@@ -154,9 +154,13 @@ class LinfAdditiveRange(Projector):
 
 
 class Mask(Projector):
+    def __init__(self, key="perturbable_mask"):
+        super().__init__()
+        self.key = key
+
     @torch.no_grad()
     def project_(self, perturbation, *, input, target):
-        perturbation.mul_(target["perturbable_mask"])
+        perturbation.mul_(target[self.key])
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"

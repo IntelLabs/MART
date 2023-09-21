@@ -83,10 +83,14 @@ class Integer(Constraint):
 
 
 class Mask(Constraint):
+    def __init__(self, key="perturbable_mask"):
+        super().__init__()
+        self.key = key
+
     def verify(self, input_adv, *, input, target):
         # True/1 is mutable, False/0 is immutable.
         # mask.shape=(H, W)
-        mask = target["perturbable_mask"]
+        mask = target[self.key]
 
         # Immutable boolean mask, True is immutable.
         imt_mask = (1 - mask).bool()
