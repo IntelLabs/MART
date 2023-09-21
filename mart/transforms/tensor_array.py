@@ -29,7 +29,7 @@ def _(obj: list, device=None):
 
 @convert.register
 def _(obj: tuple, device=None):
-    return tuple(convert(obj, device=device))
+    return tuple(convert(item, device=device) for item in obj)
 
 
 @convert.register
