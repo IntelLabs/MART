@@ -1,0 +1,28 @@
+defaults:
+  - adversary
+  - perturber: default
+  - perturber/initializer@perturber.initializer.rgb: constant
+  - perturber/projector@perturber.projector.rgb: mask_range
+  - /optimizer@optimizer: sgd
+  - gain: rcnn_training_loss
+  - objective: zero_ap
+  - gradient_modifier: modality
+  - gradient_modifier@gradient_modifier.rgb: sign
+  - composer: modality
+  - composer@composer.rgb: overlay
+  - enforcer: default
+  - enforcer/constraints@enforcer.rgb: [mask, pixel_range]
+
+# Make a 5-step attack for the demonstration purpose.
+optimizer:
+  # Though we only use modality-aware hyper-params, the config requires a value for optimizer.lr.
+  lr: 0
+  rgb:
+    lr: 55
+
+max_iters: 5
+
+perturber:
+  initializer:
+    rgb:
+      constant: 127

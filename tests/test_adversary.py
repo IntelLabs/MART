@@ -15,6 +15,7 @@ from torch.optim import SGD
 import mart
 from mart.attack import Adversary, Composer, Perturber
 from mart.attack.gradient_modifier import Sign
+from mart.attack.initializer import Constant
 
 
 def test_with_model(input_data, target_data, perturbation):
@@ -188,11 +189,8 @@ def test_forward_with_model(input_data, target_data):
         )
 
     # Perturbation initialized as zero.
-    def initializer(x):
-        torch.nn.init.constant_(x, 0)
-
     perturber = Perturber(
-        initializer=initializer,
+        initializer=Constant(0),
         projector=None,
     )
 

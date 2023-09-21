@@ -149,7 +149,7 @@ class Adversary(pl.LightningModule):
 
         if self.gradient_modifier:
             for group in optimizer.param_groups:
-                self.gradient_modifier(group["params"])
+                self.gradient_modifier(group)
 
     @silent()
     def fit(self, input, target, *, model: Callable):
