@@ -1,3 +1,9 @@
+#
+# Copyright (C) 2022 Intel Corporation
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+
 import os
 
 import fire
@@ -11,7 +17,6 @@ def generate(
     config_dir: str = "configs",
     config_name: str = "lightning.yaml",
     export_node: str = None,
-    export_name: str = "output.yaml",
     resolve: bool = False,
 ):
     # An absolute path {config_dir} is added to the search path of configs, preceding those in mart.configs.
@@ -30,13 +35,8 @@ def generate(
         if resolve:
             OmegaConf.resolve(cfg)
 
-        # Create folders for output if necessary.
-        folder = os.path.dirname(export_name)
-        if folder != "" and not os.path.isdir(folder):
-            os.makedirs(folder)
-
-        OmegaConf.save(config=cfg, f=export_name)
-        print(f"Config file saved to {export_name}")
+        # OmegaConf.to_yaml() already ends with `\n`.
+        print(OmegaConf.to_yaml(cfg), end="")
 
 
 if __name__ == "__main__":
