@@ -81,7 +81,8 @@ class Additive(Function):
 
 
 class Mask(Function):
-    def __init__(self, key="perturbable_mask"):
+    def __init__(self, *args, key="perturbable_mask", **kwargs):
+        super().__init__(*args, **kwargs)
         self.key = key
 
     def forward(self, perturbation, input, target):
@@ -93,7 +94,8 @@ class Mask(Function):
 class Overlay(Function):
     """We assume an adversary overlays a patch to the input."""
 
-    def __init__(self, key="perturbable_mask"):
+    def __init__(self, *args, key="perturbable_mask", **kwargs):
+        super().__init__(*args, **kwargs)
         self.key = key
 
     def forward(self, perturbation, input, target):
