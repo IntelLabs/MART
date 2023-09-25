@@ -6,11 +6,11 @@
 
 import torch
 
-from mart.attack.composer import Additive, MaskAdditive, Overlay
+from mart.attack.composer import Additive, Composer, Mask, Overlay
 
 
 def test_additive_composer_forward(input_data, target_data, perturbation):
-    composer = Additive()
+    composer = Composer(functions={"additive": Additive()})
 
     output = composer(perturbation, input=input_data, target=target_data)
     expected_output = input_data + perturbation
@@ -18,7 +18,7 @@ def test_additive_composer_forward(input_data, target_data, perturbation):
 
 
 def test_overlay_composer_forward(input_data, target_data, perturbation):
-    composer = Overlay()
+    composer = Composer(functions={"overlay": Overlay()})
 
     output = composer(perturbation, input=input_data, target=target_data)
     mask = target_data["perturbable_mask"]
@@ -33,6 +33,6 @@ def test_mask_additive_composer_forward():
     target = {"perturbable_mask": torch.eye(2)}
     expected_output = torch.eye(2)
 
-    composer = MaskAdditive()
+    composer = Composer(functions={"mask": Mask(order=0), "additive": Additive(order=1)})
     output = composer(perturbation, input=input, target=target)
     torch.testing.assert_close(output, expected_output, equal_nan=True)
