@@ -15,6 +15,11 @@ import torch
 
 class Function(torch.nn.Module):
     def __init__(self, *args, order=0, **kwargs) -> None:
+        """A stackable function for Composer.
+
+        Args:
+            order (int, optional): The priority number. A smaller number makes a function run earlier than others in a sequence. Defaults to 0.
+        """
         super().__init__(*args, **kwargs)
         self.order = order
 
