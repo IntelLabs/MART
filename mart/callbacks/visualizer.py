@@ -27,9 +27,9 @@ class PerturbedImageVisualizer(Callback):
             os.makedirs(self.folder)
 
     def on_train_batch_end(self, trainer, model, outputs, batch, batch_idx):
-        # Save input and target for on_train_end
-        self.input = batch["input"]
-        self.target = batch["target"]
+        # Save canonical input and target for on_train_end
+        self.input = batch[0]
+        self.target = batch[1]
 
     def on_train_end(self, trainer, model):
         # FIXME: We should really just save this to outputs instead of recomputing adv_input
