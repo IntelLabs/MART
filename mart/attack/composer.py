@@ -110,20 +110,3 @@ class Overlay(Function):
 
         input = input * (1 - mask) + perturbation
         return perturbation, input, target
-
-
-class MaskAdditive(Function):
-    """We assume an adversary adds masked perturbation to the input.
-
-    Backward compatible. Could be deleted later.
-    """
-
-    def __init__(self, key="perturbable_mask"):
-        function_mask = Mask(key=key)
-        function_additive = Additive()
-        self.functions = [function_mask, function_additive]
-
-    def compose(self, perturbation, input, target):
-        for function in self.functions:
-            perturbation, input, target = function(perturbation, input, target)
-        return perturbation, input, target
