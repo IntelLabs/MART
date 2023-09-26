@@ -1,0 +1,16 @@
+defaults:
+  - default
+  - functions:
+      [rect_crop, rect_pad, rect_perspective_transform, overlay, fake_clamp]
+
+functions:
+  rect_crop:
+    order: 0
+  rect_pad:
+    order: 1
+  rect_perspective_transform:
+    order: 2
+  overlay:
+    order: 3
+  fake_clamp:
+    order: 4

@@ -1,0 +1,5 @@
+rect_pad:
+  _target_: mart.attack.composer.RectanglePad
+  coords_key: patch_coords
+  rect_coords_key: rect_coords
+  order: 0
