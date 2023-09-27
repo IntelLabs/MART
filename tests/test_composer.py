@@ -15,6 +15,7 @@ from mart.attack.composer import (
     RectanglePad,
     RectanglePerspectiveTransform,
 )
+from mart.utils import instantiate
 
 
 def test_additive_composer_forward(input_data, target_data, perturbation):
@@ -114,3 +115,45 @@ def test_rect_perspective_transform():
     pert_coords_expected[:, 5:, 5:] = 1
     # rounding numeric error from the perspective transformation.
     assert torch.equal(pert_coords.round(), pert_coords_expected)
+
+
+def test_rect_patch_additive_composer():
+    overrides = ["+attack/composer=rectangle_patch_additive"]
+    composer = instantiate(*overrides, export_node="attack.composer")
+
+    input = torch.ones((3, 10, 10))
+    perturbation = torch.ones_like(input) * 2
+
+    input_adv_expected = input.clone()
+    input_adv_expected[:, -5:, -5:] += 2
+
+    # A simple square patch on the bottom right.
+    patch_coords = torch.tensor(((5, 5), (10, 5), (10, 10), (5, 10)))
+    perturbable_mask = torch.zeros((10, 10))
+    perturbable_mask[-5:, -5:] = 1
+
+    target = {"patch_coords": patch_coords, "perturbable_mask": perturbable_mask}
+    input_adv = composer(perturbation, input=input, target=target)
+
+    assert torch.allclose(input_adv_expected, input_adv)
+
+
+def test_rect_patch_overlay_composer():
+    overrides = ["+attack/composer=rectangle_patch_overlay"]
+    composer = instantiate(*overrides, export_node="attack.composer")
+
+    input = torch.ones((3, 10, 10))
+    perturbation = torch.ones_like(input) * 2
+
+    input_adv_expected = input.clone()
+    input_adv_expected[:, -5:, -5:] = 2
+
+    # A simple square patch on the bottom right.
+    patch_coords = torch.tensor(((5, 5), (10, 5), (10, 10), (5, 10)))
+    perturbable_mask = torch.zeros((10, 10))
+    perturbable_mask[-5:, -5:] = 1
+
+    target = {"patch_coords": patch_coords, "perturbable_mask": perturbable_mask}
+    input_adv = composer(perturbation, input=input, target=target)
+
+    assert torch.allclose(input_adv_expected, input_adv)
