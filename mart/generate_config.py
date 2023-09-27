@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+from __future__ import annotations
+
 import os
 
 import fire
@@ -20,7 +22,7 @@ def mart_compose(
     version_base: str = DEFAULT_VERSION_BASE,
     config_dir: str = DEFAULT_CONFIG_DIR,
     config_name: str = DEFAULT_CONFIG_NAME,
-    export_node: str = None,
+    export_node: str | None = None,
 ):
     # Add an absolute path {config_dir} to the search path of configs, preceding those in mart.configs.
     if not os.path.isabs(config_dir):
@@ -52,7 +54,7 @@ def main(
     version_base: str = DEFAULT_VERSION_BASE,
     config_dir: str = DEFAULT_CONFIG_DIR,
     config_name: str = DEFAULT_CONFIG_NAME,
-    export_node: str = None,
+    export_node: str | None = None,
     resolve: bool = False,
 ):
     cfg = mart_compose(
