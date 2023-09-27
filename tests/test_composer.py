@@ -118,7 +118,7 @@ def test_rect_perspective_transform():
 
 
 def test_rect_patch_additive_composer():
-    overrides = ["+attack/composer=rectangle_patch_additive"]
+    overrides = ["+attack/composer=rect_patch_additive"]
     composer = instantiate(*overrides, export_node="attack.composer")
 
     input = torch.ones((3, 10, 10))
@@ -139,7 +139,7 @@ def test_rect_patch_additive_composer():
 
 
 def test_rect_patch_overlay_composer():
-    overrides = ["+attack/composer=rectangle_patch_overlay"]
+    overrides = ["+attack/composer=rect_patch_overlay"]
     composer = instantiate(*overrides, export_node="attack.composer")
 
     input = torch.ones((3, 10, 10))
