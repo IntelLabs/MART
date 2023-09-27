@@ -8,9 +8,12 @@ from __future__ import annotations
 
 import abc
 from collections import OrderedDict
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable
 
 import torch
+
+if TYPE_CHECKING:
+    from .perturber import Perturber
 
 
 class Function(torch.nn.Module):
@@ -30,22 +33,38 @@ class Function(torch.nn.Module):
         pass
 
 
-class Composer:
-    def __init__(self, functions: dict[str, Function]) -> None:
+class Composer(torch.nn.Module):
+    def __init__(
+        self, *args, perturber: Perturber, functions: dict[str, Function], **kwargs
+    ) -> None:
+        """_summary_
+
+        Args:
+            perturber (Perturber): Manage perturbations.
+            functions (dict[str, Function]): A dictionary of functions for composing pertured input.
+        """
+        super().__init__(*args, **kwargs)
+
+        self.perturber = perturber
+
         # Sort functions by function.order and the name.
         self.functions_dict = OrderedDict(
             sorted(functions.items(), key=lambda name_fn: (name_fn[1].order, name_fn[0]))
         )
         self.functions = list(self.functions_dict.values())
 
+    def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
+        self.perturber.configure_perturbation(input)
+
     def __call__(
         self,
-        perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
         input: torch.Tensor | Iterable[torch.Tensor],
         target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         **kwargs,
     ) -> torch.Tensor | Iterable[torch.Tensor]:
+        perturbation = self.perturber(input=input, target=target)
+
         if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
             return self.compose(perturbation, input=input, target=target)
 

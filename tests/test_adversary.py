@@ -20,7 +20,7 @@ from mart.attack.gradient_modifier import Sign
 def test_with_model(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Composer(
-        functions={"additive": mart.attack.composer.Additive()}
+        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
     )
     gain = Mock()
     enforcer = Mock()
@@ -28,7 +28,6 @@ def test_with_model(input_data, target_data, perturbation):
     model = Mock()
 
     adversary = Adversary(
-        perturber=perturber,
         composer=composer,
         optimizer=None,
         gain=gain,
@@ -54,19 +53,17 @@ def test_with_model(input_data, target_data, perturbation):
 
 def test_hidden_params():
     initializer = Mock()
-    composer = mart.attack.composer.Composer(
-        functions={"additive": mart.attack.composer.Additive()}
-    )
     projector = Mock()
-
     perturber = Perturber(initializer=initializer, projector=projector)
+    composer = mart.attack.composer.Composer(
+        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
+    )
 
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
 
     adversary = Adversary(
-        perturber=perturber,
         composer=composer,
         optimizer=None,
         gain=gain,
@@ -85,12 +82,11 @@ def test_hidden_params():
 
 def test_hidden_params_after_forward(input_data, target_data, perturbation):
     initializer = Mock()
-    composer = mart.attack.composer.Composer(
-        functions={"additive": mart.attack.composer.Additive()}
-    )
     projector = Mock()
-
     perturber = Perturber(initializer=initializer, projector=projector)
+    composer = mart.attack.composer.Composer(
+        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
+    )
 
     gain = Mock()
     enforcer = Mock()
@@ -98,7 +94,6 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
     model = Mock()
 
     adversary = Adversary(
-        perturber=perturber,
         composer=composer,
         optimizer=None,
         gain=gain,
@@ -121,19 +116,17 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
 
 def test_loading_perturbation_from_state_dict():
     initializer = Mock()
-    composer = mart.attack.composer.Composer(
-        functions={"additive": mart.attack.composer.Additive()}
-    )
     projector = Mock()
-
     perturber = Perturber(initializer=initializer, projector=projector)
+    composer = mart.attack.composer.Composer(
+        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
+    )
 
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
 
     adversary = Adversary(
-        perturber=perturber,
         composer=composer,
         optimizer=None,
         gain=gain,
@@ -147,13 +140,13 @@ def test_loading_perturbation_from_state_dict():
     adversary.load_state_dict({"perturber.perturbation": torch.tensor([1.0, 2.0])})
 
     # Adversary ignores load_state_dict() quietly, so perturbation is still None.
-    assert adversary.perturber.perturbation is None
+    assert adversary.composer.perturber.perturbation is None
 
 
 def test_perturbation(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Composer(
-        functions={"additive": mart.attack.composer.Additive()}
+        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
     )
     gain = Mock()
     enforcer = Mock()
@@ -161,7 +154,6 @@ def test_perturbation(input_data, target_data, perturbation):
     model = Mock()
 
     adversary = Adversary(
-        perturber=perturber,
         composer=composer,
         optimizer=None,
         gain=gain,
@@ -185,9 +177,6 @@ def test_perturbation(input_data, target_data, perturbation):
 
 
 def test_forward_with_model(input_data, target_data):
-    composer = mart.attack.composer.Composer(
-        functions={"additive": mart.attack.composer.Additive()}
-    )
     enforcer = Mock()
     optimizer = partial(SGD, lr=1.0, maximize=True)
 
@@ -207,9 +196,11 @@ def test_forward_with_model(input_data, target_data):
         initializer=initializer,
         projector=None,
     )
+    composer = mart.attack.composer.Composer(
+        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
+    )
 
     adversary = Adversary(
-        perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         gain=gain,
@@ -232,13 +223,12 @@ def test_forward_with_model(input_data, target_data):
 def test_configure_optimizers():
     perturber = Mock()
     composer = mart.attack.composer.Composer(
-        functions={"additive": mart.attack.composer.Additive()}
+        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
     )
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock()
 
     adversary = Adversary(
-        perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         gain=gain,
@@ -253,7 +243,7 @@ def test_configure_optimizers():
 def test_training_step(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Composer(
-        functions={"additive": mart.attack.composer.Additive()}
+        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
     )
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor(1337))
@@ -261,7 +251,6 @@ def test_training_step(input_data, target_data, perturbation):
     # Set target_size manually because the test bypasses the convert() step that reads target_size.
 
     adversary = Adversary(
-        perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         gain=gain,
@@ -276,7 +265,7 @@ def test_training_step(input_data, target_data, perturbation):
 def test_training_step_with_many_gain(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Composer(
-        functions={"additive": mart.attack.composer.Additive()}
+        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
     )
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
@@ -284,7 +273,6 @@ def test_training_step_with_many_gain(input_data, target_data, perturbation):
     # Set target_size manually because the test bypasses the convert() step that reads target_size.
 
     adversary = Adversary(
-        perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         gain=gain,
@@ -298,7 +286,7 @@ def test_training_step_with_many_gain(input_data, target_data, perturbation):
 def test_training_step_with_objective(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
     composer = mart.attack.composer.Composer(
-        functions={"additive": mart.attack.composer.Additive()}
+        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
     )
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
@@ -308,7 +296,6 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
     # Set target_size manually because the test bypasses the convert() step that reads target_size.
 
     adversary = Adversary(
-        perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         objective=objective,
@@ -325,16 +312,16 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
 def test_configure_gradient_clipping():
     perturber = Mock()
     composer = mart.attack.composer.Composer(
-        functions={"additive": mart.attack.composer.Additive()}
+        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
     )
     optimizer = Mock(
-        spec=mart.optim.OptimizerFactory, param_groups=[{"params": Mock()}, {"params": Mock()}]
+        spec=mart.optim.OptimizerFactory,
+        param_groups=[{"params": Mock()}, {"params": Mock()}],
     )
     gradient_modifier = Mock()
     gain = Mock()
 
     adversary = Adversary(
-        perturber=perturber,
         composer=composer,
         optimizer=optimizer,
         gradient_modifier=gradient_modifier,

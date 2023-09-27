@@ -1,2 +1,5 @@
+defaults:
+  - perturber: default
+
 _target_: mart.attack.Composer
 functions: ???

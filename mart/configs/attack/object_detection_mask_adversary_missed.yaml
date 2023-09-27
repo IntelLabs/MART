@@ -2,7 +2,7 @@ defaults:
   - adversary
   - gradient_ascent
   - mask
-  - perturber/initializer: constant
+  - composer/perturber/initializer: constant
   - composer/functions: overlay
   - gradient_modifier: sign
   - gain: rcnn_class_background
