@@ -12,6 +12,7 @@ max_iters: ???
 lr: ???
 
 # Start with grey perturbation in the overlay mode.
-perturber:
-  initializer:
-    constant: 127
+composer:
+  perturber:
+    initializer:
+      constant: 127
