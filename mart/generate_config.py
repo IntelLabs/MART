@@ -10,12 +10,16 @@ import fire
 from hydra import compose, initialize_config_dir
 from omegaconf import OmegaConf
 
+DEFAULT_VERSION_BASE = "1.2"
+DEFAULT_CONFIG_DIR = "."
+DEFAULT_CONFIG_NAME = "lightning.yaml"
+
 
 def mart_compose(
     *overrides,
-    version_base: str = "1.2",
-    config_dir: str = "configs",
-    config_name: str = "lightning.yaml",
+    version_base: str = DEFAULT_VERSION_BASE,
+    config_dir: str = DEFAULT_CONFIG_DIR,
+    config_name: str = DEFAULT_CONFIG_NAME,
     export_node: str = None,
 ):
     # Add an absolute path {config_dir} to the search path of configs, preceding those in mart.configs.
@@ -45,9 +49,9 @@ def get_yaml_cfg(cfg, resolve: bool = False):
 
 def main(
     *overrides,
-    version_base: str = "1.2",
-    config_dir: str = "configs",
-    config_name: str = "lightning.yaml",
+    version_base: str = DEFAULT_VERSION_BASE,
+    config_dir: str = DEFAULT_CONFIG_DIR,
+    config_name: str = DEFAULT_CONFIG_NAME,
     export_node: str = None,
     resolve: bool = False,
 ):
