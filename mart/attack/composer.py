@@ -54,7 +54,7 @@ class Composer(torch.nn.Module):
         self.functions = list(self.functions_dict.values())
 
     def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
-        self.perturber.configure_perturbation(input)
+        return self.perturber.configure_perturbation(input)
 
     def __call__(
         self,
