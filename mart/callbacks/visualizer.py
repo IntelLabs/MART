@@ -34,8 +34,7 @@ class PerturbedImageVisualizer(Callback):
     def on_train_end(self, trainer, model):
         # FIXME: We should really just save this to outputs instead of recomputing adv_input
         with torch.no_grad():
-            perturbation = model.perturber(input=self.input, target=self.target)
-            adv_input = model.composer(perturbation, input=self.input, target=self.target)
+            adv_input, _target = model(self.input, self.target)
 
         for img, tgt in zip(adv_input, self.target):
             fname = tgt["file_name"]
