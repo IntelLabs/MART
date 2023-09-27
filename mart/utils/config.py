@@ -17,6 +17,8 @@ DEFAULT_VERSION_BASE = "1.2"
 DEFAULT_CONFIG_DIR = "."
 DEFAULT_CONFIG_NAME = "lightning.yaml"
 
+__all__ = ["compose", "instantiate", "get_yaml_cfg"]
+
 
 def compose(
     *overrides,
