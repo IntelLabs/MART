@@ -22,7 +22,8 @@ def mart_compose(
     if not os.path.isabs(config_dir):
         config_dir = os.path.abspath(config_dir)
 
-    # initialize_config_dir() requires an absolute path.
+    # hydra.initialize_config_dir() requires an absolute path,
+    # while hydra.initialize() searches paths relatively to mart.
     with initialize_config_dir(version_base=version_base, config_dir=config_dir):
         cfg = compose(config_name=config_name, overrides=overrides)
 
