@@ -104,6 +104,7 @@ class PerturbationMask(Function):
         return perturbation, input, target
 
 
+# TODO: We may decompose Overlay into: perturbation-mask, input-re-mask, additive.
 class Overlay(Function):
     """We assume an adversary overlays a patch to the input."""
 
@@ -125,7 +126,7 @@ class Overlay(Function):
         return perturbation, input, target
 
 
-class FakeClamp(Function):
+class InputFakeClamp(Function):
     """A Clamp operation that preserves gradients."""
 
     def __init__(self, *args, min_val, max_val, **kwargs):
