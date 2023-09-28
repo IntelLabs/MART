@@ -7,7 +7,7 @@ defaults:
         pert_rect_pad,
         pert_rect_perspective_transform,
         overlay,
-        fake_clamp,
+        input_fake_clamp,
       ]
 
 functions:
@@ -21,5 +21,5 @@ functions:
     order: 3
   overlay:
     order: 4
-  fake_clamp:
+  input_fake_clamp:
     order: 5
