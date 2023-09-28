@@ -9,11 +9,11 @@ import torch
 from mart.attack.composer import (
     Additive,
     Composer,
-    Mask,
     Overlay,
-    RectangleCrop,
-    RectanglePad,
-    RectanglePerspectiveTransform,
+    PerturbationMask,
+    PerturbationRectangleCrop,
+    PerturbationRectanglePad,
+    PerturbationRectanglePerspectiveTransform,
 )
 
 
@@ -35,22 +35,24 @@ def test_overlay_composer_forward(input_data, target_data, perturbation):
     torch.testing.assert_close(output, expected_output, equal_nan=True)
 
 
-def test_mask_additive_composer_forward():
+def test_pert_mask_additive_composer_forward():
     input = torch.zeros((2, 2))
     perturbation = torch.ones((2, 2))
     target = {"perturbable_mask": torch.eye(2)}
     expected_output = torch.eye(2)
 
-    composer = Composer(functions={"mask": Mask(order=0), "additive": Additive(order=1)})
+    composer = Composer(
+        functions={"pert_mask": PerturbationMask(order=0), "additive": Additive(order=1)}
+    )
     output = composer(perturbation, input=input, target=target)
     torch.testing.assert_close(output, expected_output, equal_nan=True)
 
 
-def test_rect_crop():
+def test_pert_rect_crop():
     key = "patch_coords"
     input = torch.zeros((3, 10, 10))
     perturbation = torch.ones_like(input)
-    fn = RectangleCrop(coords_key=key)
+    fn = PerturbationRectangleCrop(coords_key=key)
 
     # FIXME: four corner points (width, height) of a patch in the order of top-left, top-right, bottom-right, bottom-left.
     # A simple square patch.
@@ -72,7 +74,7 @@ def test_rect_crop():
     assert rect_patch.shape == (3, 8, 6)
 
 
-def test_rect_pad():
+def test_pert_rect_pad():
     coords_key = "patch_coords"
     rect_coords_key = "rect_coords"
 
@@ -82,7 +84,7 @@ def test_rect_pad():
     input = torch.zeros((3, 10, 10))
     target = {coords_key: patch_coords}
 
-    fn = RectanglePad(coords_key=coords_key, rect_coords_key=rect_coords_key)
+    fn = PerturbationRectanglePad(coords_key=coords_key, rect_coords_key=rect_coords_key)
     pert_padded, _input, _target = fn(rect_patch, input, target)
 
     pert_padded_expected = torch.zeros_like(input)
@@ -94,7 +96,7 @@ def test_rect_pad():
     assert _target[rect_coords_key] == rect_coords_expected
 
 
-def test_rect_perspective_transform():
+def test_pert_rect_perspective_transform():
     coords_key = "patch_coords"
     rect_coords_key = "rect_coords"
 
@@ -108,7 +110,9 @@ def test_rect_perspective_transform():
     pert_padded = torch.zeros_like(input)
     pert_padded[:, :5, :5] = 1
 
-    fn = RectanglePerspectiveTransform(coords_key=coords_key, rect_coords_key=rect_coords_key)
+    fn = PerturbationRectanglePerspectiveTransform(
+        coords_key=coords_key, rect_coords_key=rect_coords_key
+    )
     pert_coords, _input, _target = fn(pert_padded, input, target)
     pert_coords_expected = torch.zeros_like(input)
     pert_coords_expected[:, 5:, 5:] = 1
