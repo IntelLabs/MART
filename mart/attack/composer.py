@@ -125,6 +125,26 @@ class Overlay(Function):
         return perturbation, input, target
 
 
+class FakeClamp(Function):
+    """A Clamp operation that preserves gradients."""
+
+    def __init__(self, *args, min_val, max_val, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.min_val = min_val
+        self.max_val = max_val
+
+    @staticmethod
+    def fake_clamp(x, *, min_val, max_val):
+        with torch.no_grad():
+            x_clamped = x.clamp(min_val, max_val)
+            diff = x_clamped - x
+        return x + diff
+
+    def forward(self, perturbation, input, target):
+        input = self.fake_clamp(input, min_val=self.min_val, max_val=self.max_val)
+        return perturbation, input, target
+
+
 class PerturbationRectangleCrop(Function):
     def __init__(self, *args, coords_key="patch_coords", **kwargs):
         super().__init__(*args, **kwargs)
@@ -214,26 +234,6 @@ class PerturbationRectanglePerspectiveTransform(Function):
             fill=0,
         )
         return perturbation_coords, input, target
-
-
-class FakeClamp(Function):
-    """A Clamp operation that preserves gradients."""
-
-    def __init__(self, *args, min_val, max_val, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.min_val = min_val
-        self.max_val = max_val
-
-    @staticmethod
-    def fake_clamp(x, *, min_val, max_val):
-        with torch.no_grad():
-            x_clamped = x.clamp(min_val, max_val)
-            diff = x_clamped - x
-        return x + diff
-
-    def forward(self, perturbation, input, target):
-        input = self.fake_clamp(input, min_val=self.min_val, max_val=self.max_val)
-        return perturbation, input, target
 
 
 class PerturbationImageAdditive(Function):
