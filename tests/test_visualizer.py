@@ -19,12 +19,12 @@ def test_visualizer_run_end(input_data, target_data, perturbation, tmp_path):
     target_list = [target_data]
 
     # simulate an addition perturbation
-    def perturb(input):
+    def perturb(input, target=None):
         result = [sample + perturbation for sample in input]
-        return result
+        return result, target
 
     trainer = Mock()
-    model = Mock(composer=Mock(return_value=perturb(input_list)))
+    model = Mock(return_value=perturb(input_list))
     outputs = Mock()
     batch = {"input": input_list, "target": target_list}
     adversary = Mock(spec=Adversary, side_effect=perturb)
