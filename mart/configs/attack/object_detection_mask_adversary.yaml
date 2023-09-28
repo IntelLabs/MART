@@ -2,7 +2,7 @@ defaults:
   - adversary
   - gradient_ascent
   - mask
-  - perturber/initializer: constant
+  - composer/perturber/initializer: constant
   - composer/functions: overlay
   - gradient_modifier: sign
   - gain: rcnn_training_loss
@@ -12,6 +12,7 @@ max_iters: ???
 lr: ???
 
 # Start with grey perturbation in the overlay mode.
-perturber:
-  initializer:
-    constant: 127
+composer:
+  perturber:
+    initializer:
+      constant: 127

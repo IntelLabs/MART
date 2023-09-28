@@ -1,4 +1,0 @@
-rect_crop:
-  _target_: mart.attack.composer.RectangleCrop
-  coords_key: patch_coords
-  order: 0

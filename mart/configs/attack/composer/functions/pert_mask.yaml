@@ -1,0 +1,4 @@
+pert_mask:
+  _target_: mart.attack.composer.PerturbationMask
+  key: perturbable_mask
+  order: 0

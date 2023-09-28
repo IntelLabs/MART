@@ -8,10 +8,18 @@ from __future__ import annotations
 
 import abc
 from collections import OrderedDict
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable
 
 import torch
-from torchvision.transforms import functional as F
+import torchvision
+import torchvision.transforms.functional as F
+
+from mart.utils import pylogger
+
+logger = pylogger.get_pylogger(__name__)
+
+if TYPE_CHECKING:
+    from .perturber import Perturber
 
 
 class Function(torch.nn.Module):
@@ -33,22 +41,36 @@ class Function(torch.nn.Module):
         pass
 
 
-class Composer:
-    def __init__(self, functions: dict[str, Function]) -> None:
+class Composer(torch.nn.Module):
+    def __init__(self, perturber: Perturber, functions: dict[str, Function]) -> None:
+        """_summary_
+
+        Args:
+            perturber (Perturber): Manage perturbations.
+            functions (dict[str, Function]): A dictionary of functions for composing pertured input.
+        """
+        super().__init__()
+
+        self.perturber = perturber
+
         # Sort functions by function.order and the name.
         self.functions_dict = OrderedDict(
             sorted(functions.items(), key=lambda name_fn: (name_fn[1].order, name_fn[0]))
         )
         self.functions = list(self.functions_dict.values())
 
-    def __call__(
+    def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
+        return self.perturber.configure_perturbation(input)
+
+    def forward(
         self,
-        perturbation: torch.Tensor | Iterable[torch.Tensor],
         *,
         input: torch.Tensor | Iterable[torch.Tensor],
         target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
         **kwargs,
     ) -> torch.Tensor | Iterable[torch.Tensor]:
+        perturbation = self.perturber(input=input, target=target)
+
         if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
             return self._compose(perturbation, input=input, target=target)
 
@@ -88,17 +110,7 @@ class Additive(Function):
         return perturbation, input, target
 
 
-class Mask(Function):
-    def __init__(self, *args, key="perturbable_mask", **kwargs):
-        super().__init__(*args, **kwargs)
-        self.key = key
-
-    def forward(self, perturbation, input, target):
-        mask = target[self.key]
-        perturbation = perturbation * mask
-        return perturbation, input, target
-
-
+# TODO: We may decompose Overlay into: perturbation-mask, input-re-mask, additive.
 class Overlay(Function):
     """We assume an adversary overlays a patch to the input."""
 
@@ -120,7 +132,38 @@ class Overlay(Function):
         return perturbation, input, target
 
 
-class RectangleCrop(Function):
+class InputFakeClamp(Function):
+    """A Clamp operation that preserves gradients."""
+
+    def __init__(self, *args, min_val, max_val, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.min_val = min_val
+        self.max_val = max_val
+
+    @staticmethod
+    def fake_clamp(x, *, min_val, max_val):
+        with torch.no_grad():
+            x_clamped = x.clamp(min_val, max_val)
+            diff = x_clamped - x
+        return x + diff
+
+    def forward(self, perturbation, input, target):
+        input = self.fake_clamp(input, min_val=self.min_val, max_val=self.max_val)
+        return perturbation, input, target
+
+
+class PerturbationMask(Function):
+    def __init__(self, *args, key="perturbable_mask", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.key = key
+
+    def forward(self, perturbation, input, target):
+        mask = target[self.key]
+        perturbation = perturbation * mask
+        return perturbation, input, target
+
+
+class PerturbationRectangleCrop(Function):
     def __init__(self, *args, coords_key="patch_coords", **kwargs):
         super().__init__(*args, **kwargs)
         self.coords_key = coords_key
@@ -155,7 +198,7 @@ class RectangleCrop(Function):
         return rectangle_patch, input, target
 
 
-class RectanglePad(Function):
+class PerturbationRectanglePad(Function):
     def __init__(self, *args, coords_key="patch_coords", rect_coords_key="rect_coords", **kwargs):
         super().__init__(*args, **kwargs)
         self.coords_key = coords_key
@@ -188,7 +231,7 @@ class RectanglePad(Function):
         return perturbation_padded, input, target
 
 
-class RectanglePerspectiveTransform(Function):
+class PerturbationRectanglePerspectiveTransform(Function):
     def __init__(self, *args, coords_key="patch_coords", rect_coords_key="rect_coords", **kwargs):
         super().__init__(*args, **kwargs)
         self.coords_key = coords_key
@@ -211,21 +254,26 @@ class RectanglePerspectiveTransform(Function):
         return perturbation_coords, input, target
 
 
-class FakeClamp(Function):
-    """A Clamp operation that preserves gradients."""
+class PerturbationImageAdditive(Function):
+    """Add an image to perturbation if specified."""
 
-    def __init__(self, *args, min_val, max_val, **kwargs):
+    def __init__(self, *args, path: str | None = None, scale: int = 1, **kwargs):
         super().__init__(*args, **kwargs)
-        self.min_val = min_val
-        self.max_val = max_val
 
-    @staticmethod
-    def fake_clamp(x, *, min_val, max_val):
-        with torch.no_grad():
-            x_clamped = x.clamp(min_val, max_val)
-            diff = x_clamped - x
-        return x + diff
+        self.image = None
+        if path is not None:
+            # This is uint8 [0,255].
+            self.image = torchvision.io.read_image(path, torchvision.io.ImageReadMode.RGB)
+            # We shouldn't need scale as we use canonical input format.
+            self.image = self.image / scale
 
     def forward(self, perturbation, input, target):
-        input = self.fake_clamp(input, min_val=self.min_val, max_val=self.max_val)
+        if self.image is not None:
+            image = self.image
+
+            if image.shape != perturbation.shape:
+                logger.info(f"Resizing image from {image.shape} to {perturbation.shape}...")
+                image = F.resize(image, perturbation.shape[1:])
+
+            perturbation = perturbation + image
         return perturbation, input, target

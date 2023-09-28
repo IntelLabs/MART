@@ -1,0 +1,5 @@
+input_fake_clamp:
+  _target_: mart.attack.composer.InputFakeClamp
+  order: 0
+  min_val: 0
+  max_val: 255
