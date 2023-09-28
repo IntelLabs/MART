@@ -93,7 +93,7 @@ class Additive(Function):
         return perturbation, input, target
 
 
-class Mask(Function):
+class PerturbationMask(Function):
     def __init__(self, *args, key="perturbable_mask", **kwargs):
         super().__init__(*args, **kwargs)
         self.key = key
@@ -125,7 +125,7 @@ class Overlay(Function):
         return perturbation, input, target
 
 
-class RectangleCrop(Function):
+class PerturbationRectangleCrop(Function):
     def __init__(self, *args, coords_key="patch_coords", **kwargs):
         super().__init__(*args, **kwargs)
         self.coords_key = coords_key
@@ -160,7 +160,7 @@ class RectangleCrop(Function):
         return rectangle_patch, input, target
 
 
-class RectanglePad(Function):
+class PerturbationRectanglePad(Function):
     def __init__(self, *args, coords_key="patch_coords", rect_coords_key="rect_coords", **kwargs):
         super().__init__(*args, **kwargs)
         self.coords_key = coords_key
@@ -193,7 +193,7 @@ class RectanglePad(Function):
         return perturbation_padded, input, target
 
 
-class RectanglePerspectiveTransform(Function):
+class PerturbationRectanglePerspectiveTransform(Function):
     def __init__(self, *args, coords_key="patch_coords", rect_coords_key="rect_coords", **kwargs):
         super().__init__(*args, **kwargs)
         self.coords_key = coords_key

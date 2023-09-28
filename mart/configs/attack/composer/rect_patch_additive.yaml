@@ -2,25 +2,25 @@ defaults:
   - default
   - functions:
       [
-        rect_crop,
+        pert_rect_crop,
         pert_image,
-        rect_pad,
-        rect_perspective_transform,
-        mask,
+        pert_rect_pad,
+        pert_rect_perspective_transform,
+        pert_mask,
         additive,
         fake_clamp,
       ]
 
 functions:
-  rect_crop:
+  pert_rect_crop:
     order: 0
   pert_image:
     order: 1
-  rect_pad:
+  pert_rect_pad:
     order: 2
-  rect_perspective_transform:
+  pert_rect_perspective_transform:
     order: 3
-  mask:
+  pert_mask:
     order: 4
   additive:
     order: 5

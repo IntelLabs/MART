@@ -1,0 +1,5 @@
+pert_rect_perspective_transform:
+  _target_: mart.attack.composer.PerturbationRectanglePerspectiveTransform
+  order: 0
+  coords_key: patch_coords
+  rect_coords_key: rect_coords

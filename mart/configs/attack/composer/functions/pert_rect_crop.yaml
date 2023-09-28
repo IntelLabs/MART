@@ -1,0 +1,4 @@
+pert_rect_crop:
+  _target_: mart.attack.composer.PerturbationRectangleCrop
+  coords_key: patch_coords
+  order: 0
