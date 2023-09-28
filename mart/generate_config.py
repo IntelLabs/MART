@@ -7,13 +7,13 @@
 from __future__ import annotations
 
 import fire
+from omegaconf import OmegaConf
 
 from .utils.config import (
     DEFAULT_CONFIG_DIR,
     DEFAULT_CONFIG_NAME,
     DEFAULT_VERSION_BASE,
     compose,
-    get_yaml_cfg,
 )
 
 
@@ -24,6 +24,7 @@ def main(
     config_name: str = DEFAULT_CONFIG_NAME,
     export_node: str | None = None,
     resolve: bool = False,
+    sort_keys: bool = True,
 ):
     cfg = compose(
         *overrides,
@@ -33,7 +34,7 @@ def main(
         export_node=export_node,
     )
 
-    cfg_yaml = get_yaml_cfg(cfg, resolve=resolve)
+    cfg_yaml = OmegaConf.to_yaml(cfg, resolve=resolve, sort_keys=sort_keys)
 
     # OmegaConf.to_yaml() already ends with `\n`.
     print(cfg_yaml, end="")
