@@ -24,7 +24,9 @@ class Function(torch.nn.Module):
         self.order = order
 
     @abc.abstractmethod
-    def forward(self, perturbation, input, target) -> None:
+    def forward(
+        self, perturbation: torch.Tensor, input: torch.Tensor, target: torch.Tensor | dict
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | dict]:
         """Returns the modified perturbation, modified input and target, so we can chain Functions
         in a Composer."""
         pass
