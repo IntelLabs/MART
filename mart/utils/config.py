@@ -10,13 +10,12 @@ import os
 
 from hydra import compose as hydra_compose
 from hydra import initialize_config_dir
-from omegaconf import OmegaConf
 
 DEFAULT_VERSION_BASE = "1.2"
 DEFAULT_CONFIG_DIR = "."
 DEFAULT_CONFIG_NAME = "lightning.yaml"
 
-__all__ = ["compose", "get_yaml_cfg"]
+__all__ = ["compose"]
 
 
 def compose(
@@ -41,11 +40,3 @@ def compose(
             cfg = cfg[key]
 
     return cfg
-
-
-def get_yaml_cfg(cfg, resolve: bool = False):
-    # Resolve all interpolation in the sub-tree.
-    if resolve:
-        OmegaConf.resolve(cfg)
-
-    return OmegaConf.to_yaml(cfg)
