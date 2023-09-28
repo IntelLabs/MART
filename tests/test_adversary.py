@@ -19,9 +19,8 @@ from mart.attack.gradient_modifier import Sign
 
 def test_with_model(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
-    composer = mart.attack.composer.Composer(
-        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
-    )
+    functions = {"additive": mart.attack.composer.Additive()}
+    composer = Composer(perturber=perturber, functions=functions)
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
@@ -55,9 +54,8 @@ def test_hidden_params():
     initializer = Mock()
     projector = Mock()
     perturber = Perturber(initializer=initializer, projector=projector)
-    composer = mart.attack.composer.Composer(
-        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
-    )
+    functions = {"additive": mart.attack.composer.Additive()}
+    composer = Composer(perturber=perturber, functions=functions)
 
     gain = Mock()
     enforcer = Mock()
@@ -84,9 +82,8 @@ def test_hidden_params_after_forward(input_data, target_data, perturbation):
     initializer = Mock()
     projector = Mock()
     perturber = Perturber(initializer=initializer, projector=projector)
-    composer = mart.attack.composer.Composer(
-        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
-    )
+    functions = {"additive": mart.attack.composer.Additive()}
+    composer = Composer(perturber=perturber, functions=functions)
 
     gain = Mock()
     enforcer = Mock()
@@ -118,9 +115,8 @@ def test_loading_perturbation_from_state_dict():
     initializer = Mock()
     projector = Mock()
     perturber = Perturber(initializer=initializer, projector=projector)
-    composer = mart.attack.composer.Composer(
-        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
-    )
+    functions = {"additive": mart.attack.composer.Additive()}
+    composer = Composer(perturber=perturber, functions=functions)
 
     gain = Mock()
     enforcer = Mock()
@@ -145,9 +141,8 @@ def test_loading_perturbation_from_state_dict():
 
 def test_perturbation(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
-    composer = mart.attack.composer.Composer(
-        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
-    )
+    functions = {"additive": mart.attack.composer.Additive()}
+    composer = Composer(perturber=perturber, functions=functions)
     gain = Mock()
     enforcer = Mock()
     attacker = Mock(max_epochs=0, limit_train_batches=1, fit_loop=Mock(max_epochs=0))
@@ -196,9 +191,8 @@ def test_forward_with_model(input_data, target_data):
         initializer=initializer,
         projector=None,
     )
-    composer = mart.attack.composer.Composer(
-        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
-    )
+    functions = {"additive": mart.attack.composer.Additive()}
+    composer = Composer(perturber=perturber, functions=functions)
 
     adversary = Adversary(
         composer=composer,
@@ -222,9 +216,8 @@ def test_forward_with_model(input_data, target_data):
 
 def test_configure_optimizers():
     perturber = Mock()
-    composer = mart.attack.composer.Composer(
-        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
-    )
+    functions = {"additive": mart.attack.composer.Additive()}
+    composer = Composer(perturber=perturber, functions=functions)
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock()
 
@@ -242,9 +235,8 @@ def test_configure_optimizers():
 
 def test_training_step(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
-    composer = mart.attack.composer.Composer(
-        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
-    )
+    functions = {"additive": mart.attack.composer.Additive()}
+    composer = Composer(perturber=perturber, functions=functions)
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor(1337))
     model = Mock(spec="__call__", return_value={})
@@ -264,9 +256,8 @@ def test_training_step(input_data, target_data, perturbation):
 
 def test_training_step_with_many_gain(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
-    composer = mart.attack.composer.Composer(
-        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
-    )
+    functions = {"additive": mart.attack.composer.Additive()}
+    composer = Composer(perturber=perturber, functions=functions)
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
     model = Mock(spec="__call__", return_value={})
@@ -285,9 +276,8 @@ def test_training_step_with_many_gain(input_data, target_data, perturbation):
 
 def test_training_step_with_objective(input_data, target_data, perturbation):
     perturber = Mock(spec=Perturber, return_value=perturbation)
-    composer = mart.attack.composer.Composer(
-        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
-    )
+    functions = {"additive": mart.attack.composer.Additive()}
+    composer = Composer(perturber=perturber, functions=functions)
     optimizer = Mock(spec=mart.optim.OptimizerFactory)
     gain = Mock(return_value=torch.tensor([1234, 5678]))
     # The model has no attack_step() or training_step().
@@ -311,9 +301,9 @@ def test_training_step_with_objective(input_data, target_data, perturbation):
 
 def test_configure_gradient_clipping():
     perturber = Mock()
-    composer = mart.attack.composer.Composer(
-        perturber=perturber, functions={"additive": mart.attack.composer.Additive()}
-    )
+    functions = {"additive": mart.attack.composer.Additive()}
+    composer = Composer(perturber=perturber, functions=functions)
+
     optimizer = Mock(
         spec=mart.optim.OptimizerFactory,
         param_groups=[{"params": Mock()}, {"params": Mock()}],
