@@ -110,17 +110,6 @@ class Additive(Function):
         return perturbation, input, target
 
 
-class PerturbationMask(Function):
-    def __init__(self, *args, key="perturbable_mask", **kwargs):
-        super().__init__(*args, **kwargs)
-        self.key = key
-
-    def forward(self, perturbation, input, target):
-        mask = target[self.key]
-        perturbation = perturbation * mask
-        return perturbation, input, target
-
-
 # TODO: We may decompose Overlay into: perturbation-mask, input-re-mask, additive.
 class Overlay(Function):
     """We assume an adversary overlays a patch to the input."""
@@ -160,6 +149,17 @@ class InputFakeClamp(Function):
 
     def forward(self, perturbation, input, target):
         input = self.fake_clamp(input, min_val=self.min_val, max_val=self.max_val)
+        return perturbation, input, target
+
+
+class PerturbationMask(Function):
+    def __init__(self, *args, key="perturbable_mask", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.key = key
+
+    def forward(self, perturbation, input, target):
+        mask = target[self.key]
+        perturbation = perturbation * mask
         return perturbation, input, target
 
 
