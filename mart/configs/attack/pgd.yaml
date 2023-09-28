@@ -1,5 +1,5 @@
 defaults:
-  - perturber/initializer: uniform
+  - composer/perturber/initializer: uniform
   - /optimizer@optimizer: sgd
 
 max_iters: ???
@@ -9,9 +9,10 @@ lr: ???
 optimizer:
   lr: ${..lr}
 
-perturber:
-  initializer:
-    min: ${negate:${...eps}}
-    max: ${...eps}
-  projector:
-    eps: ${...eps}
+composer:
+  perturber:
+    initializer:
+      min: ${negate:${....eps}}
+      max: ${....eps}
+    projector:
+      eps: ${....eps}
