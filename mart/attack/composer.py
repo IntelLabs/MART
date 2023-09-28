@@ -66,7 +66,7 @@ class Composer(torch.nn.Module):
         perturbation = self.perturber(input=input, target=target)
 
         if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
-            return self.compose(perturbation, input=input, target=target)
+            return self._compose(perturbation, input=input, target=target)
 
         elif (
             isinstance(perturbation, Iterable)
@@ -75,14 +75,14 @@ class Composer(torch.nn.Module):
         ):
             # FIXME: replace tuple with whatever input's type is
             return tuple(
-                self.compose(perturbation_i, input=input_i, target=target_i)
+                self._compose(perturbation_i, input=input_i, target=target_i)
                 for perturbation_i, input_i, target_i in zip(perturbation, input, target)
             )
 
         else:
             raise NotImplementedError
 
-    def compose(
+    def _compose(
         self,
         perturbation: torch.Tensor,
         *,
