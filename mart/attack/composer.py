@@ -25,7 +25,9 @@ class Function(torch.nn.Module):
         self.order = order
 
     @abc.abstractmethod
-    def forward(self, perturbation, input, target) -> None:
+    def forward(
+        self, perturbation: torch.Tensor, input: torch.Tensor, target: torch.Tensor | dict
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | dict]:
         """Returns the modified perturbation, modified input and target, so we can chain Functions
         in a Composer."""
         pass
@@ -48,7 +50,7 @@ class Composer:
         **kwargs,
     ) -> torch.Tensor | Iterable[torch.Tensor]:
         if isinstance(perturbation, torch.Tensor) and isinstance(input, torch.Tensor):
-            return self.compose(perturbation, input=input, target=target)
+            return self._compose(perturbation, input=input, target=target)
 
         elif (
             isinstance(perturbation, Iterable)
@@ -57,14 +59,14 @@ class Composer:
         ):
             # FIXME: replace tuple with whatever input's type is
             return tuple(
-                self.compose(perturbation_i, input=input_i, target=target_i)
+                self._compose(perturbation_i, input=input_i, target=target_i)
                 for perturbation_i, input_i, target_i in zip(perturbation, input, target)
             )
 
         else:
             raise NotImplementedError
 
-    def compose(
+    def _compose(
         self,
         perturbation: torch.Tensor,
         *,
