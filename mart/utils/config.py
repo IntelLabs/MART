@@ -51,6 +51,10 @@ def instantiate(
     config_name: str = DEFAULT_CONFIG_NAME,
     export_node: str | None = None,
 ):
+    """Compose and instantiate an object.
+
+    Should be useful in testing configs.
+    """
     cfg = compose(
         *overrides,
         version_base=version_base,
