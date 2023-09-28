@@ -3,6 +3,7 @@ defaults:
   - functions:
       [
         rect_crop,
+        pert_image,
         rect_pad,
         rect_perspective_transform,
         mask,
@@ -13,13 +14,15 @@ defaults:
 functions:
   rect_crop:
     order: 0
-  rect_pad:
+  pert_image:
     order: 1
-  rect_perspective_transform:
+  rect_pad:
     order: 2
-  mask:
+  rect_perspective_transform:
     order: 3
-  additive:
+  mask:
     order: 4
-  fake_clamp:
+  additive:
     order: 5
+  fake_clamp:
+    order: 6

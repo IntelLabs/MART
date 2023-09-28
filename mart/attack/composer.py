@@ -11,7 +11,12 @@ from collections import OrderedDict
 from typing import Any, Iterable
 
 import torch
-from torchvision.transforms import functional as F
+import torchvision
+import torchvision.transforms.functional as F
+
+from mart.utils import pylogger
+
+logger = pylogger.get_pylogger(__name__)
 
 
 class Function(torch.nn.Module):
@@ -228,4 +233,29 @@ class FakeClamp(Function):
 
     def forward(self, perturbation, input, target):
         input = self.fake_clamp(input, min_val=self.min_val, max_val=self.max_val)
+        return perturbation, input, target
+
+
+class PerturbationImage(Function):
+    """Add an image to perturbation if specified."""
+
+    def __init__(self, *args, path: str | None = None, scale: int = 1, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.image = None
+        if path is not None:
+            # This is uint8 [0,255].
+            self.image = torchvision.io.read_image(path, torchvision.io.ImageReadMode.RGB)
+            # We shouldn't need scale as we use canonical input format.
+            self.image = self.image / scale
+
+    def forward(self, perturbation, input, target):
+        if self.image is not None:
+            image = self.image
+
+            if image.shape != perturbation.shape:
+                logger.info(f"Resizing image from {image.shape} to {perturbation.shape}...")
+                image = F.resize(image, perturbation.shape[1:])
+
+            perturbation = perturbation + image
         return perturbation, input, target
