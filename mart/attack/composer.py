@@ -236,7 +236,7 @@ class FakeClamp(Function):
         return perturbation, input, target
 
 
-class PerturbationImage(Function):
+class PerturbationImageAdditive(Function):
     """Add an image to perturbation if specified."""
 
     def __init__(self, *args, path: str | None = None, scale: int = 1, **kwargs):

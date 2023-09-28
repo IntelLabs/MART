@@ -3,7 +3,7 @@ defaults:
   - functions:
       [
         pert_rect_crop,
-        pert_image,
+        pert_image_additive,
         pert_rect_pad,
         pert_rect_perspective_transform,
         overlay,
@@ -13,7 +13,7 @@ defaults:
 functions:
   pert_rect_crop:
     order: 0
-  pert_image:
+  pert_image_additive:
     order: 1
   pert_rect_pad:
     order: 2
