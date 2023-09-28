@@ -3,7 +3,7 @@ defaults:
   - gradient_ascent
   - mask
   - perturber/initializer: constant
-  - composer: overlay
+  - composer/functions: overlay
   - gradient_modifier: sign
   - gain: rcnn_training_loss
   - objective: zero_ap

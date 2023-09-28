@@ -1,1 +1,9 @@
-_target_: mart.attack.composer.MaskAdditive
+defaults:
+  - default
+  - functions: [mask, additive]
+
+functions:
+  mask:
+    order: 0
+  additive:
+    order: 1
