@@ -27,23 +27,23 @@ class Function(torch.nn.Module):
         self.order = order
 
     @abc.abstractmethod
-    def forward(self, perturbation, input, target) -> None:
+    def forward(
+        self, perturbation: torch.Tensor, input: torch.Tensor, target: torch.Tensor | dict
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | dict]:
         """Returns the modified perturbation, modified input and target, so we can chain Functions
         in a Composer."""
         pass
 
 
 class Composer(torch.nn.Module):
-    def __init__(
-        self, *args, perturber: Perturber, functions: dict[str, Function], **kwargs
-    ) -> None:
+    def __init__(self, perturber: Perturber, functions: dict[str, Function]) -> None:
         """_summary_
 
         Args:
             perturber (Perturber): Manage perturbations.
             functions (dict[str, Function]): A dictionary of functions for composing pertured input.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
         self.perturber = perturber
 
@@ -56,7 +56,7 @@ class Composer(torch.nn.Module):
     def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
         return self.perturber.configure_perturbation(input)
 
-    def __call__(
+    def forward(
         self,
         *,
         input: torch.Tensor | Iterable[torch.Tensor],
