@@ -11,6 +11,12 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Iterable
 
 import torch
+import torchvision
+import torchvision.transforms.functional as F
+
+from mart.utils import pylogger
+
+logger = pylogger.get_pylogger(__name__)
 
 if TYPE_CHECKING:
     from .perturber import Perturber
@@ -133,4 +139,22 @@ class Overlay(Function):
         perturbation = perturbation * mask
 
         input = input * (1 - mask) + perturbation
+        return perturbation, input, target
+
+
+class Image(Function):
+    """Add an image to perturbation."""
+
+    def __init__(self, *args, path: str, scale: int = 1, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.image = torchvision.io.read_image(path, torchvision.io.ImageReadMode.RGB) / scale
+
+    def forward(self, perturbation, input, target):
+        image = self.image
+
+        if image.shape != perturbation.shape:
+            logger.info(f"Resizing image from {image.shape} to {perturbation.shape}...")
+            image = F.resize(image, perturbation.shape[1:])
+
+        perturbation = perturbation + image
         return perturbation, input, target
