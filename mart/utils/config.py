@@ -10,12 +10,13 @@ import os
 
 from hydra import compose as hydra_compose
 from hydra import initialize_config_dir
+from hydra.utils import instantiate as hydra_instantiate
 
 DEFAULT_VERSION_BASE = "1.2"
 DEFAULT_CONFIG_DIR = "."
 DEFAULT_CONFIG_NAME = "lightning.yaml"
 
-__all__ = ["compose"]
+__all__ = ["compose", "instantiate"]
 
 
 def compose(
@@ -40,3 +41,26 @@ def compose(
             cfg = cfg[key]
 
     return cfg
+
+
+def instantiate(
+    *overrides,
+    version_base: str = DEFAULT_VERSION_BASE,
+    config_dir: str = DEFAULT_CONFIG_DIR,
+    config_name: str = DEFAULT_CONFIG_NAME,
+    export_node: str | None = None,
+):
+    """Compose and instantiate an object.
+
+    Should be useful in testing configs.
+    """
+    cfg = compose(
+        *overrides,
+        version_base=version_base,
+        config_dir=config_dir,
+        config_name=config_name,
+        export_node=export_node,
+    )
+
+    obj = hydra_instantiate(cfg)
+    return obj
