@@ -134,3 +134,26 @@ class Overlay(Function):
 
         input = input * (1 - mask) + perturbation
         return perturbation, input, target
+
+
+class InputFakeClamp(Function):
+    """A Clamp operation that preserves gradients.
+
+    This should eliminate any assumption on Composer(e.g. additive) in Projector.
+    """
+
+    def __init__(self, *args, min_val, max_val, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.min_val = min_val
+        self.max_val = max_val
+
+    @staticmethod
+    def fake_clamp(x, *, min_val, max_val):
+        with torch.no_grad():
+            x_clamped = x.clamp(min_val, max_val)
+            diff = x_clamped - x
+        return x + diff
+
+    def forward(self, perturbation, input, target):
+        input = self.fake_clamp(input, min_val=self.min_val, max_val=self.max_val)
+        return perturbation, input, target
