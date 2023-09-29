@@ -1,4 +1,7 @@
+# Avoid null projector here due to the chance of overriding projectors defined in other config files?
+
+defaults:
+  - projector: default
+
 _target_: mart.attack.Perturber
 initializer: ???
-# Avoid null projector here due to the chance of overriding projectors defined in other config files.
-projector: ???
