@@ -2,10 +2,18 @@ defaults:
   - adversary
   - pgd
   - linf
-  - composer/functions: additive
+  - composer/functions: [additive, input_fake_clamp]
   - gradient_modifier: sign
   - gain: cross_entropy
   - objective: misclassification
+
+composer:
+  functions:
+    additive:
+      order: 0
+    # input_fake_clamp ensures valid range of pixel values after addition.
+    input_fake_clamp:
+      order: 1
 
 eps: ???
 lr: ???

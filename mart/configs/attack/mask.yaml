@@ -1,4 +1,4 @@
 defaults:
-  - composer/perturber/projector: mask_range
+  - composer/perturber/projector/functions: mask
   - enforcer: default
   - enforcer/constraints: [mask, pixel_range]

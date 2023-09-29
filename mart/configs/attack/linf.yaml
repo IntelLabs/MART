@@ -1,14 +1,23 @@
 defaults:
-  - composer/perturber/projector: linf_additive_range
+  - composer/perturber/projector/functions: lp
   - enforcer: default
   - enforcer/constraints: lp
+
+composer:
+  perturber:
+    projector:
+      functions:
+        lp:
+          p: ${......p}
+          eps: ${......eps}
 
 enforcer:
   constraints:
     lp:
-      p:
-        _target_: builtins.float
-        _args_: ["inf"]
+      p: ${....p}
       eps: ${....eps}
 
+p:
+  _target_: builtins.float
+  _args_: ["inf"]
 eps: ???
