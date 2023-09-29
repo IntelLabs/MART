@@ -66,11 +66,3 @@ def test_mask_projector(input_data, target_data, perturbation):
     expected_perturbation.mul_(target_data["perturbable_mask"])
 
     torch.testing.assert_close(perturbation, expected_perturbation)
-
-
-def test_compose_repr():
-    pass
-
-
-def test_compose(input_data, target_data):
-    pass
