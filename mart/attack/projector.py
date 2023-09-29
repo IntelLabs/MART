@@ -38,7 +38,7 @@ class Projector:
         """_summary_
 
         Args:
-            functions (dict[str, Function]): A dictionary of functions for composing pertured input.
+            functions (dict[str, Function]): A dictionary of functions for perturbation projection.
         """
         # Sort functions by function.order and the name.
         self.functions_dict = OrderedDict(
@@ -143,6 +143,7 @@ class Lp(Function):
         method(perturbation, self.p, self.eps)
 
 
+# TODO: We may move the mask projection to Initialzier, if we also have mask in composer, because no gradient to update the masked pixels.
 class Mask(Function):
     def __init__(self, *args, key="perturbable_mask", **kwargs):
         super().__init__(*args, **kwargs)
