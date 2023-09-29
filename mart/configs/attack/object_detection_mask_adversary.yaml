@@ -3,7 +3,7 @@ defaults:
   - gradient_ascent
   - mask
   - composer/perturber/initializer: constant
-  - composer/functions: overlay
+  - composer/functions: [overlay, input_fake_clamp]
   - gradient_modifier: sign
   - gain: rcnn_training_loss
   - objective: zero_ap
@@ -11,8 +11,15 @@ defaults:
 max_iters: ???
 lr: ???
 
-# Start with grey perturbation in the overlay mode.
 composer:
+  # Use fake_clamp to ensure valid range of pixel values after overlay.
+  functions:
+    overlay:
+      order: 0
+    input_fake_clamp:
+      order: 1
+
+  # Start with grey perturbation in the overlay mode.
   perturber:
     initializer:
       constant: 127

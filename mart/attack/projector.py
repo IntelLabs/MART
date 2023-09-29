@@ -6,15 +6,46 @@
 
 from __future__ import annotations
 
+import abc
+from collections import OrderedDict
 from typing import Any, Iterable
 
 import torch
 
 
+class Function:
+    def __init__(self, order=0) -> None:
+        """A stackable function for Projector.
+
+        Args:
+            order (int, optional): The priority number. A smaller number makes a function run earlier than others in a sequence. Defaults to 0.
+        """
+        self.order = order
+
+    @abc.abstractmethod
+    def __call__(self, perturbation, input, target) -> None:
+        """It returns None because we only perform non-differentiable in-place operations."""
+        pass
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}()"
+
+
 class Projector:
     """A projector modifies nn.Parameter's data."""
 
-    @torch.no_grad()
+    def __init__(self, functions: dict[str, Function] = {}) -> None:
+        """_summary_
+
+        Args:
+            functions (dict[str, Function]): A dictionary of functions for perturbation projection.
+        """
+        # Sort functions by function.order and the name.
+        self.functions_dict = OrderedDict(
+            sorted(functions.items(), key=lambda name_fn: (name_fn[1].order, name_fn[0]))
+        )
+        self.functions = list(self.functions_dict.values())
+
     def __call__(
         self,
         perturbation: torch.Tensor | Iterable[torch.Tensor],
@@ -45,42 +76,27 @@ class Projector:
         input: torch.Tensor | Iterable[torch.Tensor],
         target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
     ) -> None:
-        pass
-
-
-class Compose(Projector):
-    """Apply a list of perturbation modifier."""
-
-    def __init__(self, projectors: list[Projector]):
-        self.projectors = projectors
-
-    @torch.no_grad()
-    def __call__(
-        self,
-        perturbation: torch.Tensor | Iterable[torch.Tensor],
-        *,
-        input: torch.Tensor | Iterable[torch.Tensor],
-        target: torch.Tensor | Iterable[torch.Tensor] | Iterable[dict[str, Any]],
-        **kwargs,
-    ) -> None:
-        for projector in self.projectors:
-            projector(perturbation, input=input, target=target)
+        for function in self.functions:
+            # Some functions such as Mask need access to target["perturbable_mask"]
+            function(perturbation, input, target)
 
     def __repr__(self):
-        projector_names = [repr(p) for p in self.projectors]
-        return f"{self.__class__.__name__}({projector_names})"
+        function_names = [repr(p) for p in self.functions_dict]
+        return f"{self.__class__.__name__}({function_names})"
 
 
-class Range(Projector):
-    """Clamp the perturbation so that the output is range-constrained."""
+class Range(Function):
+    """Clamp the perturbation so that the output is range-constrained.
+
+    Maybe used in overlay composer.
+    """
 
     def __init__(self, quantize: bool = False, min: int | float = 0, max: int | float = 255):
         self.quantize = quantize
         self.min = min
         self.max = max
 
-    @torch.no_grad()
-    def project_(self, perturbation, *, input, target):
+    def __call__(self, perturbation, input, target):
         if self.quantize:
             perturbation.round_()
         perturbation.clamp_(self.min, self.max)
@@ -91,72 +107,47 @@ class Range(Projector):
         )
 
 
-class RangeAdditive(Projector):
-    """Clamp the perturbation so that the output is range-constrained.
-
-    The projector assumes an additive perturbation threat model.
-    """
-
-    def __init__(self, quantize: bool = False, min: int | float = 0, max: int | float = 255):
-        self.quantize = quantize
-        self.min = min
-        self.max = max
-
-    @torch.no_grad()
-    def project_(self, perturbation, *, input, target):
-        if self.quantize:
-            perturbation.round_()
-        perturbation.clamp_(self.min - input, self.max - input)
-
-    def __repr__(self):
-        return (
-            f"{self.__class__.__name__}(quantize={self.quantize}, min={self.min}, max={self.max})"
-        )
-
-
-class Lp(Projector):
+class Lp(Function):
     """Project perturbations to Lp norm, only if the Lp norm is larger than eps."""
 
-    def __init__(self, eps: int | float, p: int | float = torch.inf):
+    def __init__(self, eps: int | float, p: int | float = torch.inf, *args, **kwargs):
         """_summary_
 
         Args:
             eps (float): The max norm.
             p (float): The p in L-p norm, which must be positive.. Defaults to torch.inf.
         """
+        super().__init__(*args, **kwargs)
 
         self.p = p
         self.eps = eps
 
-    @torch.no_grad()
-    def project_(self, perturbation, *, input, target):
-        pert_norm = perturbation.norm(p=self.p)
-        if pert_norm > self.eps:
-            # We only upper-bound the norm.
-            perturbation.mul_(self.eps / pert_norm)
+    @staticmethod
+    def linf(x, p, eps):
+        x.clamp_(min=-eps, max=eps)
+
+    @staticmethod
+    def lp(x, p, eps):
+        x_norm = x.norm(p=p)
+        if x_norm > eps:
+            x.mul_(eps / x_norm)
+
+    def __call__(self, perturbation, input, target):
+        if self.p == torch.inf:
+            method = self.linf
+        elif self.p == 0:
+            raise NotImplementedError("L-0 projection is not implemented.")
+        else:
+            method = self.lp
+
+        method(perturbation, self.p, self.eps)
 
 
-class LinfAdditiveRange(Projector):
-    """Make sure the perturbation is within the Linf norm ball, and "input + perturbation" is
-    within the [min, max] range."""
+# TODO: We may move the mask projection to Initialzier, if we also have mask in composer, because no gradient to update the masked pixels.
+class Mask(Function):
+    def __init__(self, *args, key="perturbable_mask", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.key = key
 
-    def __init__(self, eps: int | float, min: int | float = 0, max: int | float = 255):
-        self.eps = eps
-        self.min = min
-        self.max = max
-
-    @torch.no_grad()
-    def project_(self, perturbation, *, input, target):
-        eps_min = (input - self.eps).clamp(self.min, self.max) - input
-        eps_max = (input + self.eps).clamp(self.min, self.max) - input
-
-        perturbation.clamp_(eps_min, eps_max)
-
-
-class Mask(Projector):
-    @torch.no_grad()
-    def project_(self, perturbation, *, input, target):
-        perturbation.mul_(target["perturbable_mask"])
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}()"
+    def __call__(self, perturbation, input, target):
+        perturbation.mul_(target[self.key])

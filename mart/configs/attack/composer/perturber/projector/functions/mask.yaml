@@ -1,0 +1,4 @@
+mask:
+  _target_: mart.attack.projector.Mask
+  order: 0
+  key: perturbable_mask
