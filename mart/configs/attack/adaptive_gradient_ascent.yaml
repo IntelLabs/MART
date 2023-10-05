@@ -1,0 +1,23 @@
+defaults:
+  - /optimization@: adaptive_sgd
+
+optimizer:
+  # Change the optimizer borrowed from training LitModular.
+  maximize: True
+  lr: ${..lr}
+
+lr_scheduler:
+  # The adaptive learning rate scheduler monitors some variable and adapt to it.
+  monitor: ???
+  scheduler:
+    # learning rate divided by 2
+    factor: 0.5
+    # minimum learning rate 1/255
+    min_lr: 1
+    # Set verbose true to debug the learning rate.
+    verbose: true
+    # We usually try to maximize something in Adversary.
+    mode: max
+
+max_iters: ???
+lr: ???
