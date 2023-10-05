@@ -13,6 +13,7 @@ from lightning.pytorch import LightningModule
 from ..nn import SequentialDict
 from ..optim import OptimizerFactory
 from ..utils import flatten_dict
+from ..utils.optimization import configure_optimizers
 
 logger = logging.getLogger(__name__)
 
@@ -108,20 +109,8 @@ class LitModular(LightningModule):
         self.output_target_key = output_target_key
 
     def configure_optimizers(self):
-        config = {}
-        config["optimizer"] = self.optimizer_fn(self.model)
 
-        if self.lr_scheduler is not None:
-            # FIXME: I don't think this actually work correctly, but we don't have an example of an lr_scheduler that is not a DictConfig
-            if "scheduler" in self.lr_scheduler:
-                config["lr_scheduler"] = dict(self.lr_scheduler)
-                config["lr_scheduler"]["scheduler"] = config["lr_scheduler"]["scheduler"](
-                    config["optimizer"]
-                )
-            else:
-                config["lr_scheduler"] = self.lr_scheduler(config["optimizer"])
-
-        return config
+        return configure_optimizers(self.model, self.optimizer_fn, self.lr_scheduler)
 
     def forward(self, **kwargs):
         return self.model(**kwargs)
