@@ -16,6 +16,7 @@ import torch
 from mart.utils import silent
 
 from ..optim import OptimizerFactory
+from ..utils.optimization import configure_optimizers
 
 if TYPE_CHECKING:
     from .composer import Composer
@@ -35,6 +36,7 @@ class Adversary(pl.LightningModule):
         *,
         composer: Composer,
         optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
+        lr_scheduler: dict | None = None,
         gain: Gain,
         gradient_modifier: GradientModifier | None = None,
         objective: Objective | None = None,
@@ -47,6 +49,7 @@ class Adversary(pl.LightningModule):
         Args:
             composer (Composer): A MART Composer.
             optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A MART OptimizerFactory or partial that returns an Optimizer when given params.
+            lr_scheduler (dict): A dictionary for learning rate scheduling in PyTorch Lightning.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
@@ -65,6 +68,7 @@ class Adversary(pl.LightningModule):
         # and DDP won't try to get the uninitialized parameters of perturbation.
         self._composer = [composer]
         self.optimizer = optimizer
+        self.lr_scheduler = lr_scheduler
         if not isinstance(self.optimizer, OptimizerFactory):
             self.optimizer = OptimizerFactory(self.optimizer)
         self.gain_fn = gain
@@ -104,7 +108,7 @@ class Adversary(pl.LightningModule):
         return self._composer[0]
 
     def configure_optimizers(self):
-        return self.optimizer(self.composer)
+        return configure_optimizers(self.composer, self.optimizer, self.lr_scheduler)
 
     def training_step(self, batch_and_model, batch_idx):
         input, target, model = batch_and_model

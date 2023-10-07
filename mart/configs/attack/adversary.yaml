@@ -6,6 +6,7 @@ _target_: mart.attack.Adversary
 _convert_: all
 optimizer:
   maximize: True
+lr_scheduler: null
 gain: ???
 gradient_modifier: null
 objective: null
