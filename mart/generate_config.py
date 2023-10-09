@@ -4,40 +4,41 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-import os
+from __future__ import annotations
 
 import fire
-from hydra import compose, initialize_config_dir
 from omegaconf import OmegaConf
 
+from .utils.config import (
+    DEFAULT_CONFIG_DIR,
+    DEFAULT_CONFIG_NAME,
+    DEFAULT_VERSION_BASE,
+    compose,
+)
 
-def generate(
+
+def main(
     *overrides,
-    version_base: str = "1.2",
-    config_dir: str = "configs",
-    config_name: str = "lightning.yaml",
-    export_node: str = None,
+    version_base: str = DEFAULT_VERSION_BASE,
+    config_dir: str = DEFAULT_CONFIG_DIR,
+    config_name: str = DEFAULT_CONFIG_NAME,
+    export_node: str | None = None,
     resolve: bool = False,
+    sort_keys: bool = True,
 ):
-    # An absolute path {config_dir} is added to the search path of configs, preceding those in mart.configs.
-    if not os.path.isabs(config_dir):
-        config_dir = os.path.abspath(config_dir)
+    cfg = compose(
+        *overrides,
+        version_base=version_base,
+        config_dir=config_dir,
+        config_name=config_name,
+        export_node=export_node,
+    )
 
-    with initialize_config_dir(version_base=version_base, config_dir=config_dir):
-        cfg = compose(config_name=config_name, overrides=overrides)
+    cfg_yaml = OmegaConf.to_yaml(cfg, resolve=resolve, sort_keys=sort_keys)
 
-        # Export a sub-tree.
-        if export_node is not None:
-            for key in export_node.split("."):
-                cfg = cfg[key]
-
-        # Resolve all interpolation in the sub-tree.
-        if resolve:
-            OmegaConf.resolve(cfg)
-
-        # OmegaConf.to_yaml() already ends with `\n`.
-        print(OmegaConf.to_yaml(cfg), end="")
+    # OmegaConf.to_yaml() already ends with `\n`.
+    print(cfg_yaml, end="")
 
 
 if __name__ == "__main__":
-    fire.Fire(generate)
+    fire.Fire(main)
