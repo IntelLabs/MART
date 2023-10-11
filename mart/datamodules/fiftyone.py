@@ -68,6 +68,12 @@ class FiftyOneDataset(VisionDataset_):
         # extract samples' IDs
         self.ids = self.filtered_dataset.values("id")
 
+        # coco_id is a separate and optional field in FiftyOne.
+        if self.filtered_dataset.has_field("coco_id"):
+            self.coco_ids = self.filtered_dataset.values("coco_id")
+        else:
+            self.coco_ids = range(len(self.filtered_dataset))
+
         # set classes
         self.classes = self.filtered_dataset.default_classes
         self.labels_map_rev = {c: i for i, c in enumerate(self.classes)}
@@ -84,7 +90,7 @@ class FiftyOneDataset(VisionDataset_):
         img = Image.open(image_path).convert("RGB")
 
         target = {}
-        target["image_id"] = index
+        target["image_id"] = self.coco_ids[index]
         target["file_name"] = image_path.name
         target["annotations"] = []
 
