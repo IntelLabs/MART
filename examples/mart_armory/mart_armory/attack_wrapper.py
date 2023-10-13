@@ -48,7 +48,13 @@ class MartAttack:
         self.adversary.to(self.device)
 
         # model_transform
-        self.model = self.model_transform(model)
+        self.model_transformed = self.model_transform(model)
+
+    def model(self, input, target):
+        # Wrap a model for the Adversary which works with the canonical (input, target) format.
+        batch = self.batch_c15n.revert(input, target)
+        output = self.model_transformed(*batch)
+        return output
 
     def generate(self, **batch_armory_np):
         # Armory format -> torchvision format
