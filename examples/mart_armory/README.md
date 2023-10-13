@@ -8,7 +8,7 @@ pip install 'git+https://github.com/IntelLabs/MART.git@example_armory_attack#egg
 
 ## Usage
 
-1. Generate a YAML configuration of attack.
+1. Generate a YAML configuration of attack, using Adam as the optimizer.
 
 ```shell
 python -m mart.generate_config \
@@ -17,9 +17,11 @@ python -m mart.generate_config \
 batch_converter=object_detection \
 batch_c15n=data_coco \
 attack=[object_detection_mask_adversary] \
+attack.optimizer.optimizer.path=torch.optim.Adam \
+~attack.optimizer.momentum \
 attack.objective=null \
-attack.max_iters=10 \
-attack.lr=26 \
+attack.max_iters=500 \
+attack.lr=13 \
 model_transform=armory_objdet \
 > path/to/attack.yaml
 ```
