@@ -11,7 +11,8 @@ authors = [
 requires-python = ">=3.9"
 
 dependencies = [
-  "mart@git+https://github.com/IntelLabs/MART.git@example_armory_attack",
+  # We recommend you to install MART in the editable during the development phase.
+  # "mart@git+https://github.com/IntelLabs/MART.git@example_armory_attack",
 ]
 
 [project.urls]
