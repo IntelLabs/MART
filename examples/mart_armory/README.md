@@ -17,6 +17,7 @@ python -m mart.generate_config \
 batch_converter=object_detection \
 batch_c15n=data_coco \
 attack=[object_detection_mask_adversary] \
++attack.precision=16 \
 attack.optimizer.optimizer.path=torch.optim.Adam \
 ~attack.optimizer.momentum \
 attack.objective=null \
