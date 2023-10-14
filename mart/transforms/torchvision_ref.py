@@ -59,12 +59,12 @@ class ConvertCocoPolysToMask:
         classes = torch.tensor(classes, dtype=torch.int64)
 
         masks = None
-        if anno and "segmentation" in anno[0]:
+        if len(anno) > 0 and "segmentation" in anno[0]:
             segmentations = [obj["segmentation"] for obj in anno]
             masks = convert_coco_poly_to_mask(segmentations, h, w)
 
         keypoints = None
-        if anno and "keypoints" in anno[0]:
+        if len(anno) > 0 and "keypoints" in anno[0]:
             keypoints = [obj["keypoints"] for obj in anno]
             keypoints = torch.as_tensor(keypoints, dtype=torch.float32)
             num_keypoints = keypoints.shape[0]
