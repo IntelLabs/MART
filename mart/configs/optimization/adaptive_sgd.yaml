@@ -1,0 +1,11 @@
+# @package model
+defaults:
+  - /optimizer@optimizer: sgd
+  - lr_scheduler/scheduler: reduced_lr_on_plateau
+
+optimizer: ???
+
+lr_scheduler:
+  interval: step
+  frequency: 1
+  monitor: ???

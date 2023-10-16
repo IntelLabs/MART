@@ -58,11 +58,13 @@ class ConvertCocoPolysToMask:
         classes = [obj["category_id"] for obj in anno]
         classes = torch.tensor(classes, dtype=torch.int64)
 
-        segmentations = [obj["segmentation"] for obj in anno]
-        masks = convert_coco_poly_to_mask(segmentations, h, w)
+        masks = None
+        if len(anno) > 0 and "segmentation" in anno[0]:
+            segmentations = [obj["segmentation"] for obj in anno]
+            masks = convert_coco_poly_to_mask(segmentations, h, w)
 
         keypoints = None
-        if anno and "keypoints" in anno[0]:
+        if len(anno) > 0 and "keypoints" in anno[0]:
             keypoints = [obj["keypoints"] for obj in anno]
             keypoints = torch.as_tensor(keypoints, dtype=torch.float32)
             num_keypoints = keypoints.shape[0]
@@ -72,14 +74,16 @@ class ConvertCocoPolysToMask:
         keep = (boxes[:, 3] > boxes[:, 1]) & (boxes[:, 2] > boxes[:, 0])
         boxes = boxes[keep]
         classes = classes[keep]
-        masks = masks[keep]
+        if masks is not None:
+            masks = masks[keep]
         if keypoints is not None:
             keypoints = keypoints[keep]
 
         target = {}
         target["boxes"] = boxes
         target["labels"] = classes
-        target["masks"] = masks
+        if masks is not None:
+            target["masks"] = masks
         target["image_id"] = image_id
         target["file_name"] = file_name
         if keypoints is not None:
