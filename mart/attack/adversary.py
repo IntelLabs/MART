@@ -92,6 +92,7 @@ class Adversary(pl.LightningModule):
                 # We should disable progress bar in the progress_bar callback config if needed.
                 enable_progress_bar=True,
                 # detect_anomaly=True,
+                precision=kwargs.pop("precision", "32-true"),
             )
 
         else:
