@@ -11,8 +11,8 @@ authors = [
 requires-python = ">=3.9"
 
 dependencies = [
-  "torch ~= 2.0.1",
-  "torchvision ~= 0.15.2",
+  "torch ~= 2.1",
+  "torchvision ~= 0.16",
   "lightning[extra] ~= 2.0.5", # Full functionality including TensorboardX.
   "pydantic == 1.10.11", # https://github.com/Lightning-AI/lightning/pull/18022/files
   "torchmetrics == 1.0.1",
