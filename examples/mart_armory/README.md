@@ -18,7 +18,7 @@ mkdir ~/coder; cd ~/coder
 
 git clone https://github.com/twosixlabs/armory.git
 # Make sure we are on the same page.
-cd armory; git checkout 4a5e808bfa02952618da9ca7d5ae06f793775a11; cd ..
+cd armory; git checkout tags/v0.19.0 -b r0.19.0; cd ..
 
 git clone https://github.com/IntelLabs/MART.git -b example_armory_attack
 ```
@@ -51,14 +51,6 @@ True
 > You may need to install a different PyTorch distribution if your CUDA is not 12.0.
 
 > Here's my `nvidia-smi` output: `| NVIDIA-SMI 525.125.06   Driver Version: 525.125.06   CUDA Version: 12.0     |`
-
-*Optional*: Apply a patch so we can run the ART-based attack in PyTorch 2.0+ for comparison.
-
-```shell
-sed -i \
-'s/x_tensor.requires_grad = True/if not x_tensor.requires_grad:\n                    x_tensor.requires_grad = True/g' \
-.venv/lib/python3.9/site-packages/art/estimators/object_detection/pytorch_object_detector.py
-```
 
 ## Usage
 
