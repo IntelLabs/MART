@@ -62,7 +62,11 @@ python -m mart.generate_config \
 --config_name=assemble_attack.yaml \
 batch_converter=object_detection \
 batch_c15n=data_coco \
-attack=[adversary,gradient_ascent] \
+attack=adversary \
++optimizer@attack.optimizer=sgd \
+attack.optimizer.maximize=true \
++attack.optimizer.lr=13 \
++attack.max_iters=500 \
 +attack/composer/perturber/projector=mask_range \
 +attack/enforcer=default \
 +attack/enforcer/constraints=[mask,pixel_range] \
@@ -76,8 +80,6 @@ attack.composer.perturber.initializer.min=0 \
 attack.optimizer.optimizer.path=torch.optim.Adam \
 ~attack.optimizer.momentum \
 attack.objective=null \
-attack.max_iters=500 \
-attack.lr=13 \
 model_transform=armory_objdet \
 > mart_objdet_attack_adam500.yaml
 ```
