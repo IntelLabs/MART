@@ -62,7 +62,10 @@ python -m mart.generate_config \
 --config_name=assemble_attack.yaml \
 batch_converter=object_detection \
 batch_c15n=data_coco \
-attack=[adversary,gradient_ascent,mask] \
+attack=[adversary,gradient_ascent] \
++attack/composer/perturber/projector=mask_range \
++attack/enforcer=default \
++attack/enforcer/constraints=[mask,pixel_range] \
 +attack/composer/perturber/initializer=uniform \
 attack.composer.perturber.initializer.max=255 \
 attack.composer.perturber.initializer.min=0 \
