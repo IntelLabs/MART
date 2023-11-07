@@ -1,0 +1,9 @@
+# @package _global_
+
+# specify here default training configuration
+defaults:
+  - _self_
+  - attack: ???
+  - batch_converter: ???
+  - batch_c15n: ???
+  - model_transform: ???
