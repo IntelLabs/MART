@@ -62,7 +62,13 @@ python -m mart.generate_config \
 --config_name=assemble_attack.yaml \
 batch_converter=object_detection \
 batch_c15n=data_coco \
-attack=[object_detection_mask_adversary] \
+attack=[adversary,gradient_ascent,mask] \
++attack/composer/perturber/initializer=uniform \
+attack.composer.perturber.initializer.max=255 \
+attack.composer.perturber.initializer.min=0 \
++attack/composer/functions=overlay \
++attack/gradient_modifier=sign \
++attack/gain=rcnn_training_loss \
 +attack.precision=16 \
 attack.optimizer.optimizer.path=torch.optim.Adam \
 ~attack.optimizer.momentum \
