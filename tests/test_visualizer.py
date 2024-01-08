@@ -26,15 +26,17 @@ def test_visualizer_run_end(input_data, target_data, perturbation, tmp_path):
         result = [sample + perturbation_255 for sample in input]
         return result
 
-    trainer = Mock()
-    model = Mock(composer=Mock(return_value=perturb(input_list)))
-    outputs = Mock()
-    batch = {"input": input_list, "target": target_list}
     adversary = Mock(spec=Adversary, side_effect=perturb)
+    trainer = Mock()
+    outputs = Mock()
+    target_model = Mock()
+
+    # Canonical batch in Adversary.
+    batch = (input_list, target_list, target_model)
 
     visualizer = PerturbedImageVisualizer(folder)
-    visualizer.on_train_batch_end(trainer, model, outputs, batch, 0)
-    visualizer.on_train_end(trainer, model)
+    visualizer.on_train_batch_end(trainer, adversary, outputs, batch, 0)
+    visualizer.on_train_end(trainer, adversary)
 
     # verify that the visualizer created the JPG file
     expected_output_path = folder / target_data["file_name"]

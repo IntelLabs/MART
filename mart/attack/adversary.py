@@ -16,7 +16,7 @@ import torch
 from mart.utils import silent
 
 from ..optim import OptimizerFactory
-from ..utils import MonkeyPatch
+from ..utils.optimization import configure_optimizers
 
 if TYPE_CHECKING:
     from .composer import Composer
@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from .gain import Gain
     from .gradient_modifier import GradientModifier
     from .objective import Objective
-    from .perturber import Perturber
 
 __all__ = ["Adversary"]
 
@@ -35,9 +34,9 @@ class Adversary(pl.LightningModule):
     def __init__(
         self,
         *,
-        perturber: Perturber,
         composer: Composer,
         optimizer: OptimizerFactory | Callable[[Any], torch.optim.Optimizer],
+        lr_scheduler: dict | None = None,
         gain: Gain,
         gradient_modifier: GradientModifier | None = None,
         objective: Objective | None = None,
@@ -48,9 +47,9 @@ class Adversary(pl.LightningModule):
         """_summary_
 
         Args:
-            perturber (Perturber): A MART Perturber.
             composer (Composer): A MART Composer.
             optimizer (OptimizerFactory | Callable[[Any], torch.optim.Optimizer]): A MART OptimizerFactory or partial that returns an Optimizer when given params.
+            lr_scheduler (dict): A dictionary for learning rate scheduling in PyTorch Lightning.
             gain (Gain): An adversarial gain function, which is a differentiable estimate of adversarial objective.
             gradient_modifier (GradientModifier): To modify the gradient of perturbation.
             objective (Objective): A function for computing adversarial objective, which returns True or False. Optional.
@@ -65,11 +64,11 @@ class Adversary(pl.LightningModule):
             lambda state_dict, *args, **kwargs: state_dict.clear()
         )
 
-        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
+        # Hide the composer module in a list, so that perturbation is not exported as a parameter in the model checkpoint.
         # and DDP won't try to get the uninitialized parameters of perturbation.
-        self._perturber = [perturber]
-        self.composer = composer
+        self._composer = [composer]
         self.optimizer = optimizer
+        self.lr_scheduler = lr_scheduler
         if not isinstance(self.optimizer, OptimizerFactory):
             self.optimizer = OptimizerFactory(self.optimizer)
         self.gain_fn = gain
@@ -93,6 +92,7 @@ class Adversary(pl.LightningModule):
                 # We should disable progress bar in the progress_bar callback config if needed.
                 enable_progress_bar=True,
                 # detect_anomaly=True,
+                precision=kwargs.pop("precision", "32-true"),
             )
 
         else:
@@ -103,13 +103,13 @@ class Adversary(pl.LightningModule):
             assert self._attacker.limit_train_batches > 0
 
     @property
-    def perturber(self) -> Perturber:
-        # Hide the perturber module in a list, so that perturbation is not exported as a parameter in the model checkpoint,
+    def composer(self) -> Composer:
+        # Hide the composer module in a list, so that perturbation is not exported as a parameter in the model checkpoint,
         # and DDP won't try to get the uninitialized parameters of perturbation.
-        return self._perturber[0]
+        return self._composer[0]
 
     def configure_optimizers(self):
-        return self.optimizer(self.perturber)
+        return configure_optimizers(self.composer, self.optimizer, self.lr_scheduler)
 
     def training_step(self, batch_and_model, batch_idx):
         input, target, model = batch_and_model
@@ -157,7 +157,7 @@ class Adversary(pl.LightningModule):
         batch_and_model = (input, target, model)
 
         # Configure and reset perturbation for current inputs
-        self.perturber.configure_perturbation(input)
+        self.composer.configure_perturbation(input)
 
         # Attack, aka fit a perturbation, for one epoch by cycling over the same input batch.
         # We use Trainer.limit_train_batches to control the number of attack iterations.
@@ -166,8 +166,7 @@ class Adversary(pl.LightningModule):
 
     def forward(self, input, target):
         """Compose adversarial examples and enforce the threat model."""
-        perturbation = self.perturber(input=input, target=target)
-        input_adv = self.composer(perturbation, input=input, target=target)
+        input_adv = self.composer(input=input, target=target)
 
         if self.enforcer is not None:
             self.enforcer(input_adv, input=input, target=target)

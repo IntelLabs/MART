@@ -16,6 +16,10 @@ from torchvision.datasets import VisionDataset as VisionDataset_
 
 logger = logging.getLogger(__name__)
 try:
+    # Disable the FiftyOne tracker by default due to the privacy concern.
+    # Users need to export FIFTYONE_DO_NOT_TRACK=0 if they intend to be tracked.
+    if os.getenv("FIFTYONE_DO_NOT_TRACK") is None:
+        os.environ["FIFTYONE_DO_NOT_TRACK"] = "1"
     import fiftyone as fo
     import fiftyone.utils.coco as fouc
 except ImportError:
@@ -64,6 +68,11 @@ class FiftyOneDataset(VisionDataset_):
         # extract samples' IDs
         self.ids = self.filtered_dataset.values("id")
 
+        # coco_id is a separate and optional field in FiftyOne.
+        self.idx_to_coco_id = range(len(self.filtered_dataset))
+        if self.filtered_dataset.has_field("coco_id"):
+            self.idx_to_coco_id = self.filtered_dataset.values("coco_id")
+
         # set classes
         self.classes = self.filtered_dataset.default_classes
         self.labels_map_rev = {c: i for i, c in enumerate(self.classes)}
@@ -80,7 +89,7 @@ class FiftyOneDataset(VisionDataset_):
         img = Image.open(image_path).convert("RGB")
 
         target = {}
-        target["image_id"] = index
+        target["image_id"] = self.idx_to_coco_id[index]
         target["file_name"] = image_path.name
         target["annotations"] = []
 

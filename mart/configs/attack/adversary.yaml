@@ -1,12 +1,12 @@
 defaults:
   - /callbacks@callbacks: [progress_bar]
+  - composer: default
 
 _target_: mart.attack.Adversary
 _convert_: all
-perturber: ???
-composer: ???
 optimizer:
   maximize: True
+lr_scheduler: null
 gain: ???
 gradient_modifier: null
 objective: null
