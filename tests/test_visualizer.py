@@ -22,9 +22,9 @@ def test_visualizer_run_end(input_data, target_data, perturbation, tmp_path):
     target_list = [target_data]
 
     # simulate an addition perturbation
-    def perturb(input):
+    def perturb(input, target):
         result = [sample + perturbation_255 for sample in input]
-        return result
+        return result, target
 
     adversary = Mock(spec=Adversary, side_effect=perturb)
     trainer = Mock()
