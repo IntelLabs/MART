@@ -1,0 +1,5 @@
+# Scale pixel input in the range of [0,1] to [0,255] for Adversary.
+defaults:
+  - tuple
+  - transform: times_255_and_round
+  - transform@untransform: divided_by_255

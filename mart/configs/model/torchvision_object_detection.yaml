@@ -12,13 +12,6 @@ test_sequence: ???
 output_preds_key: "losses_and_detections.eval"
 
 modules:
-  preprocessor:
-    _target_: mart.transforms.TupleTransforms
-    transforms:
-      _target_: torchvision.transforms.Normalize
-      mean: 0
-      std: 255
-
   losses_and_detections:
     # Return losses in the training mode and predictions in the eval mode in one pass.
     _target_: mart.models.DualMode
