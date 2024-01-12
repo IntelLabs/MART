@@ -1,3 +1,2 @@
 additive:
   _target_: mart.attack.composer.Additive
-  order: 0

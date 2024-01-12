@@ -2,4 +2,9 @@ defaults:
   - perturber: default
 
 _target_: mart.attack.Composer
-functions: ???
+modules:
+  ???
+  # Example: additive, mask, overlay
+sequence:
+  ???
+  # Wire modules, with input,
