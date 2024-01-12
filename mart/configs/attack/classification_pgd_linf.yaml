@@ -2,7 +2,7 @@ defaults:
   - adversary
   - pgd
   - linf
-  - composer/functions: additive
+  - composer: additive
   - gradient_modifier: sign
   - gain: cross_entropy
   - objective: misclassification
