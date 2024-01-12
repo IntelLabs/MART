@@ -1,9 +1,9 @@
 defaults:
   - default
-  - functions: [mask, additive]
+  - modules: [mask, additive]
 
-functions:
-  mask:
-    order: 0
-  additive:
-    order: 1
+sequence:
+  seq010:
+    mask: [perturbation, target.perturbable_mask]
+  seq020:
+    additive: [mask, input]
