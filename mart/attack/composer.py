@@ -6,37 +6,20 @@
 
 from __future__ import annotations
 
-import abc
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Iterable
 
 import torch
 
+from mart.nn import SequentialDict
+
 if TYPE_CHECKING:
     from .perturber import Perturber
 
-
-class Function(torch.nn.Module):
-    def __init__(self, *args, order=0, **kwargs) -> None:
-        """A stackable function for Composer.
-
-        Args:
-            order (int, optional): The priority number. A smaller number makes a function run earlier than others in a sequence. Defaults to 0.
-        """
-        super().__init__(*args, **kwargs)
-        self.order = order
-
-    @abc.abstractmethod
-    def forward(
-        self, perturbation: torch.Tensor, input: torch.Tensor, target: torch.Tensor | dict
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | dict]:
-        """Returns the modified perturbation, modified input and target, so we can chain Functions
-        in a Composer."""
-        pass
+__all__ = ["Composer"]
 
 
 class Composer(torch.nn.Module):
-    def __init__(self, perturber: Perturber, functions: dict[str, Function]) -> None:
+    def __init__(self, perturber: Perturber, modules, sequence) -> None:
         """_summary_
 
         Args:
@@ -47,11 +30,10 @@ class Composer(torch.nn.Module):
 
         self.perturber = perturber
 
-        # Sort functions by function.order and the name.
-        self.functions_dict = OrderedDict(
-            sorted(functions.items(), key=lambda name_fn: (name_fn[1].order, name_fn[0]))
-        )
-        self.functions = list(self.functions_dict.values())
+        # Convert dict sequences to list sequences by sorting keys
+        if isinstance(sequence, dict):
+            sequence = [sequence[key] for key in sorted(sequence)]
+        self.functions = SequentialDict(modules, {"composer": sequence})
 
     def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
         return self.perturber.configure_perturbation(input)
@@ -89,43 +71,39 @@ class Composer(torch.nn.Module):
         input: torch.Tensor,
         target: torch.Tensor | dict[str, Any],
     ) -> torch.Tensor:
-        for function in self.functions:
-            perturbation, input, target = function(perturbation, input, target)
+        # A computational graph in SequentialDict().
+        output = self.functions(
+            input=input, target=target, perturbation=perturbation, step="composer"
+        )
+
+        # SequentialDict returns a dictionary DotDict,
+        #  but we only need the return value of the most recently executed module.
+        last_added_key = next(reversed(output))
+        output = output[last_added_key]
 
         # Return the composed input.
+        return output
+
+
+class Additive(torch.nn.Module):
+    """We assume an adversary adds perturbation to the input."""
+
+    def forward(self, perturbation, input):
+        input = input + perturbation
         return input
 
 
-class Additive(Function):
-    """We assume an adversary adds perturbation to the input."""
-
-    def forward(self, perturbation, input, target):
-        input = input + perturbation
-        return perturbation, input, target
-
-
-class Mask(Function):
-    def __init__(self, *args, key="perturbable_mask", **kwargs):
-        super().__init__(*args, **kwargs)
-        self.key = key
-
-    def forward(self, perturbation, input, target):
-        mask = target[self.key]
+class Mask(torch.nn.Module):
+    def forward(self, perturbation, mask):
         perturbation = perturbation * mask
-        return perturbation, input, target
+        return perturbation
 
 
-class Overlay(Function):
+class Overlay(torch.nn.Module):
     """We assume an adversary overlays a patch to the input."""
 
-    def __init__(self, *args, key="perturbable_mask", **kwargs):
-        super().__init__(*args, **kwargs)
-        self.key = key
-
-    def forward(self, perturbation, input, target):
+    def forward(self, perturbation, input, mask):
         # True is mutable, False is immutable.
-        mask = target[self.key]
-
         # Convert mask to a Tensor with same torch.dtype and torch.device as input,
         #   because some data modules (e.g. Armory) gives binary mask.
         mask = mask.to(input)
@@ -133,4 +111,4 @@ class Overlay(Function):
         perturbation = perturbation * mask
 
         input = input * (1 - mask) + perturbation
-        return perturbation, input, target
+        return input

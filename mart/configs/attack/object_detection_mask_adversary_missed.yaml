@@ -2,8 +2,8 @@ defaults:
   - adversary
   - gradient_ascent
   - mask
+  - composer: overlay
   - composer/perturber/initializer: constant
-  - composer/functions: overlay
   - gradient_modifier: sign
   - gain: rcnn_class_background
   - objective: object_detection_missed

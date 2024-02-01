@@ -1,0 +1,7 @@
+defaults:
+  - default
+  - modules: [additive]
+
+sequence:
+  seq010:
+    additive: [perturbation, input]

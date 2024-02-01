@@ -1,4 +1,2 @@
 overlay:
   _target_: mart.attack.composer.Overlay
-  key: perturbable_mask
-  order: 0
