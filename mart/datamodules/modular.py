@@ -132,3 +132,9 @@ class LitDataModule(pl.LightningDataModule):
             collate_fn=self.collate_fn,
             **kwargs,
         )
+
+    def teardown(self, *, stage):
+        # Run teardown if dataset has it.
+        # An interactive dataset may have threads that we need to teardown.
+        if stage == "test" and hasattr(self.test_dataset, "teardown"):
+            self.test_dataset.teardown()
