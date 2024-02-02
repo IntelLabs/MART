@@ -13,9 +13,9 @@ import torch
 from mart.nn import SequentialDict
 
 if TYPE_CHECKING:
-    from .perturber import Perturber
+    from ..perturber import Perturber
 
-__all__ = ["Composer"]
+__all__ = ["Composer", "Additive", "Mask", "Overlay"]
 
 
 class Composer(torch.nn.Module):
