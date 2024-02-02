@@ -1,0 +1,38 @@
+defaults:
+  - default.yaml
+
+train_dataset: null
+
+val_dataset: null
+
+test_dataset:
+  _target_: oscar_datagen_tools.dataset.dataset.CarlaDataset
+  root: ???
+  modality: "rgb"
+  annFile: ${.root}/kwcoco_annotations.json
+  num_insertion_ticks: 50
+  localhost: true
+  overrides: []
+  transforms:
+    _target_: mart.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.ConvertCocoPolysToMask
+      - _target_: mart.transforms.LoadPerturbableMask
+        perturb_mask_folder: ${....root}/foreground_mask/
+      - _target_: mart.transforms.LoadCoords
+        folder: ${....root}/patch_metadata/
+      - _target_: mart.transforms.Denormalize
+        center: 0
+        scale: 255
+      - _target_: torch.fake_quantize_per_tensor_affine
+        _partial_: true
+        # (x/1+0).round().clamp(0, 255) * 1
+        scale: 1
+        zero_point: 0
+        quant_min: 0
+        quant_max: 255
+
+collate_fn:
+  _target_: hydra.utils.get_method
+  path: mart.datamodules.coco.collate_fn
