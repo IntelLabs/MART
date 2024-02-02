@@ -8,6 +8,7 @@ import logging
 import os
 from typing import Dict, Optional, Tuple
 
+import numpy as np
 import torch
 from PIL import Image, ImageOps
 from torch import Tensor
@@ -26,6 +27,7 @@ __all__ = [
     "Lambda",
     "SplitLambda",
     "LoadPerturbableMask",
+    "LoadCoords",
     "ConvertInstanceSegmentationToPerturbable",
     "RandomHorizontalFlip",
     "ConvertCocoPolysToMask",
@@ -136,6 +138,25 @@ class LoadPerturbableMask(ExTransform):
         perturbable_mask = self.to_tensor(im)[0]
         # Convert to float to be differentiable.
         target["perturbable_mask"] = perturbable_mask
+        return image, target
+
+
+class LoadCoords(ExTransform):
+    """Load perturbable masks and add to target."""
+
+    def __init__(self, folder) -> None:
+        self.folder = folder
+        self.to_tensor = T.ToTensor()
+
+    def __call__(self, image, target):
+        file_name = os.path.splitext(target["file_name"])[0]
+        coords_fname = f"{file_name}_coords.npy"
+        coords_fpath = os.path.join(self.folder, coords_fname)
+        coords = np.load(coords_fpath)
+
+        coords = self.to_tensor(coords)[0]
+        # Convert to float to be differentiable.
+        target["coords"] = coords
         return image, target
 
 
