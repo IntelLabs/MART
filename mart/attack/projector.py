@@ -131,7 +131,9 @@ class Lp(Projector):
     @torch.no_grad()
     def project_(self, perturbation, *, input, target):
         pert_norm = perturbation.norm(p=self.p)
-        if pert_norm > self.eps:
+        if self.p == torch.inf:
+            perturbation.clamp_(-self.eps, self.eps)
+        elif pert_norm > self.eps:
             # We only upper-bound the norm.
             perturbation.mul_(self.eps / pert_norm)
 
