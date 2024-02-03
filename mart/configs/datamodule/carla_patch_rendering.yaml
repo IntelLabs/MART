@@ -7,21 +7,19 @@ val_dataset: null
 
 test_dataset:
   _target_: oscar_datagen_tools.dataset.dataset.CarlaDataset
-  root: ???
+  simulation_run: ???
   modality: "rgb"
-  annFile: ${.root}/kwcoco_annotations.json
+  annFile: ${.simulation_run}/kwcoco_annotations.json
   num_insertion_ticks: 50
-  localhost: true
-  overrides: []
   transforms:
     _target_: mart.transforms.Compose
     transforms:
       - _target_: torchvision.transforms.ToTensor
       - _target_: mart.transforms.ConvertCocoPolysToMask
       - _target_: mart.transforms.LoadPerturbableMask
-        perturb_mask_folder: ${....root}/foreground_mask/
+        perturb_mask_folder: ${....simulation_run}/foreground_mask/
       - _target_: mart.transforms.LoadCoords
-        folder: ${....root}/patch_metadata/
+        folder: ${....simulation_run}/patch_metadata/
       - _target_: mart.transforms.Denormalize
         center: 0
         scale: 255
