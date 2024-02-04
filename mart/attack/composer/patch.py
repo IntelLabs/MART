@@ -10,7 +10,6 @@ import torch
 import torchvision.transforms.functional as F
 from torchvision.io import read_image
 
-
 __all__ = [
     "PertRectSize",
     "PertExtractRect",
