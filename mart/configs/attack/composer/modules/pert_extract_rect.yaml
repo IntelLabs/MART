@@ -1,0 +1,2 @@
+pert_extract_rect:
+  _target_: mart.attack.composer.PertExtractRect

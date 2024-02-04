@@ -1,0 +1,38 @@
+defaults:
+  - default.yaml
+
+train_dataset: null
+
+val_dataset: null
+
+test_dataset:
+  _target_: mart.datamodules.coco.CocoDetection
+  root: ???
+  annFile: ${.root}/kwcoco_annotations.json
+  modalities: ["rgb"]
+  transforms:
+    _target_: mart.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: mart.transforms.ConvertCocoPolysToMask
+      - _target_: mart.transforms.LoadPerturbableMask
+        perturb_mask_folder: ${....root}/foreground_mask/
+      - _target_: mart.transforms.LoadCoords
+        folder: ${....root}/patch_metadata/
+      - _target_: mart.transforms.Denormalize
+        center: 0
+        scale: 255
+      - _target_: torch.fake_quantize_per_tensor_affine
+        _partial_: true
+        # (x/1+0).round().clamp(0, 255) * 1
+        scale: 1
+        zero_point: 0
+        quant_min: 0
+        quant_max: 255
+
+num_workers: 0
+ims_per_batch: 1
+
+collate_fn:
+  _target_: hydra.utils.get_method
+  path: mart.datamodules.coco.collate_fn
