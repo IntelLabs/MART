@@ -1,0 +1,13 @@
+defaults:
+  - object_detection_lp_patch_adversary
+
+composer:
+  modules:
+    fake_renderer:
+      _target_: mart.attack.composer.FakeRenderer
+
+  sequence:
+    seq060:
+      # Ignore output from overlay.
+      fake_renderer:
+        ["pert_image_base", "pert_rect_perspective", "target.renderer"]

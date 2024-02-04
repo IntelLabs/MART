@@ -14,6 +14,7 @@ __all__ = [
     "PertRectSize",
     "PertExtractRect",
     "PertRectPerspective",
+    "FakeRenderer",
     "PertImageBase",
 ]
 
@@ -73,6 +74,29 @@ class PertRectPerspective(torch.nn.Module):
         )
 
         return perturbation
+
+
+class FakeRenderer(torch.nn.Module):
+    """Replace image with a re-rendered image, but keep the gradient on the perturbation."""
+
+    def forward(self, perturbation, input, renderer):
+        """Use the same perturbation and target.coordinates to re-render input in Simulation.
+
+        perturbation is the rectangular patch.     or a masked frame, with rectangular coordinates
+        in target, so we can extract the rectangle patch for rendering. input is the digitally
+        composed frame. target should include everything that needs to re-render a frame with the
+        perturbation.
+        """
+
+        with torch.no_grad():
+            input_rendered = renderer(perturbation)
+            input_rendered = input_rendered.clamp(0, 255)
+            delta = input_rendered - input
+
+        # Fake differentiable rendering, or BPDA, but keep the mask constraint.
+        input = input + delta
+
+        return input
 
 
 class PertImageBase(torch.nn.Module):

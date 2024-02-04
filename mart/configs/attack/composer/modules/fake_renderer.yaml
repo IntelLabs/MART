@@ -1,0 +1,2 @@
+fake_renderer:
+  _target_: mart.attack.composer.FakeRenderer
