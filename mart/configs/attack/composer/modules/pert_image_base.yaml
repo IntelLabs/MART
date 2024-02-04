@@ -1,0 +1,3 @@
+pert_image_base:
+  _target_: mart.attack.composer.PertImageBase
+  fpath: ???

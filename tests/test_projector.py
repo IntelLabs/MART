@@ -158,7 +158,7 @@ def test_compose(input_data, target_data):
     tensor.norm.return_value = 10
     compose(tensor, input=input_data, target=target_data)
 
-    # RangeProjector, RangeAdditiveProjector, and LinfAdditiveRangeProjector calls `clamp_`
-    assert tensor.clamp_.call_count == 3
-    # LpProjector and MaskProjector calls `mul_`
-    assert tensor.mul_.call_count == 2
+    # RangeProjector, RangeAdditiveProjector, LpProjector_inf, and LinfAdditiveRangeProjector calls `clamp_`
+    assert tensor.clamp_.call_count == 4
+    # MaskProjector calls `mul_`
+    assert tensor.mul_.call_count == 1

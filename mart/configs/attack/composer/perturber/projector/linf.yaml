@@ -1,0 +1,6 @@
+_target_: mart.attack.projector.Lp
+# p is actually torch.inf by default.
+p:
+  _target_: builtins.float
+  _args_: ["inf"]
+eps: ???

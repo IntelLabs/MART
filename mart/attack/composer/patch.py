@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import torch
 import torchvision.transforms.functional as F
+from torchvision.io import read_image
 
 __all__ = [
     "PertRectSize",
     "PertExtractRect",
     "PertRectPerspective",
+    "PertImageBase",
 ]
 
 
@@ -71,3 +73,44 @@ class PertRectPerspective(torch.nn.Module):
         )
 
         return perturbation
+
+
+class PertImageBase(torch.nn.Module):
+    """Resize an image and add to perturbation."""
+
+    def __init__(self, fpath):
+        super().__init__()
+        # RGBA -> RGB
+        self.image_orig = read_image(fpath)[:3, :, :]
+        self.image = None
+
+        # Project the result with the pixel value constraint.
+        self.image_clamp = FakeClamp(min=0, max=255)
+
+    def forward(self, perturbation):
+        # Initialize the image with new shape of perturbation.
+        if self.image is None or self.image.shape[-2:] != perturbation.shape[-2:]:
+            height, width = perturbation.shape[-2:]
+            self.image = F.resize(self.image_orig, size=[height, width])
+            self.image = self.image.to(device=perturbation.device)
+
+        perturbation = self.image + perturbation
+        perturbation = self.image_clamp(perturbation)
+
+        return perturbation
+
+
+class FakeClamp(torch.nn.Module):
+    """Clamp the data, but keep the gradient."""
+
+    def __init__(self, *, min, max):
+        super().__init__()
+        self.min = min
+        self.max = max
+
+    def forward(self, a):
+        with torch.no_grad():
+            delta = a.clamp(min=self.min, max=self.max) - a
+
+        a = a + delta
+        return a
