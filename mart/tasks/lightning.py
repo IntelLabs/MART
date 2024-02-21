@@ -84,6 +84,12 @@ def lightning(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     test_metrics = trainer.callback_metrics
 
+    if cfg.get("predict"):
+        log.info("Starting predictions!")
+        trainer.predict(
+            model=model, datamodule=datamodule, ckpt_path=ckpt_path, return_predictions=False
+        )
+
     # merge train and test metrics
     metric_dict = {**train_metrics, **test_metrics}
 

@@ -1,0 +1,3 @@
+fiftyone_mistakenness:
+  _target_: mart.callbacks.FiftyOneMistakenness
+  run_id: ${now:%Y-%m-%d}_${now:%H-%M-%S}

@@ -117,3 +117,36 @@ class FiftyOneDataset(VisionDataset_):
 
     def __len__(self) -> int:
         return len(self.filtered_dataset)
+
+    def add_predictions(self, sample_identifier: Any, preds: List[dict], field_name: str) -> None:
+        # get the sample that the detections will be added
+        sample = self.filtered_dataset[sample_identifier]
+        w = sample.metadata.width
+        h = sample.metadata.height
+
+        # get the dataset classes
+        classes = self.filtered_dataset.default_classes
+
+        # extract prediction values
+        labels = preds["labels"]
+        scores = preds["scores"]
+        boxes = preds["boxes"]
+
+        # convert detections to FiftyOne format
+        detections = []
+        for label, score, box in zip(labels, scores, boxes):
+            if label >= len(classes):
+                continue
+
+            # Convert to [top-left-x, top-left-y, width, height]
+            # in relative coordinates in [0, 1] x [0, 1]
+            x1, y1, x2, y2 = box
+            rel_box = [x1 / w, y1 / h, (x2 - x1) / w, (y2 - y1) / h]
+
+            detections.append(
+                fo.Detection(label=classes[label], bounding_box=rel_box, confidence=score)
+            )
+
+        # save detections to dataset
+        sample[field_name] = fo.Detections(detections=detections)
+        sample.save()

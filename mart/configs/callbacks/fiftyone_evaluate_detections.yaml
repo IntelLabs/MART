@@ -1,0 +1,3 @@
+fiftyone_evaluate_detections:
+  _target_: mart.callbacks.FiftyOneEvaluateDetections
+  run_id: ${now:%Y-%m-%d}_${now:%H-%M-%S}

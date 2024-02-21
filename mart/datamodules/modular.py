@@ -21,9 +21,11 @@ class LitDataModule(pl.LightningDataModule):
         train_dataset,
         val_dataset,
         test_dataset=None,
+        predict_dataset=None,
         train_sampler=None,
         val_sampler=None,
         test_sampler=None,
+        predict_sampler=None,
         num_workers=0,
         collate_fn=None,
         ims_per_batch=1,
@@ -45,6 +47,9 @@ class LitDataModule(pl.LightningDataModule):
 
         self.test_dataset = test_dataset
         self.test_sampler = test_sampler
+
+        self.predict_dataset = predict_dataset
+        self.predict_sampler = predict_sampler
 
         self.num_workers = num_workers
         self.collate_fn = collate_fn
@@ -77,6 +82,10 @@ class LitDataModule(pl.LightningDataModule):
         if stage == "test" or stage is None:
             if not isinstance(self.test_dataset, (Dataset, type(None))):
                 self.test_dataset = instantiate(self.test_dataset)
+
+        if stage == "predict" or stage is None:
+            if not isinstance(self.predict_dataset, (Dataset, type(None))):
+                self.predict_dataset = instantiate(self.predict_dataset)
 
     def train_dataloader(self):
         batch_sampler = self.train_sampler
@@ -128,6 +137,24 @@ class LitDataModule(pl.LightningDataModule):
 
         return DataLoader(
             self.test_dataset,
+            num_workers=self.num_workers,
+            collate_fn=self.collate_fn,
+            **kwargs,
+        )
+
+    def predict_dataloader(self):
+        batch_sampler = self.predict_sampler
+        if not isinstance(batch_sampler, (Sampler, type(None))):
+            batch_sampler = instantiate(batch_sampler, self.predict_dataset)
+
+        kwargs = {"batch_sampler": batch_sampler, "pin_memory": self.pin_memory}
+
+        if batch_sampler is None:
+            kwargs["batch_size"] = self.batch_size
+            kwargs["shuffle"] = False
+
+        return DataLoader(
+            self.predict_dataset,
             num_workers=self.num_workers,
             collate_fn=self.collate_fn,
             **kwargs,

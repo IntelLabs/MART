@@ -42,6 +42,9 @@ fit: True
 # lightning chooses best model based on metric specified in checkpoint callback
 test: True
 
+# run inference on the predict set.
+predict: False
+
 # Whether to resume training using configuration and checkpoint in specified directory
 resume: null
 
