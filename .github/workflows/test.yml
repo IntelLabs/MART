@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [main, "release/*"]
 
+permissions: read-all
+
 jobs:
   run_tests:
     runs-on: ${{ matrix.os }}
