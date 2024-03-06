@@ -18,14 +18,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2.3.4
 
       - name: Find modified files
         id: file_changes
-        uses: trilom/file-changes-action@v1.2.4
+        uses: trilom/file-changes-action@a6ca26c14274c33b15e6499323aac178af06ad4b # v1.2.4
         with:
           output: " "
 
@@ -33,6 +33,6 @@ jobs:
         run: echo '${{ steps.file_changes.outputs.files}}'
 
       - name: Run pre-commits
-        uses: pre-commit/action@v2.0.3
+        uses: pre-commit/action@9b88afc9cd57fd75b655d5c71bd38146d07135fe # v2.0.3
         with:
           extra_args: --files ${{ steps.file_changes.outputs.files}}
