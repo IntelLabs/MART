@@ -151,6 +151,8 @@ class Adversary(pl.LightningModule):
             for group in optimizer.param_groups:
                 self.gradient_modifier(group["params"])
 
+    # Turn off the inference mode, so we will create perturbation that requires gradient.
+    @torch.inference_mode(False)
     @silent()
     def fit(self, input, target, *, model: Callable):
         # The attack also needs access to the model at every iteration.
