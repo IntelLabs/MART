@@ -8,14 +8,17 @@ from __future__ import annotations
 
 import os
 
+import hydra
 from hydra import compose as hydra_compose
 from hydra import initialize_config_dir
+from lightning.pytorch.callbacks.callback import Callback
+from omegaconf import OmegaConf
 
 DEFAULT_VERSION_BASE = "1.2"
 DEFAULT_CONFIG_DIR = "."
 DEFAULT_CONFIG_NAME = "lightning.yaml"
 
-__all__ = ["compose"]
+__all__ = ["compose", "instantiate", "Instantiator", "CallbackInstantiator"]
 
 
 def compose(
@@ -40,3 +43,28 @@ def compose(
             cfg = cfg[key]
 
     return cfg
+
+
+def instantiate(cfg_path):
+    """Instantiate an object from a Hydra yaml config file."""
+    config = OmegaConf.load(cfg_path)
+    obj = hydra.utils.instantiate(config)
+    return obj
+
+
+class Instantiator:
+    def __new__(cls, cfg_path):
+        return instantiate(cfg_path)
+
+
+class CallbackInstantiator(Callback):
+    """Type checking for Lightning Callback."""
+
+    def __new__(cls, cfg_path):
+        obj = instantiate(cfg_path)
+        if isinstance(obj, Callback):
+            return obj
+        else:
+            raise ValueError(
+                f"We expect to instantiate a lightning Callback from {cfg_path}, but we get {type(obj)} instead."
+            )
