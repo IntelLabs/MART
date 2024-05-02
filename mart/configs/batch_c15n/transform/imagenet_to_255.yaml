@@ -1,0 +1,17 @@
+_target_: torchvision.transforms.Compose
+transforms:
+  - _target_: mart.transforms.Denormalize
+    # from 0-1 scale statistics: mean=[0.485, 0.456, 0.406]*255 std=[0.229, 0.224, 0.225]*255
+    center:
+      _target_: torch.as_tensor
+      data: [123.6750, 116.2800, 103.5300]
+    scale:
+      _target_: torch.as_tensor
+      data: [58.3950, 57.1200, 57.3750]
+  - _target_: torch.fake_quantize_per_tensor_affine
+    _partial_: true
+    # (x/1+0).round().clamp(0, 255) * 1
+    scale: 1
+    zero_point: 0
+    quant_min: 0
+    quant_max: 255
