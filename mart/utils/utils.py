@@ -28,6 +28,7 @@ __all__ = [
     "save_file",
     "task_wrapper",
     "flatten_dict",
+    "Get",
 ]
 
 log = pylogger.get_pylogger(__name__)
@@ -293,3 +294,13 @@ def flatten_dict(d, delimiter="."):
         ret[key] = value
 
     return ret
+
+
+class Get:
+    """Get a value from the kwargs dictionary by key."""
+
+    def __init__(self, key):
+        self.key = key
+
+    def __call__(self, **kwargs):
+        return kwargs[self.key]
