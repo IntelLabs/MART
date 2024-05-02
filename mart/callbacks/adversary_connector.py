@@ -7,13 +7,27 @@
 from __future__ import annotations
 
 import types
-from typing import Callable
+from typing import Any, Callable
 
 from lightning.pytorch.callbacks import Callback
 
 from ..utils import MonkeyPatch
 
 __all__ = ["AdversaryConnector"]
+
+
+class training_mode:
+    """A context that switches a torch.nn.Module object to the training mode."""
+
+    def __init__(self, module):
+        self.module = module
+        self.training = self.module.training
+
+    def __enter__(self):
+        self.module.train(True)
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any):
+        self.module.train(self.training)
 
 
 class AdversaryConnector(Callback):
@@ -81,7 +95,9 @@ class AdversaryConnector(Callback):
                 # LightningModule must have "training_step".
                 # Disable logging if we have to reuse training_step() of the target model.
                 with MonkeyPatch(pl_module, "log", lambda *args, **kwargs: None):
-                    outputs = pl_module.training_step(batch, dataloader_idx)
+                    # Switch the model to the training mode so traing_step works as expected.
+                    with training_mode(pl_module):
+                        outputs = pl_module.training_step(batch, dataloader_idx)
             return outputs
 
         # Canonicalize the batch to work with Adversary.
