@@ -11,32 +11,14 @@ authors = [
 requires-python = ">=3.9"
 
 dependencies = [
-  "torch >= 2.0.1",
-  "torchvision >= 0.15.2",
-  "lightning[extra] ~= 2.0.5", # Full functionality including TensorboardX.
-  "pydantic == 1.10.14", # https://github.com/Lightning-AI/lightning/pull/18022/files
-  "torchmetrics == 1.0.1",
-  "numpy == 1.23.5", # https://github.com/pytorch/pytorch/issues/91516
-
   # --------- hydra --------- #
   "hydra-core ~= 1.2.0",
   "hydra-colorlog ~= 1.2.0",
   "hydra-optuna-sweeper ~= 1.2.0",
 
-  # --------- loggers --------- #
-  # wandb
-  # neptune-client
-  # mlflow
-  # comet-ml
-
-  # --------- others --------- #
+  # --------- basics --------- #
   "pyrootutils ~= 1.0.4",      # standardizing the project root setup
   "rich ~= 12.6.0",            # beautiful text formatting in terminal
-  "timm ~= 0.6.11",            # pytorch image models
-
-  # ----- object detection----- #
-  "pycocotools ~= 2.0.5",
-
   "fire == 0.5.0",
 ]
 
@@ -47,6 +29,36 @@ Source = "https://github.com/IntelLabs/MART"
 mart = "mart.__main__:main"
 
 [project.optional-dependencies]
+
+# These are required dependencies, but we make it flexible for users to adjust.
+core = [
+  "torch >= 2.0.1",
+  # TODO: Move torchvision to the optional vision group, and make optional tests locally, but required tests on CI.
+  "torchvision >= 0.15.2",
+  # TODO: Move pycocotools to the optional objdet group, and make optional tests.
+  "pycocotools ~= 2.0.5",      # data format for object detection.
+  "lightning[extra] ~= 2.0.5", # Full functionality including TensorboardX.
+  "torchmetrics == 1.0.1",
+  # TODO: Remove pydantic and numpy constraints with newer lightning.
+  "pydantic == 1.10.14",       # https://github.com/Lightning-AI/lightning/pull/18022/files
+  "numpy == 1.23.5",           # https://github.com/pytorch/pytorch/issues/91516
+]
+
+vision = [
+  "timm ~= 0.6.11",            # pytorch image models
+]
+
+objdet = [
+  "fiftyone ~= 0.21.4",        # visualization for object detection
+]
+
+loggers = [
+  "wandb",
+  "neptune-client",
+  "mlflow",
+  "comet-ml",
+]
+
 developer = [
   "pre-commit ~= 2.20.0",      # hooks for applying linters on commit
   "pytest ~= 7.2.0",           # tests
@@ -54,10 +66,6 @@ developer = [
   "wheel",                     # support setup.py
   "pytest-cov[toml]",
   "protobuf==3.20.0"
-]
-
-fiftyone = [
-  "fiftyone ~= 0.21.4",
 ]
 
 extras = [
