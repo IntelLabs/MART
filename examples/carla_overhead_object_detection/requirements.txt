@@ -1,1 +1,1 @@
-mart @ git+https://github.com/IntelLabs/MART.git
+mart[core,vision] @ git+https://github.com/IntelLabs/MART.git
