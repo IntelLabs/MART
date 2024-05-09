@@ -9,6 +9,7 @@ from __future__ import annotations
 import torch
 import torchvision.transforms.functional as F
 from torchvision.io import read_image
+from torchvision.transforms.functional import to_pil_image
 
 __all__ = [
     "PertRectSize",
@@ -138,3 +139,10 @@ class FakeClamp(torch.nn.Module):
 
         a = a + delta
         return a
+
+
+class Visualizer:
+    def forward(self, output):
+        for key, value in output.items():
+            if isinstance(value, torch.Tensor):
+                to_pil_image(value / 255).save(f"{key}.png")

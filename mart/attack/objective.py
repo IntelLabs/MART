@@ -4,13 +4,20 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+import abc
 from typing import Any, Callable, Dict, Union
 
 import torch
 
-from .base import Objective
+__all__ = ["Objective", "Mispredict", "RandomTarget"]
 
-__all__ = ["Mispredict", "RandomTarget"]
+
+class Objective(abc.ABC):
+    """Objectives do not need to be differentiable so we do not inherit from nn.Module."""
+
+    @abc.abstractmethod
+    def __call__(self, preds: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError
 
 
 class Mispredict(Objective):
