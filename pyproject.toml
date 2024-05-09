@@ -54,7 +54,7 @@ objdet = [
 
 loggers = [
   "wandb",
-  "neptune-client",
+  "neptune",
   "mlflow",
   "comet-ml",
 ]
