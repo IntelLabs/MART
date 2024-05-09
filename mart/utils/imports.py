@@ -14,3 +14,4 @@ def has(module_name):
 _HAS_FIFTYONE = has("fiftyone")
 _HAS_TORCHVISION = has("torchvision")
 _HAS_TIMM = has("timm")
+_HAS_PYCOCOTOOLS = has("pycocotools")
