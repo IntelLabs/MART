@@ -52,11 +52,14 @@ objdet = [
   "fiftyone ~= 0.21.4",        # visualization for object detection
 ]
 
+# Comment out loggers to avoid lengthy dependency resolution.
+# It is rare that users need more than one logger.
+# And lightning[extra] already includes TensorboardX.
 loggers = [
-  "wandb",
-  "neptune",
-  "mlflow",
-  "comet-ml",
+#  "wandb",
+#  "neptune",
+#  "mlflow",
+#  "comet-ml",
 ]
 
 developer = [
