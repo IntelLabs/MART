@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[core,vision,developer]
+          pip install -e .[full]
 
       - name: List dependencies
         run: |
@@ -58,7 +58,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[core,vision,developer]
+          pip install -e .[full]
 
       - name: Run tests and collect coverage
         run: pytest --cov mart

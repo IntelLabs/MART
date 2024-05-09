@@ -26,13 +26,13 @@
 ### Using pip
 
 ```bash
-pip install mart[core,vision]@https://github.com/IntelLabs/MART/archive/refs/tags/<VERSION>.zip
+pip install mart[full]@https://github.com/IntelLabs/MART/archive/refs/tags/<VERSION>.zip
 ```
 
 Replace `<VERSION>` with the MART's version you want to install. For example:
 
 ```bash
-pip install mart[core,vision]@https://github.com/IntelLabs/MART/archive/refs/tags/v0.2.1.zip
+pip install mart[full]@https://github.com/IntelLabs/MART/archive/refs/tags/v0.2.1.zip
 ```
 
 ### Manual installation
@@ -52,7 +52,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 
 # Install Modular Adversarial Robustness Toolkit, if you plan to create your own `configs` folder elsewhere.
-pip install -e .[core,vision,developer]
+pip install -e .[full]
 
 # [OPTIONAL] install pre-commit hooks
 # this will trigger the pre-commit checks in each `git commit` command.
