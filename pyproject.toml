@@ -68,8 +68,11 @@ developer = [
   "protobuf==3.20.0"
 ]
 
+# Include every dependencies except the loggers, to avoid lengthy dependency resolution.
+# It is rare that a user needs more than one logger.
+# lightning[extra] already includes TensorboardX
 full = [
-  "mart[core,vision,objdet,loggers,developer]",
+  "mart[core,vision,objdet,developer]",
 ]
 
 extras = [
