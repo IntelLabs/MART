@@ -9,6 +9,8 @@ from tests.helpers.dataset_generator import FakeCOCODataset
 from tests.helpers.run_if import RunIf
 from tests.helpers.run_sh_command import run_sh_command
 
+from .test_utils import _IN_CI
+
 module = "mart"
 
 coco_ds = {
@@ -107,7 +109,7 @@ def test_cifar10_cnn_experiment(classification_cfg, tmp_path):
 
 @RunIf(sh=True)
 @pytest.mark.slow
-@pytest.mark.skipif(not _HAS_TIMM, reason="test requires that timm is installed")
+@pytest.mark.skipif(not _IN_CI and not _HAS_TIMM, reason="test requires that timm is installed")
 def test_imagenet_timm_experiment(classification_cfg, tmp_path):
     """Test ImageNet Timm experiment."""
     overrides = classification_cfg["trainer"] + classification_cfg["datamodel"]
