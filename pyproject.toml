@@ -68,6 +68,10 @@ developer = [
   "protobuf==3.20.0"
 ]
 
+full = [
+  "mart[core,vision,objdet,loggers,developer]",
+]
+
 extras = [
 ]
 
