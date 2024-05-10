@@ -10,7 +10,7 @@ from typing import List, Optional, Tuple, Union
 import torch
 from torchvision.ops import box_iou
 
-from ..objective import Objective
+from .base import Objective
 
 __all__ = ["ZeroAP", "Missed"]
 

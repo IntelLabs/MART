@@ -9,7 +9,7 @@ import torchvision
 import torchvision.transforms.functional as F
 
 from ...utils import pylogger
-from ..initializer import Initializer
+from .base import Initializer
 
 logger = pylogger.get_pylogger(__name__)
 
