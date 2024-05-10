@@ -8,7 +8,7 @@ import torch
 from torchvision.transforms.functional import to_pil_image
 
 
-class Visualizer:
+class ComposerImageVisualizer:
     def __call__(self, output):
         for key, value in output.items():
             if isinstance(value, torch.Tensor):
