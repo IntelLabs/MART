@@ -14,7 +14,7 @@ from hydra import compose, initialize
 from hydra.core.global_hydra import GlobalHydra
 from omegaconf import DictConfig, open_dict
 
-from .test_utils import _IN_CI
+from mart.utils.imports import _HAS_TIMM, _HAS_TORCHVISION
 
 root = Path(os.getcwd())
 pyrootutils.set_root(path=root, dotenv=True, pythonpath=True)
@@ -31,18 +31,12 @@ experiments_require_torchvision_and_timm = [
     "ImageNet_Timm",
 ]
 
-if _IN_CI:
-    # Test all experiments on CI
-    experiments_names = experiments_require_torchvision + experiments_require_torchvision_and_timm
-else:
-    # Only test experiments with installed packages in local environment.
-    from mart.utils.imports import _HAS_TIMM, _HAS_TORCHVISION
-
-    experiments_names = []
-    if _HAS_TORCHVISION:
-        experiments_names += experiments_require_torchvision
-    if _HAS_TIMM and _HAS_TORCHVISION:
-        experiments_names += experiments_require_torchvision_and_timm
+# Only test experiments with installed packages in local environment.
+experiments_names = []
+if _HAS_TORCHVISION:
+    experiments_names += experiments_require_torchvision
+if _HAS_TIMM and _HAS_TORCHVISION:
+    experiments_names += experiments_require_torchvision_and_timm
 
 
 # Loads the configuration file from a given experiment

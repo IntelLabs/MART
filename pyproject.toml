@@ -33,10 +33,6 @@ mart = "mart.__main__:main"
 # These are required dependencies, but we make it flexible for users to adjust.
 core = [
   "torch >= 2.0.1",
-  # TODO: Move torchvision to the optional vision group, and make optional tests locally, but required tests on CI.
-  "torchvision >= 0.15.2",
-  # TODO: Move pycocotools to the optional objdet group, and make optional tests.
-  "pycocotools ~= 2.0.5",      # data format for object detection.
   "lightning[extra] ~= 2.0.5", # Full functionality including TensorboardX.
   "torchmetrics == 1.0.1",
   # TODO: Remove pydantic and numpy constraints with newer lightning.
@@ -45,10 +41,12 @@ core = [
 ]
 
 vision = [
+  "torchvision >= 0.15.2",
   "timm ~= 0.6.11",            # pytorch image models
 ]
 
 objdet = [
+  "pycocotools ~= 2.0.5",      # data format for object detection.
   "fiftyone ~= 0.21.4",        # visualization for object detection
 ]
 

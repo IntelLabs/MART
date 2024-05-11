@@ -4,12 +4,10 @@ from typing import Dict
 import pytest
 from hydra.core.global_hydra import GlobalHydra
 
-from mart.utils.imports import _HAS_TIMM
+from mart.utils.imports import _HAS_TIMM, _HAS_TORCHVISION
 from tests.helpers.dataset_generator import FakeCOCODataset
 from tests.helpers.run_if import RunIf
 from tests.helpers.run_sh_command import run_sh_command
-
-from .test_utils import _IN_CI
 
 module = "mart"
 
@@ -75,6 +73,7 @@ def coco_cfg(tmp_path) -> Dict:
 
 
 @RunIf(sh=True)
+@pytest.mark.skipif(not _HAS_TORCHVISION, reason="test requires that torchvision is installed")
 def test_cifar10_cnn_adv_experiment(classification_cfg, tmp_path):
     """Test CIFAR10 CNN experiment."""
     overrides = classification_cfg["trainer"] + classification_cfg["datamodel"]
@@ -92,6 +91,7 @@ def test_cifar10_cnn_adv_experiment(classification_cfg, tmp_path):
 
 
 @RunIf(sh=True)
+@pytest.mark.skipif(not _HAS_TORCHVISION, reason="test requires that torchvision is installed")
 def test_cifar10_cnn_experiment(classification_cfg, tmp_path):
     """Test CIFAR10 CNN experiment."""
     overrides = classification_cfg["trainer"] + classification_cfg["datamodel"]
@@ -109,7 +109,10 @@ def test_cifar10_cnn_experiment(classification_cfg, tmp_path):
 
 @RunIf(sh=True)
 @pytest.mark.slow
-@pytest.mark.skipif(not _IN_CI and not _HAS_TIMM, reason="test requires that timm is installed")
+@pytest.mark.skipif(
+    not _HAS_TIMM or not _HAS_TORCHVISION,
+    reason="test requires that torchvision and timm are installed",
+)
 def test_imagenet_timm_experiment(classification_cfg, tmp_path):
     """Test ImageNet Timm experiment."""
     overrides = classification_cfg["trainer"] + classification_cfg["datamodel"]
@@ -128,6 +131,7 @@ def test_imagenet_timm_experiment(classification_cfg, tmp_path):
 
 @RunIf(sh=True)
 @pytest.mark.slow
+@pytest.mark.skipif(not _HAS_TORCHVISION, reason="test requires that torchvision is installed")
 def test_coco_fasterrcnn_experiment(coco_cfg, tmp_path):
     """Test TorchVision FasterRCNN experiment."""
     overrides = coco_cfg["trainer"] + coco_cfg["datamodel"]
@@ -143,6 +147,7 @@ def test_coco_fasterrcnn_experiment(coco_cfg, tmp_path):
 
 @RunIf(sh=True)
 @pytest.mark.slow
+@pytest.mark.skipif(not _HAS_TORCHVISION, reason="test requires that torchvision is installed")
 def test_coco_fasterrcnn_adv_experiment(coco_cfg, tmp_path):
     """Test TorchVision FasterRCNN Adv experiment."""
     overrides = coco_cfg["trainer"] + coco_cfg["datamodel"]
@@ -158,6 +163,7 @@ def test_coco_fasterrcnn_adv_experiment(coco_cfg, tmp_path):
 
 @RunIf(sh=True)
 @pytest.mark.slow
+@pytest.mark.skipif(not _HAS_TORCHVISION, reason="test requires that torchvision is installed")
 def test_coco_retinanet_experiment(coco_cfg, tmp_path):
     """Test TorchVision RetinaNet experiment."""
     overrides = coco_cfg["trainer"] + coco_cfg["datamodel"]
@@ -174,6 +180,8 @@ def test_coco_retinanet_experiment(coco_cfg, tmp_path):
 
 @RunIf(sh=True)
 @pytest.mark.slow
+@pytest.mark.skipif(not _HAS_TORCHVISION, reason="test requires that torchvision is installed")
+# The test depends on torchvision.datasets.FakeData.
 def test_resume(tmpdir):
     # Create a pseudo folder to resume from.
     ckpt = tmpdir.mkdir("checkpoints").join("last.ckpt")

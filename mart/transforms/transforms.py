@@ -5,26 +5,8 @@
 #
 
 import torch
-from torchvision.transforms import transforms as T
 
-__all__ = ["Denormalize", "Cat", "Permute", "Unsqueeze", "Squeeze", "Chunk", "TupleTransforms"]
-
-
-class Denormalize(T.Normalize):
-    """Unnormalized using center and scale via existing Normalize transform such that:
-
-        output = (input * scale + center)
-
-    Args:
-        center: value to center input by
-        scale: value to scale input by
-    """
-
-    def __init__(self, center, scale, inplace=False):
-        mean = -center / scale
-        std = 1 / scale
-
-        super().__init__(mean, std, inplace=inplace)
+__all__ = ["Cat", "Permute", "Unsqueeze", "Squeeze", "Chunk", "TupleTransforms"]
 
 
 class Cat:
