@@ -20,6 +20,7 @@ def has(module_name):
         return True
 
 
+# Do not forget to add dependency checks on CI in `tests/test_dependency.py`
 _HAS_FIFTYONE = has("fiftyone")
 _HAS_TORCHVISION = has("torchvision")
 _HAS_TIMM = has("timm")

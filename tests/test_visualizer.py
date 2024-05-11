@@ -8,9 +8,7 @@ import pytest
 
 from mart.utils.imports import _HAS_TORCHVISION
 
-from .test_utils import _IN_CI
-
-if not _IN_CI and not _HAS_TORCHVISION:
+if not _HAS_TORCHVISION:
     pytest.skip("test requires that torchvision is installed", allow_module_level=True)
 
 from unittest.mock import Mock
