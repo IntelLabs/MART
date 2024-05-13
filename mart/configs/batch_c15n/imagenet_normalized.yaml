@@ -1,6 +1,0 @@
-defaults:
-  - dict
-  - transform: imagenet_to_255
-  - transform@untransform: 255_to_imagenet
-
-input_key: image
