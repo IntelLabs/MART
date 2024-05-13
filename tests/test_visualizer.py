@@ -4,6 +4,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+import pytest
+
+from mart.utils.imports import _HAS_TORCHVISION
+
+if not _HAS_TORCHVISION:
+    pytest.skip("test requires that torchvision is installed", allow_module_level=True)
+
 from unittest.mock import Mock
 
 from PIL import Image, ImageChops
