@@ -1,0 +1,4 @@
+_target_: torchvision.transforms.Normalize
+# from 0-1 scale statistics: mean=[0.485, 0.456, 0.406]*255 std=[0.229, 0.224, 0.225]*255
+mean: [123.6750, 116.2800, 103.5300]
+std: [58.3950, 57.1200, 57.3750]

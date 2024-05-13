@@ -1,0 +1,6 @@
+defaults:
+  - list
+  - transform: times_255_and_round
+  - transform@untransform: divided_by_255
+
+input_key: 0
