@@ -9,6 +9,7 @@ from __future__ import annotations
 import types
 from typing import Any, Callable
 
+import torch
 from lightning.pytorch.callbacks import Callback
 
 from ..utils import MonkeyPatch, get_pylogger
@@ -40,7 +41,10 @@ class training_mode:
             logger.debug(f"Set {key}: {model.__class__.__name__} to eval mode.")
         else:
             for child_name, child in model.named_children():
-                child_key = f"{key}.{child_name}"
+                if isinstance(model, torch.nn.Sequential):
+                    child_key = f"{key}[{child_name}]"
+                else:
+                    child_key = f"{key}.{child_name}"
                 self.selective_eval_mode(child_key, child, eval_mode_module_names)
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any):
