@@ -23,9 +23,7 @@ class training_mode:
     """A context that switches a torch.nn.Module object to the training mode except for some
     children."""
 
-    def __init__(
-        self, module, excludes=["torch.nn.modules.dropout", "torch.nn.modules.batchnorm"]
-    ):
+    def __init__(self, module, excludes=[]):
         self.module = module
         self.excludes = excludes
 
@@ -110,13 +108,17 @@ class AdversaryConnector(Callback):
             batch = self.batch_c15n.revert(input, target)
 
             if hasattr(pl_module, "attack_step"):
+                # Users can implement LightningModule:attack_step() for generating adversarial examples.
                 outputs = pl_module.attack_step(batch, dataloader_idx)
             else:
-                # LightningModule must have "training_step".
-                # Disable logging if we have to reuse training_step() of the target model.
+                # If there is no attack_step(), we will borrow LightningModule:training_step() with some modifications.
+                #   1. Disable the training logging mechanism.
+                #   2. Switch to the training mode to get the loss value, except for children modules of BatchNorm and Dropout.
                 with MonkeyPatch(pl_module, "log", lambda *args, **kwargs: None):
-                    # Switch the model to the training mode so traing_step works as expected.
-                    with training_mode(pl_module):
+                    with training_mode(
+                        pl_module,
+                        excludes=["torch.nn.modules.dropout", "torch.nn.modules.batchnorm"],
+                    ):
                         outputs = pl_module.training_step(batch, dataloader_idx)
             return outputs
 
