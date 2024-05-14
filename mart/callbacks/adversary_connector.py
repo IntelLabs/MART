@@ -11,22 +11,42 @@ from typing import Any, Callable
 
 from lightning.pytorch.callbacks import Callback
 
-from ..utils import MonkeyPatch
+from ..utils import MonkeyPatch, get_pylogger
+
+logger = get_pylogger(__name__)
+
 
 __all__ = ["AdversaryConnector"]
 
 
 class training_mode:
-    """A context that switches a torch.nn.Module object to the training mode."""
+    """A context that switches a torch.nn.Module object to the training mode except for some
+    children."""
 
-    def __init__(self, module):
+    def __init__(
+        self, module, excludes=["torch.nn.modules.dropout", "torch.nn.modules.batchnorm"]
+    ):
         self.module = module
-        self.training = self.module.training
+        self.excludes = excludes
 
     def __enter__(self):
+        # Save the original training mode status.
+        self.training = self.module.training
         self.module.train(True)
+        # Set some children modules of "excludes" to eval mode instead.
+        self.selective_eval_mode("", self.module, self.excludes)
+
+    def selective_eval_mode(self, key, model, eval_mode_module_names):
+        if model.__module__ in eval_mode_module_names:
+            model.eval()
+            logger.debug(f"Set {key}: {model.__class__.__name__} to eval mode.")
+        else:
+            for child_name, child in model.named_children():
+                child_key = f"{key}.{child_name}"
+                self.selective_eval_mode(child_key, child, eval_mode_module_names)
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any):
+        # Restore the original training mode status.
         self.module.train(self.training)
 
 
