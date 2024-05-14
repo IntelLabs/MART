@@ -35,17 +35,17 @@ class training_mode:
         # Set some children modules of "excludes" to eval mode instead.
         self.selective_eval_mode("", self.module, self.excludes)
 
-    def selective_eval_mode(self, key, model, eval_mode_module_names):
+    def selective_eval_mode(self, path, model, eval_mode_module_names):
         if model.__module__ in eval_mode_module_names:
             model.eval()
-            logger.debug(f"Set {key}: {model.__class__.__name__} to eval mode.")
+            logger.debug(f"Set {path}: {model.__class__.__name__} to eval mode.")
         else:
             for child_name, child in model.named_children():
                 if isinstance(model, torch.nn.Sequential):
-                    child_key = f"{key}[{child_name}]"
+                    child_path = f"{path}[{child_name}]"
                 else:
-                    child_key = f"{key}.{child_name}"
-                self.selective_eval_mode(child_key, child, eval_mode_module_names)
+                    child_path = f"{path}.{child_name}"
+                self.selective_eval_mode(child_path, child, eval_mode_module_names)
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any):
         # Restore the original training mode status.
