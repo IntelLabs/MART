@@ -1,2 +1,6 @@
+from ...utils.imports import _HAS_TORCHVISION
 from .modular import *
-from .patch import *
+
+if _HAS_TORCHVISION:
+    from .patch import *
+    from .visualizer import *

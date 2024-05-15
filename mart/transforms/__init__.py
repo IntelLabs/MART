@@ -5,5 +5,5 @@
 #
 
 from .batch_c15n import *  # noqa: F403
-from .extended import *  # noqa: F403
 from .transforms import *  # noqa: F403
+from .vision import *  # noqa: F403
