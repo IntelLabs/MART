@@ -74,7 +74,6 @@ full = [
 ]
 
 extras = [
-  "rich ~= 12.6.0",            # beautiful text formatting in terminal
 ]
 
 [tool.setuptools]
