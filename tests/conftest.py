@@ -14,7 +14,7 @@ from hydra import compose, initialize
 from hydra.core.global_hydra import GlobalHydra
 from omegaconf import DictConfig, open_dict
 
-from mart.utils.imports import _HAS_TIMM, _HAS_TORCHVISION
+from mart.utils.imports import _HAS_PYCOCOTOOLS, _HAS_TIMM, _HAS_TORCHVISION
 
 root = Path(os.getcwd())
 pyrootutils.set_root(path=root, dotenv=True, pythonpath=True)
@@ -22,6 +22,9 @@ pyrootutils.set_root(path=root, dotenv=True, pythonpath=True)
 experiments_require_torchvision = [
     "CIFAR10_CNN",
     "CIFAR10_CNN_Adv",
+]
+
+experiments_require_torchvision_pycocotools = [
     "COCO_TorchvisionFasterRCNN",
     "COCO_TorchvisionFasterRCNN_Adv",
     "COCO_TorchvisionRetinaNet",
@@ -35,6 +38,8 @@ experiments_require_torchvision_and_timm = [
 experiments_names = []
 if _HAS_TORCHVISION:
     experiments_names += experiments_require_torchvision
+if _HAS_TORCHVISION and _HAS_PYCOCOTOOLS:
+    experiments_names += experiments_require_torchvision_pycocotools
 if _HAS_TIMM and _HAS_TORCHVISION:
     experiments_names += experiments_require_torchvision_and_timm
 
