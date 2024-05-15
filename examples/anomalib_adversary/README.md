@@ -47,7 +47,7 @@ CUDA_VISIBLE_DEVICES=0 anomalib test \
 └───────────────────────────┴───────────────────────────┘
 ```
 
-2. Generate an adversary config from MART.
+3. Generate an adversary config from MART.
 
 ```sh
 python -m mart.generate_config \
@@ -67,7 +67,7 @@ attack.callbacks.progress_bar.enable=true \
 > anomalib_fgsm_linf_10.yaml
 ```
 
-3. Run attack. The config file [configs/anomalib/stfpm_mart.yaml](configs/anomalib/stfpm_mart.yaml) adds a MART callback that loads the attack config file we just generated [./anomalib_fgsm_linf_10.yaml](./anomalib_fgsm_linf_10.yaml).
+4. Run attack. The config file [configs/anomalib/stfpm_mart.yaml](configs/anomalib/stfpm_mart.yaml) adds a MART callback that loads the attack config file we just generated [./anomalib_fgsm_linf_10.yaml](./anomalib_fgsm_linf_10.yaml).
 
 ```sh
 CUDA_VISIBLE_DEVICES=0 anomalib test \
