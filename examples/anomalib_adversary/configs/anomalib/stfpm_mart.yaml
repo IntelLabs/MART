@@ -1,0 +1,24 @@
+model:
+  class_path: anomalib.models.Stfpm
+  init_args:
+    backbone: resnet18
+    layers:
+      - layer1
+      - layer2
+      - layer3
+
+metrics:
+  pixel:
+    - AUROC
+
+trainer:
+  max_epochs: 100
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        patience: 5
+        monitor: pixel_AUROC
+        mode: max
+    - class_path: mart.utils.CallbackInstantiator
+      init_args:
+        cfg_path: ./anomalib_fgsm_linf_10.yaml
