@@ -6,10 +6,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 import torch
-from torchvision.transforms.functional import to_pil_image
 
 from mart.nn import SequentialDict
 
@@ -20,12 +19,15 @@ __all__ = ["Composer", "Additive", "Mask", "Overlay"]
 
 
 class Composer(torch.nn.Module):
-    def __init__(self, perturber: Perturber, modules, sequence, visualize: bool = False) -> None:
+    def __init__(
+        self, perturber: Perturber, modules, sequence, visualizer: Callable = None
+    ) -> None:
         """_summary_
 
         Args:
             perturber (Perturber): Manage perturbations.
             functions (dict[str, Function]): A dictionary of functions for composing pertured input.
+            visualizer (Callable): Visualize intermediate results of a composer.
         """
         super().__init__()
 
@@ -35,7 +37,7 @@ class Composer(torch.nn.Module):
         if isinstance(sequence, dict):
             sequence = [sequence[key] for key in sorted(sequence)]
         self.functions = SequentialDict(modules, {"composer": sequence})
-        self.visualize = visualize
+        self.visualizer = visualizer
 
     def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
         return self.perturber.configure_perturbation(input)
@@ -79,10 +81,8 @@ class Composer(torch.nn.Module):
         )
 
         # Visualize intermediate images.
-        if self.visualize:
-            for key, value in output.items():
-                if isinstance(value, torch.Tensor):
-                    to_pil_image(value / 255).save(f"{key}.png")
+        if self.visualizer:
+            self.visualizer(output)
 
         # SequentialDict returns a dictionary DotDict,
         #  but we only need the return value of the most recently executed module.

@@ -58,7 +58,7 @@ class Instantiator:
 
 
 class CallbackInstantiator(Callback):
-    """Type checking for Lightning Callback."""
+    """Satisfying type checking for Lightning Callback."""
 
     def __new__(cls, cfg_path):
         obj = instantiate(cfg_path)

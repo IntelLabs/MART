@@ -13,7 +13,7 @@ from typing import Callable, Iterable
 
 import torch
 
-__all__ = ["GroupNorm32", "SequentialDict", "ReturnKwargs", "CallWith", "Sum"]
+__all__ = ["GroupNorm32", "SequentialDict", "ReturnKwargs", "CallWith", "Sum", "Get"]
 
 logger = logging.getLogger(__name__)
 
@@ -300,3 +300,13 @@ class Sum(torch.nn.Module):
 
     def forward(self, *args):
         return sum(args)
+
+
+class Get:
+    """Get a value from the kwargs dictionary by key."""
+
+    def __init__(self, key):
+        self.key = key
+
+    def __call__(self, **kwargs):
+        return kwargs[self.key]
