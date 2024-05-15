@@ -36,8 +36,11 @@ core = [
   "lightning[extra] ~= 2.1.4", # Full functionality including TensorboardX.
   "torchmetrics == 1.0.1",
   # TODO: Remove pydantic and numpy constraints with newer lightning.
-  "pydantic == 1.10.14",       # https://github.com/Lightning-AI/lightning/pull/18022/files
-  "numpy == 1.23.5",           # https://github.com/pytorch/pytorch/issues/91516
+  # Fixed in Lightning 2.1.0+: https://github.com/Lightning-AI/pytorch-lightning/commit/df959aeb4fd454d515a74b0553ad7018b73d1f15
+  # "pydantic == 1.10.14",       # https://github.com/Lightning-AI/lightning/pull/18022/files
+  # Fixed in PyTorch 2.0+: https://github.com/pytorch/pytorch/pull/96452
+  # "numpy == 1.23.5",           # https://github.com/pytorch/pytorch/issues/91516
+  # numpy 1.26.4
 ]
 
 vision = [
@@ -46,7 +49,8 @@ vision = [
 ]
 
 objdet = [
-  "pycocotools ~= 2.0.5",      # data format for object detection.
+  # pycocotools<2.0.6 use np.float that is deprecated since numpy 1.20.0 with a warning, later with an error.
+  "pycocotools ~= 2.0.6",      # data format for object detection.
   "fiftyone ~= 0.21.4",        # visualization for object detection
 ]
 
