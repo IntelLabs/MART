@@ -18,13 +18,17 @@ pip install -r requirements.txt
 ln -s {PATH_TO_ANOMALIB_REPO}/datasets .
 ```
 
-1. Train a model. The config file [configs/anomalib/stfpm.yaml](configs/anomalib/stfpm.yaml) adds an EarlyStopping Callback with maximal 100 epochs.
+1. Train a model. We add an EarlyStopping callback in command line.
 
 ```sh
 CUDA_VISIBLE_DEVICES=0 anomalib train \
 --data anomalib.data.MVTec \
 --data.category transistor \
---config configs/anomalib/stfpm.yaml
+--model Stfpm \
+--trainer.callbacks lightning.pytorch.callbacks.EarlyStopping \
+--trainer.callbacks.patience 5 \
+--trainer.callbacks.monitor pixel_AUROC \
+--trainer.callbacks.mode max
 ```
 
 2. Evaluate the trained model without adversary as baseline.
@@ -33,7 +37,7 @@ CUDA_VISIBLE_DEVICES=0 anomalib train \
 CUDA_VISIBLE_DEVICES=0 anomalib test \
 --data anomalib.data.MVTec \
 --data.category transistor \
---config configs/anomalib/stfpm.yaml \
+--model Stfpm \
 --ckpt_path=results/Stfpm/MVTec/transistor/latest/weights/lightning/model.ckpt
 ```
 
@@ -44,10 +48,11 @@ CUDA_VISIBLE_DEVICES=0 anomalib test \
 │        image_AUROC        │    0.8733333349227905     │
 │       image_F1Score       │    0.7945205569267273     │
 │        pixel_AUROC        │    0.7860202789306641     │
+│       pixel_F1Score       │    0.46384868025779724    │
 └───────────────────────────┴───────────────────────────┘
 ```
 
-3. Generate an adversary config from MART.
+3. Generate an adversary config file from MART.
 
 ```sh
 python -m mart.generate_config \
@@ -67,13 +72,15 @@ attack.callbacks.progress_bar.enable=true \
 > anomalib_fgsm_linf_10.yaml
 ```
 
-4. Run attack. The config file [configs/anomalib/stfpm_mart.yaml](configs/anomalib/stfpm_mart.yaml) adds a MART callback that loads the attack config file we just generated [./anomalib_fgsm_linf_10.yaml](./anomalib_fgsm_linf_10.yaml).
+4. Run attack. We add a MART callback that loads the attack config file we just generated [./anomalib_fgsm_linf_10.yaml](./anomalib_fgsm_linf_10.yaml).
 
 ```sh
 CUDA_VISIBLE_DEVICES=0 anomalib test \
 --data anomalib.data.MVTec \
 --data.category transistor \
---config configs/anomalib/stfpm_mart.yaml \
+--model Stfpm \
+--trainer.callbacks mart.utils.CallbackInstantiator \
+--trainer.callbacks.cfg_path ./anomalib_fgsm_linf_10.yaml \
 --ckpt_path=results/Stfpm/MVTec/transistor/latest/weights/lightning/model.ckpt
 ```
 
@@ -83,6 +90,7 @@ CUDA_VISIBLE_DEVICES=0 anomalib test \
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
 │        image_AUROC        │    0.5979167222976685     │
 │       image_F1Score       │    0.5714285969734192     │
-│        pixel_AUROC        │    0.6867808699607849     │
+│        pixel_AUROC        │     0.686780571937561     │
+│       pixel_F1Score       │    0.0955422893166542     │
 └───────────────────────────┴───────────────────────────┘
 ```
