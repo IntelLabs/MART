@@ -18,8 +18,8 @@ dependencies = [
 
   # --------- basics --------- #
   "pyrootutils ~= 1.0.4",      # standardizing the project root setup
-  "rich",                      # beautiful text formatting in terminal
-  "fire",                      # automated CLI
+  "rich ~= 13.5.2",            # beautiful text formatting in terminal
+  "fire ~= 0.5.0",             # automated CLI
 ]
 
 [project.urls]
