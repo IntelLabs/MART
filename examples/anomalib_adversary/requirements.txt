@@ -1,2 +1,2 @@
 anomalib[full] @ git+https://github.com/openvinotoolkit/anomalib.git@v1.0.1
-mart @ git+https://github.com/IntelLabs/MART@mzweilin/upgrade_lightning_2.1.4
+mart @ git+https://github.com/IntelLabs/MART@main
