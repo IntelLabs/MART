@@ -18,8 +18,8 @@ dependencies = [
 
   # --------- basics --------- #
   "pyrootutils ~= 1.0.4",      # standardizing the project root setup
-  "rich ~= 12.6.0",            # beautiful text formatting in terminal
-  "fire == 0.5.0",
+  "rich ~= 13.5.2",            # beautiful text formatting in terminal
+  "fire ~= 0.5.0",             # automated CLI
 ]
 
 [project.urls]
@@ -33,11 +33,8 @@ mart = "mart.__main__:main"
 # These are required dependencies, but we make it flexible for users to adjust.
 core = [
   "torch >= 2.0.1",
-  "lightning[extra] ~= 2.0.5", # Full functionality including TensorboardX.
+  "lightning[extra] ~= 2.1.4", # Full functionality including TensorboardX.
   "torchmetrics == 1.0.1",
-  # TODO: Remove pydantic and numpy constraints with newer lightning.
-  "pydantic == 1.10.14",       # https://github.com/Lightning-AI/lightning/pull/18022/files
-  "numpy == 1.23.5",           # https://github.com/pytorch/pytorch/issues/91516
 ]
 
 vision = [
@@ -46,7 +43,7 @@ vision = [
 ]
 
 objdet = [
-  "pycocotools ~= 2.0.5",      # data format for object detection.
+  "pycocotools ~= 2.0.6",      # data format for object detection.
   "fiftyone ~= 0.21.4",        # visualization for object detection
 ]
 
