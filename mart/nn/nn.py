@@ -303,10 +303,16 @@ class Sum(torch.nn.Module):
 
 
 class Get:
-    """Get a value from the kwargs dictionary by key."""
+    """Get a value from the kwargs dictionary by key.
+
+    The key can be a path to a nested dictionary, concatenated by dots. For example,
+    `Get(key="a.b")(a={"b": 1}) == 1`.
+    """
 
     def __init__(self, key):
         self.key = key
 
     def __call__(self, **kwargs):
+        # Add support to nested dicts.
+        kwargs = DotDict(kwargs)
         return kwargs[self.key]
