@@ -62,6 +62,7 @@ class AdversaryConnector(Callback):
         val_adversary: Callable = None,
         test_adversary: Callable = None,
         batch_c15n: Callable = None,
+        module_step_fn: str = "training_step",
     ):
         """A pl.Trainer callback which perturbs input to be adversarial in training/validation/test
         phase.
@@ -77,6 +78,7 @@ class AdversaryConnector(Callback):
         self.val_adversary = val_adversary or adversary
         self.test_adversary = test_adversary or adversary
         self.batch_c15n = batch_c15n
+        self.module_step_fn = module_step_fn
 
     def setup(self, trainer, pl_module, stage=None):
         self._on_after_batch_transfer = pl_module.on_after_batch_transfer
@@ -123,7 +125,8 @@ class AdversaryConnector(Callback):
                         pl_module,
                         excludes=["torch.nn.modules.dropout", "torch.nn.modules.batchnorm"],
                     ):
-                        outputs = pl_module.training_step(batch, dataloader_idx)
+                        pl_module_step_fn = getattr(pl_module, self.module_step_fn)
+                        outputs = pl_module_step_fn(batch, dataloader_idx)
             return outputs
 
         # Canonicalize the batch to work with Adversary.
