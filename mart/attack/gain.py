@@ -84,3 +84,10 @@ class RegionProposalScore(Gain):
         else:
             # Encourage foreground.
             return probs
+
+
+from torch.nn import BCELoss as BCELoss_
+class BCELoss(BCELoss_):
+    def forward(self, input, target):
+        # We clone target because that tensor can be made in inference mode.
+        return super().forward(input, target.clone())
