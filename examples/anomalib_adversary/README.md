@@ -52,6 +52,10 @@ CUDA_VISIBLE_DEVICES=0 anomalib test \
 └───────────────────────────┴───────────────────────────┘
 ```
 
+```sh
+anomalib test --data anomalib.data.MVTec  --data.category hazelnut --model WinClip --data.init_args.image_size 240 --data.init_args.eval_batch_size 16 "--metrics.pixel=[F1Score,AUROC]"
+```
+
 3. Generate an adversary config file from MART.
 
 ```sh
@@ -70,6 +74,10 @@ attack.objective=null \
 attack.eps=10 \
 attack.callbacks.progress_bar.enable=true \
 > anomalib_fgsm_linf_10.yaml
+```
+
+```sh
+python -m mart.generate_config --config_dir="configs" --export_node=callbacks.adversary_connector --resolve=True  callbacks=adversary_connector batch_c15n@callbacks.adversary_connector.batch_c15n=dict_imagenet_normalized callbacks.adversary_connector.adversary=$\{attack\} +attack=classification_fgsm_linf attack.objective=null attack.eps=10 attack.callbacks.progress_bar.enable=true +callbacks.adversary_connector.module_step_fn=validation_step attack.gain._call_with_args_.0=anomaly_maps attack.gain._call_with_args_.1=mask > anomalib_fgsm_linf_10.yaml
 ```
 
 4. Run attack. We add a MART callback that loads the attack config file we just generated [./anomalib_fgsm_linf_10.yaml](./anomalib_fgsm_linf_10.yaml).
@@ -93,4 +101,8 @@ CUDA_VISIBLE_DEVICES=0 anomalib test \
 │        pixel_AUROC        │     0.686780571937561     │
 │       pixel_F1Score       │    0.0955422893166542     │
 └───────────────────────────┴───────────────────────────┘
+```
+
+```sh
+anomalib test --data anomalib.data.MVTec  --data.category hazelnut --model WinClip --data.init_args.image_size 240 --data.init_args.eval_batch_size 16 "--metrics.pixel=[F1Score,AUROC]" --trainer.callbacks mart.utils.CallbackInstantiator --trainer.callbacks.cfg_path ./anomalib_fgsm_linf_10.yaml
 ```
