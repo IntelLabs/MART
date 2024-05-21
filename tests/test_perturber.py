@@ -29,9 +29,7 @@ def test_forward(input_data, target_data):
     initializer.assert_called_once()
     projector.assert_called_once()
 
-    # ouput should be broadcastable to input
-    broadcast_shape = torch.broadcast_shapes(output.shape, input_data.shape)
-    assert broadcast_shape == input_data.shape
+    assert output.shape == input_data.shape
 
 def test_misconfiguration(input_data, target_data):
     initializer = Mock()
@@ -75,29 +73,15 @@ def test_parameters(input_data, target_data):
         assert param.requires_grad
 
 
-def test_shape(input_data, target_data):
+@pytest.mark.parametrize("shape", [(None, 1, 1), (None, 2, 2), (1, 1, 1), (None, 1, None)])
+def test_shape(input_data, target_data, shape):
     initializer = Mock()
     projector = Mock()
-    shape = (None, 1, 1)
 
     perturber = Perturber(initializer=initializer, projector=projector, shape=shape)
     perturber.configure_perturbation(input_data)
     output = perturber(input=input_data, target=target_data)
 
-    # ouput should be broadcastable to input
-    broadcast_shape = torch.broadcast_shapes(output.shape, input_data.shape)
-    assert broadcast_shape == input_data.shape
-
-
-def test_bad_shape(input_data, target_data):
-    initializer = Mock()
-    projector = Mock()
-    shape = (None, 2, 2)
-
-    perturber = Perturber(initializer=initializer, projector=projector, shape=shape)
-    perturber.configure_perturbation(input_data)
-    output = perturber(input=input_data, target=target_data)
-
-    # ouput should NOT be broadcastable to input
-    with pytest.raises(RuntimeError):
-       torch.broadcast_shapes(output.shape, input_data.shape)
+    # Desired shape is shape with None's replaced by input shape as that dimension
+    desired_shape = [desired_s or input_s for desired_s, input_s in zip(shape, input_data.shape)]
+    assert output.shape == torch.Size(desired_shape)

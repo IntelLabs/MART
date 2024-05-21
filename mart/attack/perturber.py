@@ -72,15 +72,10 @@ class Perturber(torch.nn.Module):
             else:
                 raise NotImplementedError
 
-        # Select input according to index
+        # Enable dynamic perturbation shapes
         if self.shape is not None:
-            index = []
-            for i in range(max(len(self.shape), len(input.shape))):
-                input_shape = input.shape[i]
-                desired_shape = self.shape[i]
-
-                index.append(slice(0, desired_shape or input_shape))
-            input = input[index]
+            shape = [s or input_s for s, input_s in zip(self.shape, input.shape)]
+            input = torch.empty(shape, device=input.device, dtype=input.dtype)
 
         # If we have never created a perturbation before or perturbation does not match input, then
         # create a new perturbation.
