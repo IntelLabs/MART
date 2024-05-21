@@ -73,7 +73,7 @@ def test_parameters(input_data, target_data):
         assert param.requires_grad
 
 
-@pytest.mark.parametrize("shape", [(None, 1, 1), (None, 2, 2), (1, 1, 1), (None, 1, None)])
+@pytest.mark.parametrize("shape", [(None, 1, 1), (None, 2, 2), (1, 1, 1), (None, 1, None), (None,), (1,)])
 def test_shape(input_data, target_data, shape):
     initializer = Mock()
     projector = Mock()
