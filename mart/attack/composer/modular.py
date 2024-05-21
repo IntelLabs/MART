@@ -12,6 +12,7 @@ import torch
 
 from torch_rotation import rotate_three_pass
 from kornia.color import rgb_to_hsv, hsv_to_rgb
+from kornia.geometry.transform import rotate
 
 from mart.nn import SequentialDict
 
@@ -126,7 +127,7 @@ class Overlay(torch.nn.Module):
 
 
 class Semantic(torch.nn.Module):
-    def forward(self, perturbation, input):
+    def forward(self, *, perturbation, input, target, **kwargs):
         theta, hue, saturation = torch.unbind(perturbation, dim=-1)
 
         input = input / 255  # NOTE: MART works in [0-255] space
@@ -134,6 +135,7 @@ class Semantic(torch.nn.Module):
         # Rotate image
         angle = torch.deg2rad(theta)
         input = rotate_three_pass(input, angle, N=-1, padding_mode="replicate")
+        mask = rotate(target["mask"], angle.detach(), mode="nearest").long()
 
         # Modify hue...
         input = rgb_to_hsv(input)
@@ -150,6 +152,7 @@ class Semantic(torch.nn.Module):
                 - (input[:, 1, :, :] + saturation[:, None, None])
             ).detach()
         )
-
         input = hsv_to_rgb(input)
-        return 255 * input  # NOTE: MART works in [0-255] space
+
+        input = 255 * input  # NOTE: MART works in [0-255] space
+        return {"input": input, "target": mask}
