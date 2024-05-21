@@ -10,12 +10,15 @@ from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 import torch
 
+from torch_rotation import rotate_three_pass
+from kornia.color import rgb_to_hsv, hsv_to_rgb
+
 from mart.nn import SequentialDict
 
 if TYPE_CHECKING:
     from ..perturber import Perturber
 
-__all__ = ["Composer", "Additive", "Mask", "Overlay"]
+__all__ = ["Composer", "Additive", "Mask", "Overlay", "Semantic"]
 
 
 class Composer(torch.nn.Module):
@@ -62,7 +65,9 @@ class Composer(torch.nn.Module):
             # FIXME: replace tuple with whatever input's type is
             return tuple(
                 self._compose(perturbation_i, input=input_i, target=target_i)
-                for perturbation_i, input_i, target_i in zip(perturbation, input, target)
+                for perturbation_i, input_i, target_i in zip(
+                    perturbation, input, target
+                )
             )
 
         else:
@@ -120,3 +125,33 @@ class Overlay(torch.nn.Module):
 
         input = input * (1 - mask) + perturbation
         return input
+
+
+class Semantic(torch.nn.Module):
+    def forward(self, perturbation, input):
+        theta, hue, saturation = torch.unbind(perturbation, dim=-1)
+
+        input = input / 255  # NOTE: MART works in [0-255] space
+
+        # Rotate image
+        angle = torch.deg2rad(theta)
+        input = rotate_three_pass(input, angle, N=-1, padding_mode="replicate")
+
+        # Modify hue...
+        input = rgb_to_hsv(input)
+        input[:, 0, :, :] = torch.remainder(
+            input[:, 0, :, :] + hue[:, None, None], 2 * torch.pi
+        )
+
+        # ...and saturation
+        input[:, 1, :, :] = (
+            input[:, 1, :, :]
+            + saturation[:, None, None]
+            + (
+                torch.clip(input[:, 1, :, :] + saturation[:, None, None], 0.0, 1.0)
+                - (input[:, 1, :, :] + saturation[:, None, None])
+            ).detach()
+        )
+
+        input = hsv_to_rgb(input)
+        return 255 * input  # NOTE: MART works in [0-255] space
