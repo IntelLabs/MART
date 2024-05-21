@@ -65,9 +65,7 @@ class Composer(torch.nn.Module):
             # FIXME: replace tuple with whatever input's type is
             return tuple(
                 self._compose(perturbation_i, input=input_i, target=target_i)
-                for perturbation_i, input_i, target_i in zip(
-                    perturbation, input, target
-                )
+                for perturbation_i, input_i, target_i in zip(perturbation, input, target)
             )
 
         else:
