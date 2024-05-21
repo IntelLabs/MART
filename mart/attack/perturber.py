@@ -32,6 +32,8 @@ class Perturber(torch.nn.Module):
         Args:
             initializer (Initializer): To initialize the perturbation.
             projector (Projector): To project the perturbation into some space.
+            shape (Iterable[int | None]): Desired shape to make perturbation. None's will be
+                imputed with shape from input.
         """
         super().__init__()
 
