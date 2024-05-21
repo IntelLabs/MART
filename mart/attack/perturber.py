@@ -25,7 +25,7 @@ class Perturber(torch.nn.Module):
         *,
         initializer: Initializer,
         projector: Projector | None = None,
-        shape: Iterable[int] = None,
+        shape: Iterable[int | None] | None = None,
     ):
         """_summary_
 
