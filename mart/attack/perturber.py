@@ -25,6 +25,7 @@ class Perturber(torch.nn.Module):
         *,
         initializer: Initializer,
         projector: Projector | None = None,
+        shape: Iterable[int] = None,
     ):
         """_summary_
 
@@ -38,6 +39,7 @@ class Perturber(torch.nn.Module):
         self.projector_ = projector or Projector()
 
         self.perturbation = None
+        self.shape = shape
 
     def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
         def matches(input, perturbation):
@@ -69,6 +71,15 @@ class Perturber(torch.nn.Module):
                 return torch.nn.ParameterList([create_from_tensor(t) for t in tensor])
             else:
                 raise NotImplementedError
+
+        # Select input according to index
+        index = []
+        for i in range(max(len(self.shape), len(input.shape))):
+            input_shape = input.shape[i]
+            desired_shape = self.shape[i]
+
+            index.append(slice(0, desired_shape or input_shape))
+        input = input[index]
 
         # If we have never created a perturbation before or perturbation does not match input, then
         # create a new perturbation.
