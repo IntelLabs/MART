@@ -79,6 +79,12 @@ class SemanticAdversary(Callback):
 
         # Create optimization variables for angle, hue, and saturation
         batch_size = batch["image"].shape[0]
+        steps = torch.tensor(
+            [0] * batch_size,
+            device=device,
+            dtype=torch.int32,
+        )
+
         angle = torch.tensor(
             [self.angle_init] * batch_size,
             device=device,
@@ -100,9 +106,27 @@ class SemanticAdversary(Callback):
             requires_grad=True,
         )
 
+        # dict_keys(['image_path', 'label', 'image', 'mask_path', 'mask'])
+        # Metrics to save
+        metrics = {
+            "angle": angle.detach().clone(),
+            "hue": hue.detach().clone(),
+            "sat": sat.detach().clone(),
+            "gain": torch.tensor(
+                [-torch.inf] * batch_size,
+                device=device,
+                dtype=torch.float32,
+            ),
+            "step": torch.tensor(
+                [0] * batch_size,
+                device=device,
+                dtype=torch.int32,
+            ),
+        }
+
         # Run optimization
-        for step_idx in range(self.steps):
-            if step_idx % self.restart_every == 0:
+        for step in range(self.steps):
+            if step % self.restart_every == 0:
                 optimizer = torch.optim.Adam(
                     [
                         {"params": angle, "lr": self.angle_lr},
@@ -113,85 +137,95 @@ class SemanticAdversary(Callback):
                 )
 
                 # Randomly reinitialize parameters after restart
-                if step_idx > 0:
+                if step > 0:
                     angle.data.uniform_(*self.angle_bound)
                     hue.data.uniform_(*self.hue_bound)
                     sat.data.uniform_(*self.sat_bound)
 
             # Clip parameters to valid bounds using straight-through estimator
-            clipped_angle = (
+            batch["angle"] = (
                 angle + (torch.clip(angle, *self.angle_bound) - angle).detach()
             )
-            clipped_hue = hue + (torch.clip(hue, *self.hue_bound) - hue).detach()
-            clipped_sat = sat + (torch.clip(sat, *self.sat_bound) - sat).detach()
+            batch["hue"] = hue + (torch.clip(hue, *self.hue_bound) - hue).detach()
+            batch["sat"] = sat + (torch.clip(sat, *self.sat_bound) - sat).detach()
+            batch["step"] = steps + step
 
-            adv_batch = perturb_batch(
-                batch, angle=clipped_angle, hue=clipped_hue, sat=clipped_sat
-            )
+            adv_batch = perturb(**batch)
             adv_batch = pl_module.validation_step(adv_batch)
-            loss = compute_loss(adv_batch["anomaly_maps"], adv_batch["mask"])
+            adv_batch["gain"] = compute_gain(**adv_batch)
+
+            # Save examples with highest gain
+            better = torch.where(adv_batch["gain"] > metrics["gain"])
+            for key in metrics:
+                metrics[key][better] = adv_batch[key][better].detach()
 
             optimizer.zero_grad()
-            loss.backward()
+            adv_batch["gain"].sum().backward()
             optimizer.step()
 
         # NOTE: mask is now rotated and will be used to compute metrics!!!
         return adv_batch
 
 
-def perturb_batch(batch, *, angle, hue, sat):
-    image = batch["image"]
-
+def perturb(*, image, mask, angle=None, hue=None, sat=None, **kwargs):
     # Return image to [0, 1] space
     mean = torch.tensor([0.48145466, 0.4578275, 0.40821073], device=image.device)
     std = torch.tensor([0.26862954, 0.26130258, 0.27577711], device=image.device)
-    image_01 = image * std[..., None, None] + mean[..., None, None]
+    image_adv = image * std[..., None, None] + mean[..., None, None]
 
     # Rotate image by angle degrees
-    theta = torch.deg2rad(angle)
-    image_rot = rotate_three_pass(image_01, theta, N=-1, padding_mode="replicate")
+    if angle is not None:
+        theta = torch.deg2rad(angle)
+        image_adv = rotate_three_pass(image_adv, theta, N=-1, padding_mode="replicate")
 
-    image_hsv = rgb_to_hsv(image_rot)
-    image_hue, image_sat, image_val = torch.unbind(image_hsv, dim=-3)
+    if hue is not None or sat is not None:
+        image_hsv = rgb_to_hsv(image_adv)
+        image_hue, image_sat, image_val = torch.unbind(image_hsv, dim=-3)
 
     # Additive hue perturbation with STE clipping
-    image_hue = image_hue + hue[:, None, None]
-    image_hue = torch.remainder(image_hue, 2 * torch.pi)
+    if hue is not None:
+        image_hue = image_hue + hue[:, None, None]
+        image_hue = torch.remainder(image_hue, 2 * torch.pi)
 
     # Additive saturation perturbation with STE clipping
-    image_sat = image_sat + sat[:, None, None]
-    image_sat = image_sat + (torch.clip(image_sat, 0.0, 1.0) - image_sat).detach()
+    if sat is not None:
+        image_sat = image_sat + sat[:, None, None]
+        image_sat = image_sat + (torch.clip(image_sat, 0.0, 1.0) - image_sat).detach()
 
-    image_hsv = torch.stack([image_hue, image_sat, image_val], dim=-3)
-    image_adv = hsv_to_rgb(image_hsv)
+    if hue is not None or sat is not None:
+        image_hsv = torch.stack([image_hue, image_sat, image_val], dim=-3)
+        image_adv = hsv_to_rgb(image_hsv)
 
     # Re-normalize image
     image_adv = (image_adv - mean[..., None, None]) / std[..., None, None]
 
     # Rotate mask to match image
-    mask = batch["mask"]
     mask_rot = mask[..., None, :, :]
-    mask_rot = rotate(mask_rot, angle.detach(), mode="nearest")
+    if angle is not None:
+        mask_rot = rotate(mask_rot, angle.detach(), mode="nearest")
     mask_rot = mask_rot[..., 0, :, :]
 
     # Replace image with adversarial image and mask with rotated mask
-    batch = dict(batch)
-    batch["image"] = image_adv
-    batch["mask"] = mask_rot
+    return {
+        "image": image_adv,
+        "mask": mask_rot,
+        "angle": angle,
+        "hue": hue,
+        "sat": sat,
+        **kwargs,
+    }
 
-    return batch
 
-
-def compute_loss(input, target):
-    true_negatives = target == 0
-    negative_loss = torch.sum(input * true_negatives, dim=(1, 2)) / (
+def compute_gain(anomaly_maps, mask, **kwargs):
+    true_negatives = mask == 0
+    negative_loss = torch.sum(anomaly_maps * true_negatives, dim=(1, 2)) / (
         torch.sum(true_negatives, dim=(1, 2)) + 1e-8
     )
 
-    true_positives = target == 1
-    positive_loss = torch.sum(input * true_positives, dim=(1, 2)) / (
+    true_positives = mask == 1
+    positive_loss = torch.sum(anomaly_maps * true_positives, dim=(1, 2)) / (
         torch.sum(true_positives, dim=(1, 2)) + 1e-8
     )
 
     # decrease negatives and increase positives
-    return (negative_loss + -positive_loss).sum()
+    return negative_loss + -positive_loss
