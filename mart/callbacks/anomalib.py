@@ -106,7 +106,6 @@ class SemanticAdversary(Callback):
             requires_grad=True,
         )
 
-        # dict_keys(['image_path', 'label', 'image', 'mask_path', 'mask'])
         # Metrics to save
         metrics = {
             "angle": angle.detach().clone(),
