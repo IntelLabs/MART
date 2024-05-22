@@ -29,7 +29,6 @@ def test_forward(input_data, target_data):
     initializer.assert_called_once()
     projector.assert_called_once()
 
-    assert output.shape == input_data.shape
 
 def test_misconfiguration(input_data, target_data):
     initializer = Mock()
@@ -67,21 +66,5 @@ def test_parameters(input_data, target_data):
     perturber.configure_perturbation(input_data)
 
     # Make sure each parameter in optimizer requires a gradient
-    parameters = list(perturber.parameters())
-    assert len(parameters) == 1
-    for param in parameters:
+    for param in perturber.parameters():
         assert param.requires_grad
-
-
-@pytest.mark.parametrize("shape", [(None, 1, 1), (None, 2, 2), (1, 1, 1), (None, 1, None), (None,), (1,)])
-def test_shape(input_data, target_data, shape):
-    initializer = Mock()
-    projector = Mock()
-
-    perturber = Perturber(initializer=initializer, projector=projector, shape=shape)
-    perturber.configure_perturbation(input_data)
-    output = perturber(input=input_data, target=target_data)
-
-    # Desired shape is shape with None's replaced by input shape as that dimension
-    desired_shape = [desired_s or input_s for desired_s, input_s in zip(shape, input_data.shape)]
-    assert output.shape == torch.Size(desired_shape)

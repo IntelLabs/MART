@@ -25,15 +25,12 @@ class Perturber(torch.nn.Module):
         *,
         initializer: Initializer,
         projector: Projector | None = None,
-        shape: Iterable[int | None] | None = None,
     ):
         """_summary_
 
         Args:
             initializer (Initializer): To initialize the perturbation.
             projector (Projector): To project the perturbation into some space.
-            shape (Iterable[int | None]): Desired shape to make perturbation. None's will be
-                imputed with shape from input.
         """
         super().__init__()
 
@@ -41,7 +38,6 @@ class Perturber(torch.nn.Module):
         self.projector_ = projector or Projector()
 
         self.perturbation = None
-        self.shape = shape
 
     def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
         def matches(input, perturbation):
@@ -73,11 +69,6 @@ class Perturber(torch.nn.Module):
                 return torch.nn.ParameterList([create_from_tensor(t) for t in tensor])
             else:
                 raise NotImplementedError
-
-        # Enable dynamic perturbation shapes
-        if self.shape is not None:
-            shape = [s or input_s for s, input_s in zip(self.shape, input.shape)]
-            input = torch.empty(shape, device=input.device, dtype=input.dtype)
 
         # If we have never created a perturbation before or perturbation does not match input, then
         # create a new perturbation.
