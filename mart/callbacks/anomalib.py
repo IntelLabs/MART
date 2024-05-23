@@ -14,6 +14,7 @@ from lightning.pytorch.callbacks import Callback
 from torch_rotation import rotate_three_pass
 from kornia.color import rgb_to_hsv, hsv_to_rgb
 from kornia.geometry.transform import rotate
+from tqdm import trange
 
 from ..utils import get_pylogger
 
@@ -124,7 +125,7 @@ class SemanticAdversary(Callback):
         }
 
         # Run optimization
-        for step in range(self.steps):
+        for step in (pbar := trange(self.steps, desc="Attack", position=1)):
             if step % self.restart_every == 0:
                 optimizer = torch.optim.Adam(
                     [
