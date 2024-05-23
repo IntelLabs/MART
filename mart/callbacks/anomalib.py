@@ -159,6 +159,14 @@ class SemanticAdversary(Callback):
             for key in metrics:
                 metrics[key][better] = adv_batch[key][better].detach()
 
+            pbar.set_postfix(
+                {
+                    "cur gain": adv_batch["gain"].mean().item(),
+                    "gain": metrics["gain"].mean().item(),
+                }
+            )
+
+            # Take optimization step
             optimizer.zero_grad()
             adv_batch["gain"].sum().backward()
             optimizer.step()
