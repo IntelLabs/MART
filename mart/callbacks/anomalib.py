@@ -120,6 +120,9 @@ class SemanticAdversary(Callback):
 
         # FIXME: Ideally we would clone the trainer and run fit instead of creating our own optimization loop
         # Run optimization
+        adv_image = {}
+        adv_mask = {}
+
         for step in (pbar := trange(self.steps, desc="Attack", position=1)):
             if step % self.restart_every == 0:
                 optimizer = torch.optim.Adam(
@@ -137,36 +140,25 @@ class SemanticAdversary(Callback):
                     sat.data.uniform_(*self.sat_bound)
 
             # Clip parameters to valid bounds using straight-through estimator
-            adv_batch = batch | {
+            adv_args = {
                 "angle": angle
                 + (torch.clip(angle, *self.angle_bound) - angle).detach(),
                 "hue": hue + (torch.clip(hue, *self.hue_bound) - hue).detach(),
                 "sat": sat + (torch.clip(sat, *self.sat_bound) - sat).detach(),
+                "image_mean": image_mean,
+                "image_std": image_std,
             }
 
             # Perturb image and get outputs from model on perturbed image
-            adv_image = perturb_image(
-                **adv_batch, image_mean=image_mean, image_std=image_std
-            )
-            adv_batch = pl_module.validation_step(adv_batch | adv_image)
-            del adv_image
+            adv_image = perturb_image(**batch, **adv_args)
+            adv_batch = pl_module.validation_step(batch | adv_image)
 
             # Compute adversarial loss from model outputs and perturbed mask
-            adv_mask = perturb_mask(**adv_batch)
-            adv_batch = adv_batch | compute_loss(**(adv_batch | adv_mask))
-            breakpoint()
-            del adv_mask
+            adv_mask = perturb_mask(**batch, **adv_args)
+            losses = compute_loss(**(adv_batch | adv_mask))
 
-            # Unrotate anomaly_maps for metric computations
-            unrotated_anomaly_maps = perturb_mask(
-                adv_batch["anomaly_maps"].detach(),
-                angle=-adv_batch["angle"].detach(),
-                mode="three_pass",
-                padding_mode="constant",
-            )
-            adv_batch["anomaly_maps"] = unrotated_anomaly_maps["mask"]
-            adv_batch["orig_anomaly_maps"] = unrotated_anomaly_maps["benign_mask"]
-            del unrotated_anomaly_maps
+            # Add rotated mask, args, and losses for metric computations
+            adv_batch = adv_batch | adv_mask | adv_args | losses
 
             # Compute per-example and batch metrics
             adv_batch = adv_batch | compute_metrics(
@@ -207,8 +199,9 @@ class SemanticAdversary(Callback):
         pbar.close()
 
         print(f"{metrics = }")
-        # NOTE: mask is now rotated and will be used to compute metrics!!!
-        return adv_batch
+
+        # Return adversarial image and rotated mask
+        return batch | adv_image | adv_mask
 
 
 # FIXME: Make this a @staticmethod
