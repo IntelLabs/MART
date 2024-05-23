@@ -172,12 +172,12 @@ class SemanticAdversary(Callback):
             adv_batch = adv_batch | compute_metrics(
                 image_metrics,
                 inputs=adv_batch["pred_scores"],
-                targets=adv_batch["label"].long(),
+                targets=adv_batch["label"].int(),
             )
             adv_batch = adv_batch | compute_metrics(
                 pixel_metrics,
                 inputs=adv_batch["anomaly_maps"],
-                targets=adv_batch["mask"].long(),
+                targets=adv_batch["mask"].int(),
             )
 
             # Save metrics with lowest loss
