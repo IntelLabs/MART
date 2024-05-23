@@ -15,6 +15,7 @@ from torch_rotation import rotate_three_pass
 from kornia.color import rgb_to_hsv, hsv_to_rgb
 from kornia.geometry.transform import rotate
 from tqdm import trange
+from anomalib.metrics import create_metric_collection
 
 from ..utils import get_pylogger
 
@@ -80,12 +81,6 @@ class SemanticAdversary(Callback):
 
         # Create optimization variables for angle, hue, and saturation
         batch_size = batch["image"].shape[0]
-        steps = torch.tensor(
-            [0] * batch_size,
-            device=device,
-            dtype=torch.int32,
-        )
-
         angle = torch.tensor(
             [self.angle_init] * batch_size,
             device=device,
@@ -108,22 +103,35 @@ class SemanticAdversary(Callback):
         )
 
         # Metrics to save
+        per_example_metric = torch.tensor(
+            [-torch.inf] * batch_size, device=device, dtype=torch.float32
+        )
+
+        image_metrics = create_metric_collection(["F1Score", "AUROC"], "image_").to(
+            device
+        )
+        pixel_metrics = create_metric_collection(["F1Score", "AUROC"], "pixel_").to(
+            device
+        )
+
         metrics = {
             "angle": angle.detach().clone(),
             "hue": hue.detach().clone(),
             "sat": sat.detach().clone(),
-            "gain": torch.tensor(
-                [-torch.inf] * batch_size,
-                device=device,
-                dtype=torch.float32,
-            ),
-            "step": torch.tensor(
-                [0] * batch_size,
-                device=device,
-                dtype=torch.int32,
-            ),
+            "step": per_example_metric.clone(),
+            "gain": per_example_metric.clone(),
         }
 
+        for name in image_metrics.keys():
+            metrics[name] = per_example_metric.clone()
+        for name in pixel_metrics.keys():
+            metrics[name] = per_example_metric.clone()
+
+        # FIXME: It would be nice to extract these from the datamodule transform
+        image_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073], device=device)
+        image_std = torch.tensor([0.26862954, 0.26130258, 0.27577711], device=device)
+
+        # FIXME: Ideally we would clone the trainer and run fit instead of creating our own optimization loop
         # Run optimization
         for step in (pbar := trange(self.steps, desc="Attack", position=1)):
             if step % self.restart_every == 0:
@@ -143,60 +151,109 @@ class SemanticAdversary(Callback):
                     sat.data.uniform_(*self.sat_bound)
 
             # Clip parameters to valid bounds using straight-through estimator
-            batch["angle"] = (
-                angle + (torch.clip(angle, *self.angle_bound) - angle).detach()
+            adv_batch = batch | {
+                "angle": angle
+                + (torch.clip(angle, *self.angle_bound) - angle).detach(),
+                "hue": hue + (torch.clip(hue, *self.hue_bound) - hue).detach(),
+                "sat": sat + (torch.clip(sat, *self.sat_bound) - sat).detach(),
+            }
+
+            # Perturb image and get outputs from model on perturbed image
+            adv_image = perturb_image(
+                **adv_batch, image_mean=image_mean, image_std=image_std
             )
-            batch["hue"] = hue + (torch.clip(hue, *self.hue_bound) - hue).detach()
-            batch["sat"] = sat + (torch.clip(sat, *self.sat_bound) - sat).detach()
-            batch["step"] = steps + step
+            adv_batch = pl_module.validation_step(adv_batch | adv_image)
+            del adv_image
 
-            adv_batch = perturb(**batch)
-            adv_batch = pl_module.validation_step(adv_batch)
-            adv_batch["gain"] = compute_gain(**adv_batch)
+            # Compute adversarial gain from model outputs and perturbed mask
+            adv_mask = perturb_mask(**adv_batch)
+            adv_batch = adv_batch | compute_gain(**(adv_batch | adv_mask))
+            del adv_mask
 
-            # Derotate anomaly_maps and mask
-            anomaly_maps = adv_batch["anomaly_maps"][..., None, :, :]
-            anomaly_maps = rotate_three_pass(
-                anomaly_maps,
-                torch.deg2rad(-batch["angle"].detach()),
-                N=-1,
+            # Unrotate anomaly_maps for metric computations
+            unrotated_anomaly_maps = perturb_mask(
+                adv_batch["anomaly_maps"].detach(),
+                angle=-adv_batch["angle"].detach(),
+                mode="three_pass",
                 padding_mode="constant",
             )
-            adv_batch["anomaly_maps"] = anomaly_maps[..., 0, :, :]
-            adv_batch["mask"] = batch["mask"]
+            adv_batch["anomaly_maps"] = unrotated_anomaly_maps["mask"]
+            adv_batch["orig_anomaly_maps"] = unrotated_anomaly_maps["benign_mask"]
+            del unrotated_anomaly_maps
 
-            # Save examples with highest gain
+            # Compute per-example and batch metrics
+            adv_batch = adv_batch | compute_metrics(
+                image_metrics,
+                inputs=adv_batch["pred_scores"],
+                targets=adv_batch["label"].long(),
+            )
+            adv_batch = adv_batch | compute_metrics(
+                pixel_metrics,
+                inputs=adv_batch["anomaly_maps"],
+                targets=adv_batch["mask"].long(),
+            )
+
+            # Save metrics with highest gain
             better = torch.where(adv_batch["gain"] > metrics["gain"])
             for key in metrics:
-                metrics[key][better] = adv_batch[key][better].detach()
+                # FIXME: remove this by comprehending scalars instead of key names
+                if key == "step":
+                    metrics[key][better] = step
+                else:
+                    metrics[key][better] = adv_batch[key][better].detach()
 
+            # FIXME: Turn gain into a loss because as an adversary we generally want to lower these metrics.
             pbar.set_postfix(
                 {
-                    "cur gain": adv_batch["gain"].mean().item(),
-                    "gain": metrics["gain"].mean().item(),
+                    "gain": adv_batch["batch_gain"].item(),
+                    "iAUROC": adv_batch["batch_image_AUROC"].item(),
+                    "pAUROC": adv_batch["batch_pixel_AUROC"].item(),
+                    "↑gain": metrics["gain"].sum().item(),
+                    "↑iAUROC": metrics["image_AUROC"].mean().item(),
+                    "↑pAUROC": metrics["pixel_AUROC"].mean().item(),
                 }
             )
 
             # Take optimization step
             optimizer.zero_grad()
-            adv_batch["gain"].sum().backward()
+            adv_batch["batch_gain"].backward()
             optimizer.step()
 
+        print(f"{metrics = }")
         # NOTE: mask is now rotated and will be used to compute metrics!!!
         return adv_batch
 
 
-def perturb(*, image, mask, angle=None, hue=None, sat=None, **kwargs):
+# FIXME: Make this a @staticmethod
+def perturb_image(
+    image,
+    *,
+    angle=None,
+    hue=None,
+    sat=None,
+    image_mean=None,
+    image_std=None,
+    mode="three_pass",  # bilinear | nearest | three_pass
+    padding_mode="replicate",  # constant | replicate | reflect | circular | zeros | border | reflection
+    **kwargs,
+):
+    image_adv = image.clone()
+
     # Return image to [0, 1] space
-    mean = torch.tensor([0.48145466, 0.4578275, 0.40821073], device=image.device)
-    std = torch.tensor([0.26862954, 0.26130258, 0.27577711], device=image.device)
-    image_adv = image * std[..., None, None] + mean[..., None, None]
+    if image_mean is not None and image_std is not None:
+        image_adv = image_adv * image_std[..., None, None] + image_mean[..., None, None]
 
     # Rotate image by angle degrees
     if angle is not None:
-        theta = torch.deg2rad(angle)
-        image_adv = rotate_three_pass(image_adv, theta, N=-1, padding_mode="replicate")
+        if mode == "three_pass":
+            theta = torch.deg2rad(angle)
+            image_adv = rotate_three_pass(
+                image_adv, theta, N=-1, padding_mode=padding_mode
+            )
+        else:
+            image_adv = rotate(image_adv, angle, mode=mode, padding_mode=padding_mode)
 
+    # Convert image from RGB to HSV space
     if hue is not None or sat is not None:
         image_hsv = rgb_to_hsv(image_adv)
         image_hue, image_sat, image_val = torch.unbind(image_hsv, dim=-3)
@@ -211,30 +268,47 @@ def perturb(*, image, mask, angle=None, hue=None, sat=None, **kwargs):
         image_sat = image_sat + sat[:, None, None]
         image_sat = image_sat + (torch.clip(image_sat, 0.0, 1.0) - image_sat).detach()
 
+    # Convert image fro HSV to RGB space
     if hue is not None or sat is not None:
         image_hsv = torch.stack([image_hue, image_sat, image_val], dim=-3)
         image_adv = hsv_to_rgb(image_hsv)
 
-    # Re-normalize image
-    image_adv = (image_adv - mean[..., None, None]) / std[..., None, None]
+    # Re-normalize image to image_mean and image_std
+    if image_mean is not None and image_std is not None:
+        image_adv = (image_adv - image_mean[..., None, None]) / image_std[
+            ..., None, None
+        ]
 
-    # Rotate mask to match image
-    mask_rot = mask[..., None, :, :]
-    if angle is not None:
-        mask_rot = rotate(mask_rot, angle.detach(), mode="nearest")
+    return {"benign_image": image, "image": image_adv}
+
+
+# FIXME: Make this a @staticmethod
+@torch.no_grad()
+def perturb_mask(
+    mask,
+    *,
+    angle,
+    mode="nearest",  # bilinear | nearest | three_pass
+    padding_mode="zeros",  # constant | replicate | reflect | circular | zeros | border | reflection
+    **kwargs,
+):
+    mask_rot = mask[..., None, :, :].clone()
+
+    if mode == "three_pass":
+        theta = torch.deg2rad(angle)
+        mask_rot = rotate_three_pass(mask_rot, theta, N=-1, padding_mode=padding_mode)
+    else:
+        mask_rot = rotate(mask_rot, angle, mode=mode, padding_mode=padding_mode)
+
     mask_rot = mask_rot[..., 0, :, :]
 
-    # Replace image with adversarial image and mask with rotated mask
     return {
-        "image": image_adv,
+        "benign_mask": mask,
         "mask": mask_rot,
-        "angle": angle,
-        "hue": hue,
-        "sat": sat,
-        **kwargs,
     }
 
 
+# FIXME: Make this a @staticmethod
 def compute_gain(anomaly_maps, mask, **kwargs):
     true_negatives = mask == 0
     negative_loss = torch.sum(anomaly_maps * true_negatives, dim=(1, 2)) / (
@@ -246,5 +320,37 @@ def compute_gain(anomaly_maps, mask, **kwargs):
         torch.sum(true_positives, dim=(1, 2)) + 1e-8
     )
 
+    gain = negative_loss + -positive_loss
+
     # decrease negatives and increase positives
-    return negative_loss + -positive_loss
+    return {
+        "negative_loss": negative_loss,
+        "positive_loss": positive_loss,
+        "gain": gain,
+        "batch_gain": gain.sum(),
+    }
+
+
+# FIXME: Make this a @staticmethod
+def compute_metrics(
+    metric_collection,
+    *,
+    inputs,
+    targets,
+):
+    ret = {}
+
+    for name in metric_collection.keys():
+        ret[name] = []
+
+    for input, target in zip(inputs, targets):
+        for name, value in metric_collection(input[None], target[None]).items():
+            ret[name].append(value)
+
+    for name in metric_collection.keys():
+        ret[name] = torch.stack(ret[name])
+
+    for name, value in metric_collection.compute().items():
+        ret[f"batch_{name}"] = value
+
+    return ret
