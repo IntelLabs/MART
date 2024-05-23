@@ -42,6 +42,7 @@ class SemanticAdversary(Callback):
         sat_init: float = 0,
         sat_bound: float = 0.5,
         sat_lr_mult: float = 0.02,
+        metrics: list[str] = None,
     ):
         super().__init__()
 
@@ -59,6 +60,10 @@ class SemanticAdversary(Callback):
         self.sat_init = sat_init
         self.sat_bound = [-sat_bound, sat_bound]
         self.sat_lr = lr * sat_lr_mult
+
+        self.metrics = metrics
+        if self.metrics is None:
+            self.metrics = ["F1Score", "AUROC"]
 
     def setup(self, trainer, pl_module, stage=None):
         self._on_after_batch_transfer = pl_module.on_after_batch_transfer
@@ -107,12 +112,9 @@ class SemanticAdversary(Callback):
             [torch.inf] * batch_size, device=device, dtype=torch.float32
         )
 
-        image_metrics = create_metric_collection(["F1Score", "AUROC"], "image_").to(
-            device
-        )
-        pixel_metrics = create_metric_collection(["F1Score", "AUROC"], "pixel_").to(
-            device
-        )
+        # FIXME: F1Score seems like it needs an adaptive threshold!
+        image_metrics = create_metric_collection(self.metrics, "image_").to(device)
+        pixel_metrics = create_metric_collection(self.metrics, "pixel_").to(device)
 
         metrics = {
             "angle": angle.detach().clone(),
