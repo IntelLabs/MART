@@ -93,25 +93,10 @@ class SemanticAdversary(Callback):
             requires_grad=True,
         )
 
-        hue = torch.tensor(
-            [self.hue_init] * batch_size,
-            device=device,
-            dtype=torch.float32,
-            requires_grad=True,
-        )
-
-        sat = torch.tensor(
-            [self.sat_init] * batch_size,
-            device=device,
-            dtype=torch.float32,
-            requires_grad=True,
-        )
+        hue = torch.full_like(angle, self.hue_init, requires_grad=True)
+        sat = torch.full_like(angle, self.sat_init, requires_grad=True)
 
         # Metrics to save
-        per_example_metric = torch.tensor(
-            [torch.inf] * batch_size, device=device, dtype=torch.float32
-        )
-
         # FIXME: F1Score seems like it needs an adaptive threshold!
         image_metrics = create_metric_collection(self.metrics, "image_").to(device)
         pixel_metrics = create_metric_collection(self.metrics, "pixel_").to(device)
@@ -120,14 +105,14 @@ class SemanticAdversary(Callback):
             "angle": angle.detach().clone(),
             "hue": hue.detach().clone(),
             "sat": sat.detach().clone(),
-            "step": per_example_metric.clone(),
-            "loss": per_example_metric.clone(),
+            "step": torch.full_like(angle, -1, dtype=torch.int32),
+            "loss": torch.full_like(angle, torch.inf),
         }
 
         for name in image_metrics.keys():
-            metrics[name] = per_example_metric.clone()
+            metrics[name] = torch.full_like(angle, torch.inf)
         for name in pixel_metrics.keys():
-            metrics[name] = per_example_metric.clone()
+            metrics[name] = torch.full_like(angle, torch.inf)
 
         # FIXME: It would be nice to extract these from the datamodule transform
         image_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073], device=device)
