@@ -279,7 +279,8 @@ def perturb_mask(
     padding_mode="zeros",  # constant | replicate | reflect | circular | zeros | border | reflection
     **kwargs,
 ):
-    mask_rot = mask[..., None, :, :].clone()
+    mask_rot = mask.clone()
+    mask_rot = mask_rot[..., None, :, :]
 
     if mode == "three_pass":
         theta = torch.deg2rad(angle)
