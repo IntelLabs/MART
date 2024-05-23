@@ -204,6 +204,7 @@ class SemanticAdversary(Callback):
             optimizer.zero_grad()
             adv_batch["batch_loss"].backward()
             optimizer.step()
+        pbar.close()
 
         print(f"{metrics = }")
         # NOTE: mask is now rotated and will be used to compute metrics!!!
