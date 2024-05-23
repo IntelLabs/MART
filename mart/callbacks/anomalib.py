@@ -104,7 +104,7 @@ class SemanticAdversary(Callback):
 
         # Metrics to save
         per_example_metric = torch.tensor(
-            [-torch.inf] * batch_size, device=device, dtype=torch.float32
+            [torch.inf] * batch_size, device=device, dtype=torch.float32
         )
 
         image_metrics = create_metric_collection(["F1Score", "AUROC"], "image_").to(
@@ -119,7 +119,7 @@ class SemanticAdversary(Callback):
             "hue": hue.detach().clone(),
             "sat": sat.detach().clone(),
             "step": per_example_metric.clone(),
-            "gain": per_example_metric.clone(),
+            "loss": per_example_metric.clone(),
         }
 
         for name in image_metrics.keys():
@@ -141,7 +141,6 @@ class SemanticAdversary(Callback):
                         {"params": hue, "lr": self.hue_lr},
                         {"params": sat, "lr": self.sat_lr},
                     ],
-                    maximize=True,
                 )
 
                 # Randomly reinitialize parameters after restart
@@ -165,9 +164,10 @@ class SemanticAdversary(Callback):
             adv_batch = pl_module.validation_step(adv_batch | adv_image)
             del adv_image
 
-            # Compute adversarial gain from model outputs and perturbed mask
+            # Compute adversarial loss from model outputs and perturbed mask
             adv_mask = perturb_mask(**adv_batch)
-            adv_batch = adv_batch | compute_gain(**(adv_batch | adv_mask))
+            adv_batch = adv_batch | compute_loss(**(adv_batch | adv_mask))
+            breakpoint()
             del adv_mask
 
             # Unrotate anomaly_maps for metric computations
@@ -193,8 +193,8 @@ class SemanticAdversary(Callback):
                 targets=adv_batch["mask"].long(),
             )
 
-            # Save metrics with highest gain
-            better = torch.where(adv_batch["gain"] > metrics["gain"])
+            # Save metrics with lowest loss
+            better = torch.where(adv_batch["loss"] < metrics["loss"])
             for key in metrics:
                 # FIXME: remove this by comprehending scalars instead of key names
                 if key == "step":
@@ -202,21 +202,20 @@ class SemanticAdversary(Callback):
                 else:
                     metrics[key][better] = adv_batch[key][better].detach()
 
-            # FIXME: Turn gain into a loss because as an adversary we generally want to lower these metrics.
             pbar.set_postfix(
                 {
-                    "gain": adv_batch["batch_gain"].item(),
+                    "loss": adv_batch["batch_loss"].item(),
                     "iAUROC": adv_batch["batch_image_AUROC"].item(),
                     "pAUROC": adv_batch["batch_pixel_AUROC"].item(),
-                    "↑gain": metrics["gain"].sum().item(),
-                    "↑iAUROC": metrics["image_AUROC"].mean().item(),
-                    "↑pAUROC": metrics["pixel_AUROC"].mean().item(),
+                    "↓loss": metrics["loss"].sum().item(),
+                    "↓iAUROC": metrics["image_AUROC"].mean().item(),
+                    "↓pAUROC": metrics["pixel_AUROC"].mean().item(),
                 }
             )
 
             # Take optimization step
             optimizer.zero_grad()
-            adv_batch["batch_gain"].backward()
+            adv_batch["batch_loss"].backward()
             optimizer.step()
 
         print(f"{metrics = }")
@@ -309,9 +308,9 @@ def perturb_mask(
 
 
 # FIXME: Make this a @staticmethod
-def compute_gain(anomaly_maps, mask, **kwargs):
+def compute_loss(anomaly_maps, mask, **kwargs):
     true_negatives = mask == 0
-    negative_loss = torch.sum(anomaly_maps * true_negatives, dim=(1, 2)) / (
+    negative_loss = 1 - torch.sum(anomaly_maps * true_negatives, dim=(1, 2)) / (
         torch.sum(true_negatives, dim=(1, 2)) + 1e-8
     )
 
@@ -320,14 +319,14 @@ def compute_gain(anomaly_maps, mask, **kwargs):
         torch.sum(true_positives, dim=(1, 2)) + 1e-8
     )
 
-    gain = negative_loss + -positive_loss
+    loss = negative_loss + positive_loss
 
     # decrease negatives and increase positives
     return {
         "negative_loss": negative_loss,
         "positive_loss": positive_loss,
-        "gain": gain,
-        "batch_gain": gain.sum(),
+        "loss": loss,
+        "batch_loss": loss.sum(),
     }
 
 
