@@ -154,6 +154,17 @@ class SemanticAdversary(Callback):
             adv_batch = pl_module.validation_step(adv_batch)
             adv_batch["gain"] = compute_gain(**adv_batch)
 
+            # Derotate anomaly_maps and mask
+            anomaly_maps = adv_batch["anomaly_maps"][..., None, :, :]
+            anomaly_maps = rotate_three_pass(
+                anomaly_maps,
+                torch.deg2rad(-batch["angle"].detach()),
+                N=-1,
+                padding_mode="constant",
+            )
+            adv_batch["anomaly_maps"] = anomaly_maps[..., 0, :, :]
+            adv_batch["mask"] = batch["mask"]
+
             # Save examples with highest gain
             better = torch.where(adv_batch["gain"] > metrics["gain"])
             for key in metrics:
