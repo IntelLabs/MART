@@ -43,6 +43,7 @@ class SemanticAdversary(Callback):
         sat_bound: float = 0.5,
         sat_lr_mult: float = 0.02,
         metrics: list[str] = None,
+        seed: int = 2024,
     ):
         super().__init__()
 
@@ -64,6 +65,8 @@ class SemanticAdversary(Callback):
         self.metrics = metrics
         if self.metrics is None:
             self.metrics = ["F1Score", "AUROC"]
+
+        torch.manual_seed(seed)
 
     def setup(self, trainer, pl_module, stage=None):
         self._on_after_batch_transfer = pl_module.on_after_batch_transfer
