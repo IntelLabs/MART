@@ -143,7 +143,7 @@ class SemanticAdversary(Callback):
                     sat.data.uniform_(*self.sat_bound)
 
             # Clip parameters to valid bounds using straight-through estimator
-            adv_args = {
+            adv_params = {
                 "angle": angle
                 + (torch.clip(angle, *self.angle_bound) - angle).detach(),
                 "hue": hue + (torch.clip(hue, *self.hue_bound) - hue).detach(),
@@ -153,15 +153,17 @@ class SemanticAdversary(Callback):
             }
 
             # Perturb image and get outputs from model on perturbed image
-            adv_image = perturb_image(**batch, **adv_args)
+            adv_image = perturb_image(**batch, **adv_params)
             adv_batch = pl_module.validation_step(batch | adv_image)
+            del adv_image
 
             # Compute adversarial loss from model outputs and perturbed mask
-            adv_mask = perturb_mask(**batch, **adv_args)
+            adv_mask = perturb_mask(**batch, **adv_params)
             losses = compute_loss(**(adv_batch | adv_mask))
 
             # Add rotated mask, args, and losses for metric computations
-            adv_batch = adv_batch | adv_mask | adv_args | losses
+            adv_batch = adv_batch | adv_mask | adv_params | losses
+            del adv_mask, adv_params, losses
 
             # Compute per-example and batch image/pixel metrics
             adv_batch = adv_batch | compute_metrics(
@@ -206,9 +208,20 @@ class SemanticAdversary(Callback):
             optimizer.step()
         pbar.close()
 
-        print(f"{metrics = }")
+        logger.info(f"{metrics = }")
 
-        # Return adversarial image and rotated mask
+        # Return perturbed image and rotated mask
+        best_adv_params = {
+            "angle": metrics["angle"],
+            "hue": metrics["hue"],
+            "sat": metrics["sat"],
+            "image_mean": image_mean,
+            "image_std": image_std,
+        }
+
+        adv_image = perturb_image(**batch, **best_adv_params)
+        adv_mask = perturb_mask(**batch, **best_adv_params)
+
         return batch | adv_image | adv_mask
 
 
