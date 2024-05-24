@@ -184,7 +184,7 @@ class SemanticAdversary(Callback):
                 {
                     "loss": adv_batch["batch_loss"].item(),
                     "↓loss": best_params["loss"].sum().item(),
-                    "pAUROC": adv_batch["batch_pAUROC"].item(),
+                    "pAUROC": adv_batch["pAUROC"].mean().item(),
                     "↓pAUROC": best_params["pAUROC"].mean().item(),  # NOTE: upperbound
                 }
             )
