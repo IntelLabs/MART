@@ -119,9 +119,6 @@ class SemanticAdversary(Callback):
 
         # FIXME: Ideally we would clone the trainer and run fit instead of creating our own optimization loop
         # Run optimization
-        adv_image = {}
-        adv_mask = {}
-
         for step in (pbar := trange(self.steps, desc="Attack", position=1)):
             if step % self.restart_every == 0:
                 optimizer = torch.optim.Adam(
@@ -181,13 +178,14 @@ class SemanticAdversary(Callback):
                     best_params[key][lower] = step
                 else:
                     best_params[key][lower] = adv_batch[key][lower].detach()
+            del is_negative, loss_is_lower, metric_is_lower, is_lower, lower
 
             pbar.set_postfix(
                 {
                     "loss": adv_batch["batch_loss"].item(),
                     "↓loss": best_params["loss"].sum().item(),
                     "pAUROC": adv_batch["batch_pAUROC"].item(),
-                    "↓pAUROC": best_params["pAUROC"].mean().item(),
+                    "↓pAUROC": best_params["pAUROC"].mean().item(),  # NOTE: upperbound
                 }
             )
 
@@ -195,6 +193,7 @@ class SemanticAdversary(Callback):
             optimizer.zero_grad()
             adv_batch["batch_loss"].backward()
             optimizer.step()
+
         pbar.close()
 
         logger.info(f"{best_params = }")
