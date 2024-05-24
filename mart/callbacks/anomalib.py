@@ -180,12 +180,15 @@ class SemanticAdversary(Callback):
                     best_params[key][lower] = adv_batch[key][lower].detach()
             del is_negative, loss_is_lower, metric_is_lower, is_lower, lower
 
+            def format_tensor(tensor):
+                return f"{tensor.mean():.3g}±{tensor.std():.3g}"
+
             pbar.set_postfix(
                 {
-                    "loss": adv_batch["batch_loss"].item(),
-                    "↓loss": best_params["loss"].sum().item(),
-                    "pAUROC": adv_batch["pAUROC"].mean().item(),
-                    "↓pAUROC": best_params["pAUROC"].mean().item(),  # NOTE: upperbound
+                    "loss": format_tensor(adv_batch['loss']),
+                    "↓loss": format_tensor(best_params["loss"]),
+                    "pAUROC": format_tensor(adv_batch["pAUROC"]),
+                    "↓pAUROC": format_tensor(best_params["pAUROC"]),
                 }
             )
 
