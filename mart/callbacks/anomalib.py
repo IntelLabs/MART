@@ -160,7 +160,7 @@ class SemanticAdversary(Callback):
             # Add rotated mask, args, and losses for metric computations
             adv_batch = adv_batch | adv_mask | adv_args | losses
 
-            # Compute per-example and batch metrics
+            # Compute per-example and batch image/pixel metrics
             adv_batch = adv_batch | compute_metrics(
                 image_metrics,
                 inputs=adv_batch["pred_scores"],
@@ -172,14 +172,19 @@ class SemanticAdversary(Callback):
                 targets=adv_batch["mask"].int(),
             )
 
-            # Save metrics with lowest loss
-            better = torch.where(adv_batch["loss"] < metrics["loss"])
+            # Save metrics with lowest loss (if all negative) or lowest metric
+            is_negative = torch.sum(batch["mask"], dim=(-1, -2)) == 0
+            loss_is_lower = adv_batch["loss"] < metrics["loss"]
+            metric_is_lower = adv_batch["pixel_AUROC"] < metrics["pixel_AUROC"]
+            is_lower = torch.where(is_negative, loss_is_lower, metric_is_lower)
+            lower = torch.where(is_lower)
+
             for key in metrics:
-                # FIXME: remove this by comprehending scalars instead of key names
+                # FIXME: remove this if-statement by comprehending scalars instead of key names
                 if key == "step":
-                    metrics[key][better] = step
+                    metrics[key][lower] = step
                 else:
-                    metrics[key][better] = adv_batch[key][better].detach()
+                    metrics[key][lower] = adv_batch[key][lower].detach()
 
             pbar.set_postfix(
                 {
