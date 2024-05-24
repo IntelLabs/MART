@@ -335,3 +335,26 @@ def compute_metrics(
         ret[f"batch_{name}"] = value
 
     return ret
+
+
+if __name__ == "__main__":
+    image = torch.rand((16, 3, 240, 240))
+    zeros = torch.zeros_like(image[:, 0, 0, 0])
+
+    adv_image = perturb_image(image, angle=zeros, hue=zeros, sat=zeros)
+    assert torch.allclose(adv_image["image"], adv_image["benign_image"], atol=0.1 / 255)
+
+    image_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073])
+    image_std = torch.tensor([0.26862954, 0.26130258, 0.27577711])
+
+    image = (image - image_mean[..., None, None]) / image_std[..., None, None]
+
+    adv_image = perturb_image(
+        image,
+        angle=zeros,
+        hue=zeros,
+        sat=zeros,
+        image_mean=image_mean,
+        image_std=image_std,
+    )
+    assert torch.allclose(adv_image["image"], adv_image["benign_image"], atol=0.1 / 255)
