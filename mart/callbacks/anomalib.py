@@ -64,7 +64,7 @@ class SemanticAdversary(Callback):
 
         self.metrics = metrics
         if self.metrics is None:
-            self.metrics = ["F1Score", "AUROC"]
+            self.metrics = ["AUROC"]
 
         torch.manual_seed(seed)
 
@@ -100,9 +100,7 @@ class SemanticAdversary(Callback):
         sat = torch.full_like(angle, self.sat_init, requires_grad=True)
 
         # Metrics to save
-        # FIXME: F1Score seems like it needs an adaptive threshold!
-        image_metrics = create_metric_collection(self.metrics, "image_").to(device)
-        pixel_metrics = create_metric_collection(self.metrics, "pixel_").to(device)
+        pixel_metrics = create_metric_collection(self.metrics, prefix="p").to(device)
 
         metrics = {
             "angle": angle.detach().clone(),
@@ -112,8 +110,6 @@ class SemanticAdversary(Callback):
             "loss": torch.full_like(angle, torch.inf),
         }
 
-        for name in image_metrics.keys():
-            metrics[name] = torch.full_like(angle, torch.inf)
         for name in pixel_metrics.keys():
             metrics[name] = torch.full_like(angle, torch.inf)
 
@@ -165,12 +161,7 @@ class SemanticAdversary(Callback):
             adv_batch = adv_batch | adv_mask | adv_params | losses
             del adv_mask, adv_params, losses
 
-            # Compute per-example and batch image/pixel metrics
-            adv_batch = adv_batch | compute_metrics(
-                image_metrics,
-                inputs=adv_batch["pred_scores"],
-                targets=adv_batch["label"].int(),
-            )
+            # Compute per-example and batch pixel metrics
             adv_batch = adv_batch | compute_metrics(
                 pixel_metrics,
                 inputs=adv_batch["anomaly_maps"],
@@ -194,10 +185,8 @@ class SemanticAdversary(Callback):
             pbar.set_postfix(
                 {
                     "loss": adv_batch["batch_loss"].item(),
-                    "iAUROC": adv_batch["batch_image_AUROC"].item(),
                     "pAUROC": adv_batch["batch_pixel_AUROC"].item(),
                     "↓loss": metrics["loss"].sum().item(),
-                    "↓iAUROC": metrics["image_AUROC"].mean().item(),
                     "↓pAUROC": metrics["pixel_AUROC"].mean().item(),
                 }
             )
