@@ -100,9 +100,9 @@ class SemanticAdversary(Callback):
         sat = torch.full_like(angle, self.sat_init, requires_grad=True)
 
         # Metrics to save
-        pixel_metrics = create_metric_collection(self.metrics, prefix="p").to(device)
+        metrics = create_metric_collection(self.metrics, prefix="p").to(device)
 
-        metrics = {
+        best_params = {
             "angle": angle.detach().clone(),
             "hue": hue.detach().clone(),
             "sat": sat.detach().clone(),
@@ -110,8 +110,8 @@ class SemanticAdversary(Callback):
             "loss": torch.full_like(angle, torch.inf),
         }
 
-        for name in pixel_metrics.keys():
-            metrics[name] = torch.full_like(angle, torch.inf)
+        for name in metrics.keys():
+            best_params[name] = torch.full_like(angle, torch.inf)
 
         # FIXME: It would be nice to extract these from the datamodule transform
         image_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073], device=device)
@@ -139,55 +139,55 @@ class SemanticAdversary(Callback):
                     sat.data.uniform_(*self.sat_bound)
 
             # Clip parameters to valid bounds using straight-through estimator
-            adv_params = {
+            params = {
                 "angle": angle
                 + (torch.clip(angle, *self.angle_bound) - angle).detach(),
                 "hue": hue + (torch.clip(hue, *self.hue_bound) - hue).detach(),
                 "sat": sat + (torch.clip(sat, *self.sat_bound) - sat).detach(),
-                "image_mean": image_mean,
-                "image_std": image_std,
             }
 
             # Perturb image and get outputs from model on perturbed image
-            adv_image = perturb_image(**batch, **adv_params)
+            adv_image = perturb_image(
+                **batch, **params, image_mean=image_mean, image_std=image_std
+            )
             adv_batch = pl_module.validation_step(batch | adv_image)
             del adv_image
 
             # Compute adversarial loss from model outputs and perturbed mask
-            adv_mask = perturb_mask(**batch, **adv_params)
+            adv_mask = perturb_mask(**batch, **params)
             losses = compute_loss(**(adv_batch | adv_mask))
 
             # Add rotated mask, args, and losses for metric computations
-            adv_batch = adv_batch | adv_mask | adv_params | losses
-            del adv_mask, adv_params, losses
+            adv_batch = adv_batch | adv_mask | params | losses
+            del adv_mask, params, losses
 
             # Compute per-example and batch pixel metrics
             adv_batch = adv_batch | compute_metrics(
-                pixel_metrics,
+                metrics,
                 inputs=adv_batch["anomaly_maps"],
                 targets=adv_batch["mask"].int(),
             )
 
-            # Save metrics with lowest loss (if all negative) or lowest metric
-            is_negative = torch.sum(batch["mask"], dim=(-1, -2)) == 0
-            loss_is_lower = adv_batch["loss"] < metrics["loss"]
-            metric_is_lower = adv_batch["pixel_AUROC"] < metrics["pixel_AUROC"]
+            # Save best parameters amb lowest loss (if all negative) or lowest metric
+            is_negative = torch.sum(batch["mask"], dim=(-2, -1)) == 0
+            loss_is_lower = adv_batch["loss"] < best_params["loss"]
+            metric_is_lower = adv_batch["pAUROC"] < best_params["pAUROC"]
             is_lower = torch.where(is_negative, loss_is_lower, metric_is_lower)
             lower = torch.where(is_lower)
 
-            for key in metrics:
+            for key in best_params:
                 # FIXME: remove this if-statement by comprehending scalars instead of key names
                 if key == "step":
-                    metrics[key][lower] = step
+                    best_params[key][lower] = step
                 else:
-                    metrics[key][lower] = adv_batch[key][lower].detach()
+                    best_params[key][lower] = adv_batch[key][lower].detach()
 
             pbar.set_postfix(
                 {
                     "loss": adv_batch["batch_loss"].item(),
-                    "pAUROC": adv_batch["batch_pixel_AUROC"].item(),
-                    "↓loss": metrics["loss"].sum().item(),
-                    "↓pAUROC": metrics["pixel_AUROC"].mean().item(),
+                    "↓loss": best_params["loss"].sum().item(),
+                    "pAUROC": adv_batch["batch_pAUROC"].item(),
+                    "↓pAUROC": best_params["pAUROC"].mean().item(),
                 }
             )
 
@@ -197,19 +197,13 @@ class SemanticAdversary(Callback):
             optimizer.step()
         pbar.close()
 
-        logger.info(f"{metrics = }")
+        logger.info(f"{best_params = }")
 
         # Return perturbed image and rotated mask
-        best_adv_params = {
-            "angle": metrics["angle"],
-            "hue": metrics["hue"],
-            "sat": metrics["sat"],
-            "image_mean": image_mean,
-            "image_std": image_std,
-        }
-
-        adv_image = perturb_image(**batch, **best_adv_params)
-        adv_mask = perturb_mask(**batch, **best_adv_params)
+        adv_image = perturb_image(
+            **batch, **best_params, image_mean=image_mean, image_std=image_std
+        )
+        adv_mask = perturb_mask(**batch, **best_params)
 
         return batch | adv_image | adv_mask
 
