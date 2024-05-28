@@ -108,6 +108,8 @@ class SemanticAdversary(Callback):
         optimizer = None
         for step in (pbar := trange(self.steps, desc="Attack", position=1)):
             if step % self.restart_every == 0:
+                if optimizer is not None:
+                    del optimizer
                 optimizer = torch.optim.Adam(
                     [
                         {"params": angle, "lr": self.angle_lr},
