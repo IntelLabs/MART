@@ -134,7 +134,9 @@ class SemanticAdversary(Callback):
             adv_image = perturb_image(
                 **batch, **params, image_mean=image_mean, image_std=image_std
             )
-            adv_batch = pl_module.validation_step(batch | adv_image)
+            adv_batch = pl_module.test_step(
+                batch | adv_image, batch_idx=batch_idx, dataloader_idx=dataloader_idx
+            )
             del adv_image
 
             # Compute adversarial loss from model outputs and perturbed mask
