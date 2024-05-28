@@ -68,23 +68,10 @@ class SemanticAdversary(Callback):
 
         torch.manual_seed(seed)
 
-    def setup(self, trainer, pl_module, stage=None):
-        self._on_after_batch_transfer = pl_module.on_after_batch_transfer
-        pl_module.on_after_batch_transfer = types.MethodType(
-            self.on_after_batch_transfer, pl_module
-        )
-
-    def teardown(self, trainer, pl_module, stage=None):
-        pl_module.on_after_batch_transfer = self._on_after_batch_transfer
-
     @torch.inference_mode(False)
-    def on_after_batch_transfer(self, pl_module, batch, dataloader_idx):
-        batch = self._on_after_batch_transfer(batch, dataloader_idx)
-
-        # FIXME: Dispatch to on_after_train/val/test_batch_transfer
-        if not pl_module.trainer.testing:
-            return batch
-
+    def on_test_batch_start(
+        self, trainer, pl_module, batch, batch_idx, dataloader_idx=0
+    ):
         device = pl_module.device
 
         # Create optimization variables for angle, hue, and saturation
@@ -185,7 +172,7 @@ class SemanticAdversary(Callback):
 
             pbar.set_postfix(
                 {
-                    "loss": format_tensor(adv_batch['loss']),
+                    "loss": format_tensor(adv_batch["loss"]),
                     "↓loss": format_tensor(best_params["loss"]),
                     "pAUROC": format_tensor(adv_batch["pAUROC"]),
                     "↓pAUROC": format_tensor(best_params["pAUROC"]),
@@ -201,13 +188,14 @@ class SemanticAdversary(Callback):
 
         logger.info(f"{best_params = }")
 
-        # Return perturbed image and rotated mask
+        # Update batch with perturbed image and rotated mask
         adv_image = perturb_image(
             **batch, **best_params, image_mean=image_mean, image_std=image_std
         )
         adv_mask = perturb_mask(**batch, **best_params)
 
-        return batch | adv_image | adv_mask
+        batch.update(adv_image)
+        batch.update(adv_mask)
 
 
 # FIXME: Make this a @staticmethod
