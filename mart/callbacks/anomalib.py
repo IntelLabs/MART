@@ -82,7 +82,6 @@ class SemanticAdversary(Callback):
             dtype=torch.float32,
             requires_grad=True,
         )
-
         hue = torch.full_like(angle, self.hue_init, requires_grad=True)
         sat = torch.full_like(angle, self.sat_init, requires_grad=True)
 
@@ -106,6 +105,7 @@ class SemanticAdversary(Callback):
 
         # FIXME: Ideally we would clone the trainer and run fit instead of creating our own optimization loop
         # Run optimization
+        optimizer = None
         for step in (pbar := trange(self.steps, desc="Attack", position=1)):
             if step % self.restart_every == 0:
                 optimizer = torch.optim.Adam(
@@ -171,7 +171,6 @@ class SemanticAdversary(Callback):
 
             def format_tensor(tensor):
                 return f"{tensor.mean():.3g}±{tensor.std():.3g}"
-
             pbar.set_postfix(
                 {
                     "loss": format_tensor(adv_batch["loss"]),
@@ -185,6 +184,10 @@ class SemanticAdversary(Callback):
             optimizer.zero_grad()
             adv_batch["batch_loss"].backward()
             optimizer.step()
+
+            del adv_batch
+
+        del optimizer
 
         pbar.close()
 
