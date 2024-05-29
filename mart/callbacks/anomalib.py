@@ -122,7 +122,7 @@ class SemanticAdversary(Callback):
                 + (torch.clip(angle, *self.angle_bound) - angle).detach(),
                 "hue": hue + (torch.clip(hue, *self.hue_bound) - hue).detach(),
                 "sat": sat + (torch.clip(sat, *self.sat_bound) - sat).detach(),
-                "step": step,
+                "step": torch.full_like(angle, step),
             }
 
             # Perturb image and get outputs from model on perturbed image
