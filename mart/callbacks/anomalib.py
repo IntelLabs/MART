@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import os
 import types
 
 import torch
@@ -16,10 +17,7 @@ from kornia.color import rgb_to_hsv, hsv_to_rgb
 from kornia.geometry.transform import rotate
 from tqdm import trange
 from anomalib.metrics import create_metric_collection
-
-from ..utils import get_pylogger
-
-logger = get_pylogger(__name__)
+from collections import defaultdict
 
 
 __all__ = ["SemanticAdversary"]
@@ -68,6 +66,9 @@ class SemanticAdversary(Callback):
 
         torch.manual_seed(seed)
 
+    def on_test_epoch_start(self, trainer, pl_module):
+        self.results = defaultdict(list)
+
     @torch.inference_mode(False)
     def on_test_batch_start(
         self, trainer, pl_module, batch, batch_idx, dataloader_idx=0
@@ -75,6 +76,7 @@ class SemanticAdversary(Callback):
         device = pl_module.device
 
         # Create optimization variables for angle, hue, and saturation
+        # FIXME: We should make this a proper nn.Module
         batch_size = batch["image"].shape[0]
         angle = torch.tensor(
             [self.angle_init] * batch_size,
@@ -85,19 +87,21 @@ class SemanticAdversary(Callback):
         hue = torch.full_like(angle, self.hue_init, requires_grad=True)
         sat = torch.full_like(angle, self.sat_init, requires_grad=True)
 
-        # Metrics to save
+        # Metrics and parameters to save
         metrics = create_metric_collection(self.metrics, prefix="p").to(device)
 
         best_params = {
-            "angle": angle.detach().clone(),
-            "hue": hue.detach().clone(),
-            "sat": sat.detach().clone(),
-            "step": torch.full_like(angle, -1, dtype=torch.int32),
-            "loss": torch.full_like(angle, torch.inf),
+            "angle": angle.detach().to("cpu", copy=True),
+            "hue": hue.detach().to("cpu", copy=True),
+            "sat": sat.detach().to("cpu", copy=True),
+            "step": torch.full_like(angle, -1, dtype=torch.int, device="cpu"),
+            "loss": torch.full_like(angle, torch.inf, device="cpu"),
+            "pred_scores": torch.full_like(angle, -1, device="cpu"),
+            "anomaly_maps": torch.empty_like(batch["image"][:, 0, :, :], device="cpu"),
         }
 
         for name in metrics.keys():
-            best_params[name] = torch.full_like(angle, torch.inf)
+            best_params[name] = torch.full_like(angle, torch.inf, device="cpu")
 
         # FIXME: It would be nice to extract these from the datamodule transform
         image_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073], device=device)
@@ -130,6 +134,7 @@ class SemanticAdversary(Callback):
                 + (torch.clip(angle, *self.angle_bound) - angle).detach(),
                 "hue": hue + (torch.clip(hue, *self.hue_bound) - hue).detach(),
                 "sat": sat + (torch.clip(sat, *self.sat_bound) - sat).detach(),
+                "step": step,
             }
 
             # Perturb image and get outputs from model on perturbed image
@@ -157,22 +162,26 @@ class SemanticAdversary(Callback):
             )
 
             # Save best parameters amb lowest loss (if all negative) or lowest metric
-            is_negative = torch.sum(batch["mask"], dim=(-2, -1)) == 0
-            loss_is_lower = adv_batch["loss"] < best_params["loss"]
-            metric_is_lower = adv_batch["pAUROC"] < best_params["pAUROC"]
+            is_negative = torch.sum(batch["mask"], dim=(-2, -1)).cpu() == 0
+            loss_is_lower = adv_batch["loss"].cpu() < best_params["loss"]
+            metric_is_lower = adv_batch["pAUROC"].cpu() < best_params["pAUROC"]
             is_lower = torch.where(is_negative, loss_is_lower, metric_is_lower)
             lower = torch.where(is_lower)
 
             for key in best_params:
-                # FIXME: remove this if-statement by comprehending scalars instead of key names
-                if key == "step":
-                    best_params[key][lower] = step
+                if isinstance(adv_batch[key], torch.Tensor):
+                    best_params[key][lower] = adv_batch[key][lower].detach().cpu()
+                elif isinstance(adv_batch[key], list):
+                    for i in lower[0]:
+                        best_params[key][i] = adv_batch[key][i]
                 else:
-                    best_params[key][lower] = adv_batch[key][lower].detach()
+                    best_params[key][lower] = adv_batch[key]
+
             del is_negative, loss_is_lower, metric_is_lower, is_lower, lower
 
             def format_tensor(tensor):
                 return f"{tensor.mean():.3g}±{tensor.std():.3g}"
+
             pbar.set_postfix(
                 {
                     "loss": format_tensor(adv_batch["loss"]),
@@ -193,9 +202,18 @@ class SemanticAdversary(Callback):
 
         pbar.close()
 
-        logger.info(f"{best_params = }")
+        # Save best params and specific batch items to results
+        for key in ["image_path", "mask_path", "label"]:
+            self.results[key].append(
+                batch[key].to("cpu")
+                if isinstance(batch[key], torch.Tensor)
+                else batch[key]
+            )
+        for key, value in best_params.items():
+            self.results[key].append(value)
 
         # Update batch with perturbed image and rotated mask
+        best_params = {key: param.to(device) for key, param in best_params.items()}
         adv_image = perturb_image(
             **batch, **best_params, image_mean=image_mean, image_std=image_std
         )
@@ -203,6 +221,17 @@ class SemanticAdversary(Callback):
 
         adv_mask = perturb_mask(**batch, **best_params)
         batch.update(adv_mask)
+
+    def on_test_epoch_end(self, trainer, pl_module):
+        # Flatten list of tensors/lists into tensor/list
+        results = {
+            key: torch.concat(values)
+            if isinstance(values[0], torch.Tensor)
+            else sum(values, [])
+            for key, values in self.results.items()
+        }
+
+        torch.save(results, os.path.join(trainer.default_root_dir, "results.pt"))
 
 
 # FIXME: Make this a @staticmethod
