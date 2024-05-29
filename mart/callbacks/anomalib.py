@@ -90,25 +90,13 @@ class SemanticAdversary(Callback):
         # Metrics and parameters to save
         metrics = create_metric_collection(self.metrics, prefix="p").to(device)
 
-        best_params = {
-            "angle": angle.detach().to("cpu", copy=True),
-            "hue": hue.detach().to("cpu", copy=True),
-            "sat": sat.detach().to("cpu", copy=True),
-            "step": torch.full_like(angle, -1, dtype=torch.int, device="cpu"),
-            "loss": torch.full_like(angle, torch.inf, device="cpu"),
-            "pred_scores": torch.full_like(angle, -1, device="cpu"),
-            "anomaly_maps": torch.empty_like(batch["image"][:, 0, :, :], device="cpu"),
-        }
-
-        for name in metrics.keys():
-            best_params[name] = torch.full_like(angle, torch.inf, device="cpu")
-
         # FIXME: It would be nice to extract these from the datamodule transform
         image_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073], device=device)
         image_std = torch.tensor([0.26862954, 0.26130258, 0.27577711], device=device)
 
         # FIXME: Ideally we would clone the trainer and run fit instead of creating our own optimization loop
         # Run optimization
+        best_batch = None
         optimizer = None
         for step in (pbar := trange(self.steps, desc="Attack", position=1)):
             if step % self.restart_every == 0:
@@ -161,33 +149,52 @@ class SemanticAdversary(Callback):
                 targets=adv_batch["mask"].int(),
             )
 
-            # Save best parameters amb lowest loss (if all negative) or lowest metric
+            # Clone initial batch since it is the best batch
+            if best_batch is None:
+                best_batch = {}
+                for key, value in adv_batch.items():
+                    if isinstance(value, torch.Tensor):
+                        best_batch[key] = value.detach().to("cpu", copy=True)
+                    elif isinstance(value, list):
+                        best_batch[key] = value.copy()
+                    else:
+                        best_batch[key] = value
+
+            # Find examples with lowest loss, if all negative mask, or lowest metric (pAUROC)
             is_negative = torch.sum(batch["mask"], dim=(-2, -1)).cpu() == 0
-            loss_is_lower = adv_batch["loss"].cpu() < best_params["loss"]
-            metric_is_lower = adv_batch["pAUROC"].cpu() < best_params["pAUROC"]
+            loss_is_lower = adv_batch["loss"].cpu() < best_batch["loss"]
+            metric_is_lower = adv_batch["pAUROC"].cpu() < best_batch["pAUROC"]
             is_lower = torch.where(is_negative, loss_is_lower, metric_is_lower)
             lower = torch.where(is_lower)
 
-            for key in best_params:
+            # Save best examples from batch
+            for key in best_batch:
                 if isinstance(adv_batch[key], torch.Tensor):
-                    best_params[key][lower] = adv_batch[key][lower].detach().cpu()
+                    best_batch[key][lower] = adv_batch[key][lower].detach().cpu()
                 elif isinstance(adv_batch[key], list):
+                    # FIXME: Use numpy instead?
                     for i in lower[0]:
-                        best_params[key][i] = adv_batch[key][i]
+                        best_batch[key][i] = adv_batch[key][i]
                 else:
-                    best_params[key][lower] = adv_batch[key]
+                    best_batch[key] = adv_batch[key]
+
+            # Update metrics using best examples
+            best_batch = best_batch | compute_metrics(
+                metrics,
+                inputs=best_batch["anomaly_maps"],
+                targets=best_batch["mask"].int(),
+            )
 
             del is_negative, loss_is_lower, metric_is_lower, is_lower, lower
 
-            def format_tensor(tensor):
-                return f"{tensor.mean():.3g}±{tensor.std():.3g}"
 
+            # Update progress bar with metrics
             pbar.set_postfix(
                 {
-                    "loss": format_tensor(adv_batch["loss"]),
-                    "↓loss": format_tensor(best_params["loss"]),
-                    "pAUROC": format_tensor(adv_batch["pAUROC"]),
-                    "↓pAUROC": format_tensor(best_params["pAUROC"]),
+                    "loss": f"{adv_batch['loss'].sum().item():.6g}",
+                    "↓loss": f"{best_batch['loss'].sum().item():.6g}",
+                    "pAUROC": f"{adv_batch['batch_pAUROC']:.6g}",
+                    "↓pAUROC": f"{best_batch['batch_pAUROC']:.4g}",
                 }
             )
 
@@ -203,34 +210,32 @@ class SemanticAdversary(Callback):
         pbar.close()
 
         # Save best params and specific batch items to results
-        # FIXME: Should we just have a best_batch instead?
         for key in ["image_path", "mask_path", "label"]:
             self.results[key].append(
                 batch[key].to("cpu")
                 if isinstance(batch[key], torch.Tensor)
                 else batch[key]
             )
-        for key, value in best_params.items():
+        for key, value in best_batch.items():
             self.results[key].append(value)
 
-        # Update batch with perturbed image and rotated mask
-        best_params = {key: param.to(device) for key, param in best_params.items()}
-        adv_image = perturb_image(
-            **batch, **best_params, image_mean=image_mean, image_std=image_std
-        )
-        batch.update(adv_image)
-
-        adv_mask = perturb_mask(**batch, **best_params)
-        batch.update(adv_mask)
+        # Update batch with items from best batch
+        for key in batch:
+            value = best_batch[key]
+            if isinstance(value, torch.Tensor):
+                value = value.to(device)
+            batch[key] = value
 
     def on_test_epoch_end(self, trainer, pl_module):
         # Flatten list of tensors/lists into tensor/list
-        results = {
-            key: torch.concat(values)
-            if isinstance(values[0], torch.Tensor)
-            else sum(values, [])
-            for key, values in self.results.items()
-        }
+        results = {}
+        for key, value in self.results.items():
+            if isinstance(value[0], torch.Tensor):
+                value = torch.concat(value)
+            elif isinstance(value[0], list):
+                value = sum(value, [])
+
+            results[key] = value
 
         torch.save(results, os.path.join(trainer.default_root_dir, "results.pt"))
 
@@ -339,7 +344,6 @@ def compute_loss(anomaly_maps, mask, **kwargs):
         "negative_loss": negative_loss,
         "positive_loss": positive_loss,
         "loss": loss,
-        "batch_loss": loss.sum(),
     }
 
 
@@ -364,7 +368,7 @@ def compute_metrics(
         ret[name] = torch.stack(ret[name])
 
     for name, value in metric_collection.compute().items():
-        ret[f"batch_{name}"] = value
+        ret[f"batch_{name}"] = value.item()
 
     return ret
 
