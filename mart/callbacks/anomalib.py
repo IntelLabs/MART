@@ -203,6 +203,7 @@ class SemanticAdversary(Callback):
         pbar.close()
 
         # Save best params and specific batch items to results
+        # FIXME: Should we just have a best_batch instead?
         for key in ["image_path", "mask_path", "label"]:
             self.results[key].append(
                 batch[key].to("cpu")
