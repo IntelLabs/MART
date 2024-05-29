@@ -138,6 +138,11 @@ class SemanticAdversary(Callback):
             adv_mask = perturb_mask(**batch, **params)
             losses = compute_loss(**(adv_batch | adv_mask))
 
+            # Take optimization step
+            optimizer.zero_grad()
+            losses["loss"].sum().backward()
+            optimizer.step()
+
             # Add rotated mask, args, and losses for metric computations
             adv_batch = adv_batch | adv_mask | params | losses
             del adv_mask, params, losses
@@ -197,11 +202,6 @@ class SemanticAdversary(Callback):
                     "↓pAUROC": f"{best_batch['batch_pAUROC']:.4g}",
                 }
             )
-
-            # Take optimization step
-            optimizer.zero_grad()
-            adv_batch["batch_loss"].backward()
-            optimizer.step()
 
             del adv_batch
 
