@@ -171,14 +171,15 @@ class SemanticAdversary(Callback):
 
             # Save best examples from batch
             for key in best_batch:
-                if isinstance(adv_batch[key], torch.Tensor):
-                    best_batch[key][lower] = adv_batch[key][lower]
-                elif isinstance(adv_batch[key], list):
+                value = adv_batch[key]
+                if isinstance(value, torch.Tensor) and value.ndim > 0:
+                    best_batch[key][lower] = value[lower]
+                elif isinstance(value, list):
                     # FIXME: Use numpy instead?
                     for i in lower[0]:
-                        best_batch[key][i] = adv_batch[key][i]
+                        best_batch[key][i] = value[i]
                 else:
-                    best_batch[key] = adv_batch[key]
+                    best_batch[key] = value
 
             # Update metrics using best examples
             best_batch = best_batch | compute_metrics(
@@ -199,13 +200,6 @@ class SemanticAdversary(Callback):
 
         pbar.close()
 
-        # Save best params and specific batch items to results
-        for key in ["image_path", "mask_path", "label"]:
-            self.results[key].append(
-                batch[key].to("cpu")
-                if isinstance(batch[key], torch.Tensor)
-                else batch[key]
-            )
         for key, value in best_batch.items():
             self.results[key].append(value)
 
@@ -358,7 +352,7 @@ def compute_metrics(
         ret[name] = torch.stack(ret[name])
 
     for name, value in metric_collection.compute().items():
-        ret[f"batch_{name}"] = value.item()
+        ret[f"batch_{name}"] = value
 
     return ret
 
