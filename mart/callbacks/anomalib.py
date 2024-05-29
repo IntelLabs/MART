@@ -68,7 +68,8 @@ class SemanticAdversary(Callback):
         torch.manual_seed(seed)
 
     def on_test_epoch_start(self, trainer, pl_module):
-        self.results = defaultdict(list)
+        self.best = defaultdict(list)
+        self.history = defaultdict(list)
 
     @torch.inference_mode(False)
     def on_test_batch_start(
@@ -98,6 +99,8 @@ class SemanticAdversary(Callback):
         # FIXME: Ideally we would clone the trainer and run fit instead of creating our own optimization loop
         # Run optimization
         best_batch = None
+        batch_history = defaultdict(list)
+
         for step in (pbar := trange(self.steps, desc="Attack", position=1)):
             if step % self.restart_every == 0:
                 optimizer = torch.optim.Adam(
@@ -158,6 +161,18 @@ class SemanticAdversary(Callback):
                 targets=adv_batch["mask"].int(),
             )
 
+            # Save batch items to history that are tensors and have a single dimension.
+            # Anything larger takes up too much memory.
+            for key, value in adv_batch.items():
+                if (
+                    key in ["label", "step"]
+                    or (isinstance(value, torch.Tensor) and value.ndim != 1)
+                    or (isinstance(value, list))
+                ):
+                    continue
+
+                batch_history[key].append(value)
+
             # Save initial batch since it is the best batch
             if best_batch is None:
                 best_batch = deepcopy(adv_batch)
@@ -200,8 +215,13 @@ class SemanticAdversary(Callback):
 
         pbar.close()
 
+        # Save best batch and history
         for key, value in best_batch.items():
-            self.results[key].append(value)
+            self.best[key].append(value)
+        for key, value in batch_history.items():
+            if isinstance(value[0], torch.Tensor):
+                value = torch.stack(value, dim=-1)
+            self.history[key].append(value)
 
         # Update batch with items from best batch
         for key in batch:
@@ -211,17 +231,29 @@ class SemanticAdversary(Callback):
             batch[key] = value
 
     def on_test_epoch_end(self, trainer, pl_module):
-        # Flatten list of tensors/lists into tensor/list
-        results = {}
-        for key, value in self.results.items():
-            if isinstance(value[0], torch.Tensor):
-                value = torch.concat(value)
-            elif isinstance(value[0], list):
-                value = sum(value, [])
-
-            results[key] = value
+        results = {
+            "best": flatten(self.best),
+            "history": flatten(self.history),
+        }
 
         torch.save(results, os.path.join(trainer.default_root_dir, "results.pt"))
+        del self.best, self.history
+
+
+def flatten(dict_of_lists):
+    # Flatten list of tensors/lists into tensor/list
+    flattened = {}
+
+    for key, value in dict_of_lists.items():
+        if isinstance(value[0], torch.Tensor) and value[0].ndim > 0:
+            value = torch.concat(value)
+        elif isinstance(value[0], torch.Tensor):
+            value = torch.stack(value)
+        elif isinstance(value[0], list):
+            value = sum(value, [])
+        flattened[key] = value
+
+    return flattened
 
 
 # FIXME: Make this a @staticmethod
