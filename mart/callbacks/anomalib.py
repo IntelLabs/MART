@@ -117,7 +117,7 @@ class SemanticAdversary(Callback):
                     sat.data.uniform_(*self.sat_bound)
 
             # Clip parameters to valid bounds using straight-through estimator
-            params = {
+            adv_batch = batch | {
                 "angle": angle
                 + (torch.clip(angle, *self.angle_bound) - angle).detach(),
                 "hue": hue + (torch.clip(hue, *self.hue_bound) - hue).detach(),
@@ -125,27 +125,25 @@ class SemanticAdversary(Callback):
                 "step": torch.full_like(angle, step),
             }
 
-            # Perturb image and get outputs from model on perturbed image
-            adv_image = perturb_image(
-                **batch, **params, image_mean=image_mean, image_std=image_std
+            # Perturb image
+            adv_batch |= perturb_image(
+                **adv_batch, image_mean=image_mean, image_std=image_std
             )
-            adv_batch = pl_module.test_step(
-                batch | adv_image, batch_idx=batch_idx, dataloader_idx=dataloader_idx
+
+            # Run perturbed image through module. Note the module in-place
+            # modifies the batch
+            adv_batch |= pl_module.test_step(
+                adv_batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
             )
-            del adv_image
 
             # Compute adversarial loss from model outputs and perturbed mask
-            adv_mask = perturb_mask(**batch, **params)
-            losses = compute_loss(**(adv_batch | adv_mask))
+            adv_batch |= perturb_mask(**adv_batch)
+            adv_batch |= compute_loss(**adv_batch)
 
             # Take optimization step
             optimizer.zero_grad()
-            losses["loss"].sum().backward()
+            adv_batch["loss"].sum().backward()
             optimizer.step()
-
-            # Add rotated mask, args, and losses for metric computations
-            adv_batch = adv_batch | adv_mask | params | losses
-            del adv_mask, params, losses
 
             # Compute per-example and batch pixel metrics
             adv_batch = adv_batch | compute_metrics(
@@ -198,7 +196,7 @@ class SemanticAdversary(Callback):
                 {
                     "loss": f"{adv_batch['loss'].sum().item():.6g}",
                     "↓loss": f"{best_batch['loss'].sum().item():.6g}",
-                    "pAUROC": f"{adv_batch['batch_pAUROC']:.6g}",
+                    "pAUROC": f"{adv_batch['batch_pAUROC']:.4g}",
                     "↓pAUROC": f"{best_batch['batch_pAUROC']:.4g}",
                 }
             )
