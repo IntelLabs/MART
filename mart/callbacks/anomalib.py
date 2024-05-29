@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import types
+from copy import deepcopy
 
 import torch
 from lightning.pytorch.callbacks import Callback
@@ -159,7 +160,7 @@ class SemanticAdversary(Callback):
 
             # Save initial batch since it is the best batch
             if best_batch is None:
-                best_batch = adv_batch
+                best_batch = deepcopy(adv_batch)
 
             # Find examples with lowest loss, if all negative mask, or lowest metric (pAUROC)
             is_negative = torch.sum(adv_batch["mask"], dim=(-2, -1)) == 0
@@ -185,7 +186,6 @@ class SemanticAdversary(Callback):
                 inputs=best_batch["anomaly_maps"],
                 targets=best_batch["mask"].int(),
             )
-
 
             # Update progress bar with metrics
             pbar.set_postfix(
