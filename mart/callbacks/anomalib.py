@@ -199,9 +199,9 @@ class SemanticAdversary(Callback):
         adv_image = perturb_image(
             **batch, **best_params, image_mean=image_mean, image_std=image_std
         )
-        adv_mask = perturb_mask(**batch, **best_params)
-
         batch.update(adv_image)
+
+        adv_mask = perturb_mask(**batch, **best_params)
         batch.update(adv_mask)
 
 
@@ -274,7 +274,7 @@ def perturb_mask(
     **kwargs,
 ):
     mask_rot = mask.clone()
-    mask_rot = mask_rot[..., None, :, :]
+    mask_rot = mask_rot[..., None, :, :].float()
 
     if mode == "three_pass":
         theta = torch.deg2rad(angle)
@@ -282,7 +282,7 @@ def perturb_mask(
     else:
         mask_rot = rotate(mask_rot, angle, mode=mode, padding_mode=padding_mode)
 
-    mask_rot = mask_rot[..., 0, :, :]
+    mask_rot = mask_rot[..., 0, :, :].int()
 
     return {
         "benign_mask": mask,
@@ -325,6 +325,7 @@ def compute_metrics(
     for name in metric_collection.keys():
         ret[name] = []
 
+    metric_collection.reset()
     for input, target in zip(inputs, targets):
         for name, value in metric_collection(input[None], target[None]).items():
             ret[name].append(value)
