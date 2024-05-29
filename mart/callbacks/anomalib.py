@@ -88,7 +88,7 @@ class SemanticAdversary(Callback):
         sat = torch.full_like(angle, self.sat_init, requires_grad=True)
 
         # Metrics and parameters to save
-        metrics = create_metric_collection(self.metrics, prefix="p").to(device)
+        metrics = create_metric_collection(self.metrics, prefix="p")
 
         # FIXME: It would be nice to extract these from the datamodule transform
         image_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073], device=device)
@@ -97,11 +97,8 @@ class SemanticAdversary(Callback):
         # FIXME: Ideally we would clone the trainer and run fit instead of creating our own optimization loop
         # Run optimization
         best_batch = None
-        optimizer = None
         for step in (pbar := trange(self.steps, desc="Attack", position=1)):
             if step % self.restart_every == 0:
-                if optimizer is not None:
-                    del optimizer
                 optimizer = torch.optim.Adam(
                     [
                         {"params": angle, "lr": self.angle_lr},
@@ -145,6 +142,14 @@ class SemanticAdversary(Callback):
             adv_batch["loss"].sum().backward()
             optimizer.step()
 
+            # Move adv_batch to cpu for remaining computation
+            adv_batch = {
+                key: value.detach().to("cpu", non_blocking=True)
+                if isinstance(value, torch.Tensor)
+                else value
+                for key, value in adv_batch.items()
+            }
+
             # Compute per-example and batch pixel metrics
             adv_batch = adv_batch | compute_metrics(
                 metrics,
@@ -152,28 +157,21 @@ class SemanticAdversary(Callback):
                 targets=adv_batch["mask"].int(),
             )
 
-            # Clone initial batch since it is the best batch
+            # Save initial batch since it is the best batch
             if best_batch is None:
-                best_batch = {}
-                for key, value in adv_batch.items():
-                    if isinstance(value, torch.Tensor):
-                        best_batch[key] = value.detach().to("cpu", copy=True)
-                    elif isinstance(value, list):
-                        best_batch[key] = value.copy()
-                    else:
-                        best_batch[key] = value
+                best_batch = adv_batch
 
             # Find examples with lowest loss, if all negative mask, or lowest metric (pAUROC)
-            is_negative = torch.sum(batch["mask"], dim=(-2, -1)).cpu() == 0
-            loss_is_lower = adv_batch["loss"].cpu() < best_batch["loss"]
-            metric_is_lower = adv_batch["pAUROC"].cpu() < best_batch["pAUROC"]
+            is_negative = torch.sum(adv_batch["mask"], dim=(-2, -1)) == 0
+            loss_is_lower = adv_batch["loss"] < best_batch["loss"]
+            metric_is_lower = adv_batch["pAUROC"] < best_batch["pAUROC"]
             is_lower = torch.where(is_negative, loss_is_lower, metric_is_lower)
             lower = torch.where(is_lower)
 
             # Save best examples from batch
             for key in best_batch:
                 if isinstance(adv_batch[key], torch.Tensor):
-                    best_batch[key][lower] = adv_batch[key][lower].detach().cpu()
+                    best_batch[key][lower] = adv_batch[key][lower]
                 elif isinstance(adv_batch[key], list):
                     # FIXME: Use numpy instead?
                     for i in lower[0]:
@@ -188,8 +186,6 @@ class SemanticAdversary(Callback):
                 targets=best_batch["mask"].int(),
             )
 
-            del is_negative, loss_is_lower, metric_is_lower, is_lower, lower
-
 
             # Update progress bar with metrics
             pbar.set_postfix(
@@ -200,10 +196,6 @@ class SemanticAdversary(Callback):
                     "↓pAUROC": f"{best_batch['batch_pAUROC']:.4g}",
                 }
             )
-
-            del adv_batch
-
-        del optimizer
 
         pbar.close()
 
