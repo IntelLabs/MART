@@ -92,7 +92,7 @@ class SemanticAdversary(Callback):
         # Metrics and parameters to save
         metrics = create_metric_collection(self.metrics, prefix="p")
 
-        # FIXME: It would be nice to extract these from the datamodule transform
+        # FIXME: It would be nice to extract these from trainer.datamodule.test_data.transform
         image_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073], device=device)
         image_std = torch.tensor([0.26862954, 0.26130258, 0.27577711], device=device)
 
