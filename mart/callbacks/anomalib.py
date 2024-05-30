@@ -146,14 +146,6 @@ class SemanticAdversary(Callback):
             adv_batch["loss"].sum().backward()
             optimizer.step()
 
-            # Move adv_batch to cpu for remaining computation
-            adv_batch = {
-                key: value.detach().to("cpu", non_blocking=True)
-                if isinstance(value, torch.Tensor)
-                else value
-                for key, value in adv_batch.items()
-            }
-
             # Compute per-example and batch pixel metrics
             adv_batch = adv_batch | compute_metrics(
                 metrics,
@@ -161,9 +153,15 @@ class SemanticAdversary(Callback):
                 targets=adv_batch["mask"].int(),
             )
 
-            # Save batch items to history that are tensors and have a single dimension.
-            # Anything larger takes up too much memory.
+            # Detach all tensors in batch
+            adv_batch = {
+                key: value.detach() if isinstance(value, torch.Tensor) else value
+                for key, value in adv_batch.items()
+            }
+
+            # Save some items in batch to history
             for key, value in adv_batch.items():
+                # Ignore 2D+ tensors (too much memory), python lists, and some specific keys
                 if (
                     key in ["label", "step"]
                     or (isinstance(value, torch.Tensor) and value.ndim != 1)
@@ -171,7 +169,11 @@ class SemanticAdversary(Callback):
                 ):
                     continue
 
-                batch_history[key].append(value)
+                batch_history[key].append(
+                    value.to("cpu", non_blocking=True)
+                    if isinstance(value, torch.Tensor)
+                    else value
+                )
 
             # Save initial batch since it is the best batch
             if best_batch is None:
