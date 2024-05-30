@@ -202,12 +202,19 @@ class SemanticAdversary(Callback):
                 else:
                     best_batch[key] = value
 
-            # Update metrics using best examples
-            best_batch = best_batch | compute_metrics(
+            # Update metrics using best examples and save them to history
+            best_metrics = compute_metrics(
                 metrics,
                 inputs=best_batch["anomaly_maps"],
                 targets=best_batch["mask"].int(),
             )
+            for key, value in best_metrics.items():
+                batch_history[f"best_{key}"].append(
+                    value.to("cpu", non_blocking=True)
+                    if isinstance(value, torch.Tensor)
+                    else value
+                )
+            best_batch = best_batch | best_metrics
 
             # Update progress bar with metrics
             pbar.set_postfix(
