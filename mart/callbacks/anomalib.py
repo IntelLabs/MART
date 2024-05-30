@@ -164,7 +164,7 @@ class SemanticAdversary(Callback):
                 # Ignore 2D+ tensors (too much memory), python lists, and some specific keys
                 if (
                     key in ["label", "step"]
-                    or (isinstance(value, torch.Tensor) and value.ndim != 1)
+                    or (isinstance(value, torch.Tensor) and value.ndim > 1)
                     or (isinstance(value, list))
                 ):
                     continue
@@ -189,7 +189,11 @@ class SemanticAdversary(Callback):
             # Save best examples from batch
             for key in best_batch:
                 value = adv_batch[key]
-                if isinstance(value, torch.Tensor) and value.ndim > 0:
+                if (
+                    isinstance(value, torch.Tensor)
+                    and value.ndim > 0
+                    and value.shape[0] == len(is_lower)
+                ):
                     best_batch[key][lower] = value[lower]
                 elif isinstance(value, list):
                     # FIXME: Use numpy instead?
@@ -210,8 +214,8 @@ class SemanticAdversary(Callback):
                 {
                     "loss": f"{adv_batch['loss'].sum().item():.6g}",
                     "↓loss": f"{best_batch['loss'].sum().item():.6g}",
-                    "pAUROC": f"{adv_batch['batch_pAUROC']:.4g}",
-                    "↓pAUROC": f"{best_batch['batch_pAUROC']:.4g}",
+                    "pAUROC": f"{adv_batch['batch_pAUROC'].item():.4g}",
+                    "↓pAUROC": f"{best_batch['batch_pAUROC'].item():.4g}",
                 }
             )
 
@@ -386,7 +390,7 @@ def compute_metrics(
         ret[name] = torch.stack(ret[name])
 
     for name, value in metric_collection.compute().items():
-        ret[f"batch_{name}"] = value
+        ret[f"batch_{name}"] = value[None]
 
     return ret
 
