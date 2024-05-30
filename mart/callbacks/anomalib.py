@@ -350,7 +350,7 @@ def perturb_mask(
 # FIXME: Make this a @staticmethod
 def compute_loss(anomaly_maps, mask, **kwargs):
     true_negatives = mask == 0
-    negative_loss = 1 - torch.sum(anomaly_maps * true_negatives, dim=(1, 2)) / (
+    negative_loss = -torch.sum(anomaly_maps * true_negatives, dim=(1, 2)) / (
         torch.sum(true_negatives, dim=(1, 2)) + 1e-8
     )
 
