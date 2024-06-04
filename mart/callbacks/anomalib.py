@@ -313,7 +313,7 @@ def perturb_image(
         image_sat = image_sat + sat[:, None, None]
         image_sat = image_sat + (torch.clip(image_sat, 0.0, 1.0) - image_sat).detach()
 
-    # Convert image fro HSV to RGB space
+    # Convert image from HSV to RGB space
     if hue is not None or sat is not None:
         image_hsv = torch.stack([image_hue, image_sat, image_val], dim=-3)
         image_adv = hsv_to_rgb(image_hsv)
