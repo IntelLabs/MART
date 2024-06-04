@@ -303,7 +303,7 @@ def perturb_image(
         image_hsv = rgb_to_hsv(image_adv)
         image_hue, image_sat, image_val = torch.unbind(image_hsv, dim=-3)
 
-    # Additive hue perturbation with STE clipping
+    # Additive hue perturbation with remainder
     if hue is not None:
         image_hue = image_hue + hue[:, None, None]
         image_hue = torch.remainder(image_hue, 2 * torch.pi)
