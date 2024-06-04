@@ -368,7 +368,7 @@ def compute_loss(anomaly_maps, mask, **kwargs):
 
     loss = negative_loss + positive_loss
 
-    # decrease negatives and increase positives
+    # loss is minimized so it will decrease true negatives and true positives
     return {
         "negative_loss": negative_loss,
         "positive_loss": positive_loss,
