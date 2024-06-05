@@ -1,2 +1,0 @@
-anomalib[full] @ git+https://github.com/openvinotoolkit/anomalib.git@v1.0.1
-mart @ git+https://github.com/IntelLabs/MART@v0.6.1
