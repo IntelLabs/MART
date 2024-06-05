@@ -8,24 +8,22 @@ from __future__ import annotations
 
 import os
 import types
+from collections import defaultdict
 from copy import deepcopy
 
 import torch
-from lightning.pytorch.callbacks import Callback
-
-from torch_rotation import rotate_three_pass
-from kornia.color import rgb_to_hsv, hsv_to_rgb
-from kornia.geometry.transform import rotate
-from tqdm import trange
 from anomalib.metrics import create_metric_collection
-from collections import defaultdict
-
+from kornia.color import hsv_to_rgb, rgb_to_hsv
+from kornia.geometry.transform import rotate
+from lightning.pytorch.callbacks import Callback
+from torch_rotation import rotate_three_pass
+from tqdm import trange
 
 __all__ = ["SemanticAdversary"]
 
 
 class SemanticAdversary(Callback):
-    """Perturbs inputs to be adversarial under semantic contraints."""
+    """Perturbs inputs to be adversarial under semantic constraints."""
 
     def __init__(
         self,
@@ -72,9 +70,7 @@ class SemanticAdversary(Callback):
         self.history = defaultdict(list)
 
     @torch.inference_mode(False)
-    def on_test_batch_start(
-        self, trainer, pl_module, batch, batch_idx, dataloader_idx=0
-    ):
+    def on_test_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx=0):
         device = pl_module.device
 
         # Create optimization variables for angle, hue, and saturation
@@ -119,17 +115,14 @@ class SemanticAdversary(Callback):
 
             # Clip parameters to valid bounds using straight-through estimator
             adv_batch = batch | {
-                "angle": angle
-                + (torch.clip(angle, *self.angle_bound) - angle).detach(),
+                "angle": angle + (torch.clip(angle, *self.angle_bound) - angle).detach(),
                 "hue": hue + (torch.clip(hue, *self.hue_bound) - hue).detach(),
                 "sat": sat + (torch.clip(sat, *self.sat_bound) - sat).detach(),
                 "step": torch.full_like(angle, step),
             }
 
             # Perturb image
-            adv_batch |= perturb_image(
-                **adv_batch, image_mean=image_mean, image_std=image_std
-            )
+            adv_batch |= perturb_image(**adv_batch, image_mean=image_mean, image_std=image_std)
 
             # Run perturbed image through module. Note the module in-place
             # modifies the batch
@@ -292,9 +285,7 @@ def perturb_image(
     if angle is not None:
         if mode == "three_pass":
             theta = torch.deg2rad(angle)
-            image_adv = rotate_three_pass(
-                image_adv, theta, N=-1, padding_mode=padding_mode
-            )
+            image_adv = rotate_three_pass(image_adv, theta, N=-1, padding_mode=padding_mode)
         else:
             image_adv = rotate(image_adv, angle, mode=mode, padding_mode=padding_mode)
 
@@ -320,9 +311,7 @@ def perturb_image(
 
     # Re-normalize image to image_mean and image_std
     if image_mean is not None and image_std is not None:
-        image_adv = (image_adv - image_mean[..., None, None]) / image_std[
-            ..., None, None
-        ]
+        image_adv = (image_adv - image_mean[..., None, None]) / image_std[..., None, None]
 
     return {"benign_image": image, "image": image_adv}
 
