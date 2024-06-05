@@ -18,6 +18,8 @@ pip install -e .
 ln -s {PATH_TO_ANOMALIB_REPO}/datasets .
 ```
 
+### Model: STFPM
+
 1. Train a model. We add an EarlyStopping callback in command line.
 
 ```sh
@@ -93,4 +95,36 @@ CUDA_VISIBLE_DEVICES=0 anomalib test \
 │        pixel_AUROC        │     0.686780571937561     │
 │       pixel_F1Score       │    0.0955422893166542     │
 └───────────────────────────┴───────────────────────────┘
+```
+
+### Model: WinCLIP
+
+1. Evaluate the pre-trained model without adversary as baseline.
+
+```sh
+CUDA_VISIBLE_DEVICES=0 \
+anomalib test --data anomalib.data.MVTec  --data.category hazelnut --model WinClip --data.init_args.image_size [240,240] --data.init_args.eval_batch_size 16 "--metrics.pixel=[F1Score,AUROC]"
+```
+
+```console
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃        Test metric        ┃       DataLoader 0        ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│        image_AUROC        │    0.9253571033477783     │
+│       image_F1Score       │     0.881118893623352     │
+│        pixel_AUROC        │    0.9571955800056458     │
+│       pixel_F1Score       │    0.38736850023269653    │
+└───────────────────────────┴───────────────────────────┘
+```
+
+2. Generate an adversary config file from MART.
+
+```sh
+
+```
+
+4. Run attack.
+
+```sh
+
 ```
