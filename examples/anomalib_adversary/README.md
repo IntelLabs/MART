@@ -103,7 +103,13 @@ CUDA_VISIBLE_DEVICES=0 anomalib test \
 
 ```sh
 CUDA_VISIBLE_DEVICES=0 \
-anomalib test --data anomalib.data.MVTec  --data.category hazelnut --model WinClip --data.init_args.image_size [240,240] --data.init_args.eval_batch_size 16 "--metrics.pixel=[F1Score,AUROC]"
+anomalib test \
+--data anomalib.data.MVTec \
+--data.category hazelnut \
+--model WinClip \
+--data.init_args.image_size [240,240] \
+--data.init_args.eval_batch_size 16 \
+--metrics.pixel=[F1Score,AUROC]
 ```
 
 ```console
@@ -117,14 +123,17 @@ anomalib test --data anomalib.data.MVTec  --data.category hazelnut --model WinCl
 └───────────────────────────┴───────────────────────────┘
 ```
 
-2. Generate an adversary config file from MART.
+2. Run attack.
 
 ```sh
-
-```
-
-4. Run attack.
-
-```sh
-
+CUDA_VISIBLE_DEVICES=0 \
+anomalib test \
+--data anomalib.data.MVTec \
+--data.category hazelnut \
+--model WinClip \
+--data.init_args.image_size [240,240] \
+--data.init_args.eval_batch_size 16 \
+--metrics.pixel=[F1Score,AUROC] \
+--trainer.callbacks anomalib_adversary.callbacks.SemanticAdversary \
+--trainer.callbacks.seed 2024
 ```
