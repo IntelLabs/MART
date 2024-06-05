@@ -1,0 +1,16 @@
+[project]
+name = "anomalib_adversary"
+version = "0.1.0a"
+description = "Evaluating robustness of anomaly detection models in Anomalib."
+authors = [
+  {name = "Intel Corporation"}
+]
+
+dependencies = [
+    "anomalib[full]==1.0.1",
+    "mart @ https://github.com/IntelLabs/MART/archive/refs/tags/v0.6.1.zip",
+    "torch-rotation==0.1.2",
+]
+
+[tool.setuptools.packages.find]
+include = ["anomalib_adversary*"]
