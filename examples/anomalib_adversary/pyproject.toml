@@ -8,7 +8,7 @@ authors = [
 
 dependencies = [
     "anomalib[full]==1.0.1",
-    "mart @ https://github.com/IntelLabs/MART/archive/refs/tags/v0.6.1.zip"
+    "mart @ https://github.com/IntelLabs/MART/archive/refs/tags/v0.6.1.zip",
 ]
 
 [tool.setuptools.packages.find]
