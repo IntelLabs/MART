@@ -7,7 +7,7 @@ This project demonstrates how to generate adversarial examples against anomaly d
 Anomalib requires Python 3.10+.
 
 ```sh
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ## Experiment
