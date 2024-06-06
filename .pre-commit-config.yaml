@@ -51,10 +51,11 @@ repos:
     hooks:
       - id: flake8
         # ignore E203 because black is used for formatting.
+        # W503 and W504 are conflicting rules. We ignore W503 in favor of W504.
         args:
           [
             "--ignore",
-            "E203,E501,F401,F403,F841,W504",
+            "E203,E501,F401,F403,F841,W503",
             "--exclude",
             "logs/*,data/*",
           ]
