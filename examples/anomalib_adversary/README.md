@@ -18,6 +18,8 @@ pip install -e .
 ln -s {PATH_TO_ANOMALIB_REPO}/datasets .
 ```
 
+### Model: STFPM
+
 1. Train a model. We add an EarlyStopping callback in command line.
 
 ```sh
@@ -92,5 +94,57 @@ CUDA_VISIBLE_DEVICES=0 anomalib test \
 │       image_F1Score       │    0.5714285969734192     │
 │        pixel_AUROC        │     0.686780571937561     │
 │       pixel_F1Score       │    0.0955422893166542     │
+└───────────────────────────┴───────────────────────────┘
+```
+
+### Model: WinCLIP
+
+1. Evaluate the pre-trained model without adversary as baseline.
+
+```sh
+CUDA_VISIBLE_DEVICES=0 \
+anomalib test \
+--data anomalib.data.MVTec \
+--data.category hazelnut \
+--model WinClip \
+--data.init_args.image_size [240,240] \
+--data.init_args.eval_batch_size 16 \
+--metrics.pixel=[F1Score,AUROC]
+```
+
+```console
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃        Test metric        ┃       DataLoader 0        ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│        image_AUROC        │    0.9074999690055847     │
+│       image_F1Score       │     0.882758617401123     │
+│        pixel_AUROC        │    0.9510707855224609     │
+│       pixel_F1Score       │    0.37700045108795166    │
+└───────────────────────────┴───────────────────────────┘
+```
+
+2. Run attack.
+
+```sh
+CUDA_VISIBLE_DEVICES=0 \
+anomalib test \
+--data anomalib.data.MVTec \
+--data.category hazelnut \
+--model WinClip \
+--data.init_args.image_size [240,240] \
+--data.init_args.eval_batch_size 16 \
+--metrics.pixel=[F1Score,AUROC] \
+--trainer.callbacks anomalib_adversary.callbacks.SemanticAdversary \
+--trainer.callbacks.seed 2024
+```
+
+```console
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃        Test metric        ┃       DataLoader 0        ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│        image_AUROC        │          0.1875           │
+│       image_F1Score       │    0.7283236980438232     │
+│        pixel_AUROC        │    0.8381223678588867     │
+│       pixel_F1Score       │    0.07936933636665344    │
 └───────────────────────────┴───────────────────────────┘
 ```

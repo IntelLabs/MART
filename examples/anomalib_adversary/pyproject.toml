@@ -7,8 +7,10 @@ authors = [
 ]
 
 dependencies = [
-    "anomalib[full]==1.0.1",
+    # Lock to an earlier version of anomalib because they later decorate anomalib.models.image.winclip.torch_model.WinClipModel.forward() with torch.no_grad().
+    "anomalib[full] @ git+https://github.com/openvinotoolkit/anomalib.git@241c14787bded6cd3cb5241b74673477601479ce",
     "mart @ https://github.com/IntelLabs/MART/archive/refs/tags/v0.6.1.zip",
+    "torch-rotation==0.1.2",
 ]
 
 [tool.setuptools.packages.find]
