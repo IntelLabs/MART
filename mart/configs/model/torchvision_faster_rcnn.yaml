@@ -11,12 +11,9 @@ training_step_log:
 
 training_sequence:
   seq010:
-    preprocessor: ["input"]
+    losses_and_detections: ["input", "target"]
 
   seq020:
-    losses_and_detections: ["preprocessor", "target"]
-
-  seq030:
     loss:
       # Sum up the losses.
       [
@@ -28,17 +25,11 @@ training_sequence:
 
 validation_sequence:
   seq010:
-    preprocessor: ["input"]
-
-  seq020:
-    losses_and_detections: ["preprocessor", "target"]
+    losses_and_detections: ["input", "target"]
 
 test_sequence:
   seq010:
-    preprocessor: ["input"]
-
-  seq020:
-    losses_and_detections: ["preprocessor", "target"]
+    losses_and_detections: ["input", "target"]
 
 modules:
   losses_and_detections:
