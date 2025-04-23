@@ -25,7 +25,7 @@ root = os.getcwd()
 pyrootutils.set_root(path=root, dotenv=True, pythonpath=True)
 
 config_path = os.path.join(root, "configs")
-if not config_path.exists():
+if not os.path.exists(config_path):
     log.warning(f"No config directory found at {config_path}!")
     config_path = "configs"
 
