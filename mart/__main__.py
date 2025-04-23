@@ -3,7 +3,6 @@
 
 import os
 import sys
-from pathlib import Path
 
 import hydra
 import pyrootutils
@@ -20,10 +19,12 @@ log = utils.get_pylogger(__name__)
 # adds root dir to the PYTHONPATH (so this file can be run from any place)
 # https://github.com/ashleve/pyrootutils
 # FIXME: Get rid of pyrootutils if we don't infer config.paths.root from PROJECT_ROOT.
-root = Path(os.getcwd())
+# Hydra does not support Posix path after 1.2.0: https://github.com/facebookresearch/hydra/commit/53d07f56a272485cc81596d23aad33e18e007091
+# Use string path instead.
+root = os.getcwd()
 pyrootutils.set_root(path=root, dotenv=True, pythonpath=True)
 
-config_path = root / "configs"
+config_path = os.path.join(root, "configs")
 if not config_path.exists():
     log.warning(f"No config directory found at {config_path}!")
     config_path = "configs"
