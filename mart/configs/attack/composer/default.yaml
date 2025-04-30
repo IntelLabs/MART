@@ -2,6 +2,7 @@ defaults:
   - perturber: default
 
 _target_: mart.attack.Composer
+return_final_output_only: true
 modules:
   ???
   # Example: additive, mask, overlay
