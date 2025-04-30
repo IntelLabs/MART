@@ -40,13 +40,16 @@ class Constant(Initializer):
 
 
 class Uniform(Initializer):
-    def __init__(self, min: int | float, max: int | float):
+    def __init__(self, min: int | float, max: int | float, round: False):
         self.min = min
         self.max = max
+        self.round = round
 
     @torch.no_grad()
     def initialize_(self, parameter: torch.Tensor) -> None:
         torch.nn.init.uniform_(parameter, self.min, self.max)
+        if self.round:
+            parameter.round_()
 
 
 class UniformLp(Initializer):
