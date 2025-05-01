@@ -20,7 +20,12 @@ __all__ = ["Composer", "Additive", "Mask", "Overlay"]
 
 class Composer(torch.nn.Module):
     def __init__(
-        self, perturber: Perturber, modules, sequence, visualizer: Callable = None
+        self,
+        perturber: Perturber,
+        modules,
+        sequence,
+        visualizer: Callable = None,
+        return_final_output_only: bool = True,
     ) -> None:
         """_summary_
 
@@ -28,6 +33,7 @@ class Composer(torch.nn.Module):
             perturber (Perturber): Manage perturbations.
             functions (dict[str, Function]): A dictionary of functions for composing pertured input.
             visualizer (Callable): Visualize intermediate results of a composer.
+            return_final_output_only (bool): Only returns the final output instead of the output dict if True.
         """
         super().__init__()
 
@@ -38,6 +44,7 @@ class Composer(torch.nn.Module):
             sequence = [sequence[key] for key in sorted(sequence)]
         self.functions = SequentialDict(modules, {"composer": sequence})
         self.visualizer = visualizer
+        self.return_final_output_only = return_final_output_only
 
     def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
         return self.perturber.configure_perturbation(input)
@@ -84,10 +91,11 @@ class Composer(torch.nn.Module):
         if self.visualizer:
             self.visualizer(output)
 
-        # SequentialDict returns a dictionary DotDict,
-        #  but we only need the return value of the most recently executed module.
-        last_added_key = next(reversed(output))
-        output = output[last_added_key]
+        if self.return_final_output_only:
+            # SequentialDict returns a dictionary DotDict,
+            #  but we only need the return value of the most recently executed module.
+            last_added_key = next(reversed(output))
+            output = output[last_added_key]
 
         # Return the composed input.
         return output
