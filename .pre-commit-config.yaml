@@ -84,7 +84,7 @@ repos:
 
   # md formatting
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.14
+    rev: 0.7.22
     hooks:
       - id: mdformat
         args: ["--number"]
