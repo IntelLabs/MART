@@ -1,0 +1,5 @@
+_target_: mart.attack.UniversalPerturber
+shape: ???
+initializer: ???
+# Avoid null projector here due to the chance of overriding projectors defined in other config files.
+projector: ???
