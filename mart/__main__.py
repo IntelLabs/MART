@@ -29,7 +29,7 @@ if not config_path.exists():
     config_path = "configs"
 
 
-@hydra.main(version_base="1.2", config_path=config_path, config_name="lightning.yaml")
+@hydra.main(version_base="1.2", config_path=str(config_path), config_name="lightning.yaml")
 def main(cfg: DictConfig) -> float:
 
     if cfg.resume is None and ("datamodule" not in cfg or "model" not in cfg):
