@@ -26,6 +26,7 @@ class LitModular(LightningModule):
         self,
         modules,
         optimizer,
+        gradient_modifier=None,
         lr_scheduler=None,
         training_sequence=None,
         training_step_log=None,
@@ -72,6 +73,7 @@ class LitModular(LightningModule):
             # Set bias_decay and norm_decay to 0.
             self.optimizer_fn = OptimizerFactory(self.optimizer_fn)
 
+        self.gradient_modifier = gradient_modifier
         self.lr_scheduler = lr_scheduler
 
         # Be backwards compatible by turning list into dict where each item is its own key-value
@@ -112,6 +114,16 @@ class LitModular(LightningModule):
     def configure_optimizers(self):
 
         return configure_optimizers(self.model, self.optimizer_fn, self.lr_scheduler)
+
+    def configure_gradient_clipping(
+        self, optimizer, gradient_clip_val=None, gradient_clip_algorithm=None
+    ):
+        # Configuring gradient clipping in pl.Trainer is still useful, so use it.
+        super().configure_gradient_clipping(optimizer, gradient_clip_val, gradient_clip_algorithm)
+
+        if self.gradient_modifier:
+            for group in optimizer.param_groups:
+                self.gradient_modifier(group["params"])
 
     def forward(self, **kwargs):
         return self.model(**kwargs)
