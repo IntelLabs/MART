@@ -40,7 +40,7 @@ class Constant(Initializer):
 
 
 class Uniform(Initializer):
-    def __init__(self, min: int | float, max: int | float, round: False):
+    def __init__(self, min: int | float, max: int | float, round: bool = False):
         self.min = min
         self.max = max
         self.round = round
