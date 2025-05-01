@@ -12,7 +12,7 @@ pip install -e .
 
 ## Experiment
 
-0. \[Optional\] Soft link the existing datasets folder from Anomalib if you have downloaded datasets before with Anomalib.
+0. [Optional] Soft link the existing datasets folder from Anomalib if you have downloaded datasets before with Anomalib.
 
 ```sh
 ln -s {PATH_TO_ANOMALIB_REPO}/datasets .

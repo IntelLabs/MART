@@ -121,9 +121,10 @@ def _get_coco_format_annotations(
 
     Format is defined at https://cocodataset.org/#format-data
 
-    The code is adapted from https://github.com/PyTorchLightning/metrics/blob/v0.6.0/torchmetrics/detection/map.py#L356
-        Return annotations only;
-        Add image_id.
+    The code is adapted from
+    https://github.com/PyTorchLightning/metrics/blob/v0.6.0/torchmetrics/detection/map.py#L356
+    Return annotations only;
+    Add image_id.
     """
 
     annotations = []
