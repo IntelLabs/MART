@@ -11,15 +11,6 @@ authors = [
 requires-python = ">=3.9"
 
 dependencies = [
-  # --------- hydra --------- #
-  "hydra-core ~= 1.2.0",
-  "hydra-colorlog ~= 1.2.0",
-  "hydra-optuna-sweeper ~= 1.2.0",
-
-  # --------- basics --------- #
-  "pyrootutils ~= 1.0.4",      # standardizing the project root setup
-  "rich ~= 13.5.2",            # beautiful text formatting in terminal
-  "fire ~= 0.5.0",             # automated CLI
 ]
 
 [project.urls]
@@ -32,6 +23,17 @@ mart = "mart.__main__:main"
 
 # These are required dependencies, but we make it flexible for users to adjust.
 core = [
+    # --------- hydra --------- #
+  "hydra-core ~= 1.2.0",
+  "hydra-colorlog ~= 1.2.0",
+  "hydra-optuna-sweeper ~= 1.2.0",
+
+  # --------- basics --------- #
+  "pyrootutils ~= 1.0.4",      # standardizing the project root setup
+  "rich ~= 13.5.2",            # beautiful text formatting in terminal
+  "fire ~= 0.5.0",             # automated CLI
+
+  # ---- PyTorch ecosystem --- #
   "torch >= 2.0.1",
   "lightning[extra] ~= 2.1.4", # Full functionality including TensorboardX.
   "torchmetrics == 1.0.1",
