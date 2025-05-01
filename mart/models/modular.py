@@ -6,6 +6,7 @@
 
 import logging
 from operator import attrgetter
+from typing import Sequence
 
 import torch
 from lightning.pytorch import LightningModule
@@ -127,9 +128,8 @@ class LitModular(LightningModule):
     def training_step(self, batch, batch_idx):
         # FIXME: Would be much nicer if batch is always a dictionary!
         # We are going to feed the raw batch of a dictionary to self.model, but also making it backward-compatible with the tuple batch format.
-        if isinstance(batch, dict):
-            input = target = None
-        else:
+        input = target = None
+        if isinstance(batch, Sequence) and len(batch) == 2:
             input, target = batch
         output = self(input=input, target=target, batch=batch, model=self.model, step="training")
 
@@ -164,9 +164,8 @@ class LitModular(LightningModule):
     #
     def validation_step(self, batch, batch_idx):
         # FIXME: Would be much nicer if batch was a dict!
-        if isinstance(batch, dict):
-            input = target = None
-        else:
+        input = target = None
+        if isinstance(batch, Sequence) and len(batch) == 2:
             input, target = batch
         output = self(input=input, target=target, batch=batch, model=self.model, step="validation")
 
@@ -189,9 +188,8 @@ class LitModular(LightningModule):
     #
     def test_step(self, batch, batch_idx):
         # FIXME: Would be much nicer if batch was a dict!
-        if isinstance(batch, dict):
-            input = target = None
-        else:
+        input = target = None
+        if isinstance(batch, Sequence) and len(batch) == 2:
             input, target = batch
         output = self(input=input, target=target, batch=batch, model=self.model, step="test")
 
