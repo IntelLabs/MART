@@ -40,7 +40,9 @@ repos:
 
   # python docstring formatting
   - repo: https://github.com/myint/docformatter
-    rev: v1.4
+    # Use a commit in the master branch to avoid the conflict with pre-commit
+    # Source: https://github.com/PyCQA/docformatter/issues/289
+    rev: eb1df347edd128b30cd3368dddc3aa65edcfac38
     hooks:
       - id: docformatter
         args: [--in-place, --wrap-summaries=99, --wrap-descriptions=99]
