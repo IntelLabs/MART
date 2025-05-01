@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterable, Sequence
 
 import torch
 from lightning.pytorch.utilities.exceptions import MisconfigurationException
@@ -16,7 +16,7 @@ from .projector import Projector
 if TYPE_CHECKING:
     from .initializer import Initializer
 
-__all__ = ["Perturber"]
+__all__ = ["Perturber", "UniversalPerturber"]
 
 
 class Perturber(torch.nn.Module):
@@ -99,3 +99,31 @@ class Perturber(torch.nn.Module):
         self.projector_(self.perturbation, **batch)
 
         return self.perturbation
+
+
+class UniversalPerturber(Perturber):
+    """The perturbation is shared by all data batches, so we don't duplicate the shape of any
+    batch."""
+
+    def __init__(
+        self,
+        *,
+        shape: Sequence[int],
+        initializer: Initializer,
+        projector: Projector | None = None,
+    ):
+        super().__init__(initializer=initializer, projector=projector)
+
+        # We just configure the perturbation here. No need to invoke configure_perturbation() externally.
+        self._configure_perturbation(shape)
+
+    def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
+        raise NotImplementedError(
+            "We don't (repeatedly) configure the universal perturbation with input."
+        )
+
+    def _configure_perturbation(self, shape: Sequence[int]):
+        perturbation = torch.empty(shape, dtype=torch.float, requires_grad=True)
+        self.perturbation = torch.nn.Parameter(perturbation)
+        # Always initialize the perturbation.
+        self.initializer_(self.perturbation)
