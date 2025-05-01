@@ -115,9 +115,14 @@ class UniversalPerturber(Perturber):
         super().__init__(initializer=initializer, projector=projector)
 
         # We just configure the perturbation here. No need to invoke configure_perturbation() externally.
-        self.configure_perturbation(shape)
+        self._configure_perturbation(shape)
 
-    def configure_perturbation(self, shape: Sequence[int]):
+    def configure_perturbation(self, input: torch.Tensor | Iterable[torch.Tensor]):
+        raise NotImplementedError(
+            "We don't (repeatedly) configure the universal perturbation with input."
+        )
+
+    def _configure_perturbation(self, shape: Sequence[int]):
         perturbation = torch.empty(shape, dtype=torch.float, requires_grad=True)
         self.perturbation = torch.nn.Parameter(perturbation)
         # Always initialize the perturbation.
