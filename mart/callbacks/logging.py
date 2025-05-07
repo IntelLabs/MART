@@ -10,6 +10,7 @@ import logging
 from typing import Sequence
 
 from lightning.pytorch.callbacks import Callback
+from torch import Tensor
 
 from ..nn.nn import DotDict
 
@@ -31,17 +32,17 @@ class Logging(Callback):
         super().__init__()
 
         # Be backwards compatible by turning list into dict where each item is its own key-value
-        if isinstance(train_step_log, (list, tuple)):
+        if isinstance(train_step_log, Sequence):
             train_step_log = {item: {"key": item, "prog_bar": True} for item in train_step_log}
         train_step_log = train_step_log or {}
 
         # Be backwards compatible by turning list into dict where each item is its own key-value
-        if isinstance(val_step_log, (list, tuple)):
+        if isinstance(val_step_log, Sequence):
             val_step_log = {item: {"key": item, "prog_bar": True} for item in val_step_log}
         val_step_log = val_step_log or {}
 
         # Be backwards compatible by turning list into dict where each item is its own key-value
-        if isinstance(test_step_log, (list, tuple)):
+        if isinstance(test_step_log, Sequence):
             test_step_log = {item: {"key": item, "prog_bar": True} for item in test_step_log}
         test_step_log = test_step_log or {}
 
