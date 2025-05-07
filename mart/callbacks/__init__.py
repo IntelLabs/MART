@@ -2,6 +2,8 @@ from ..utils.imports import _HAS_TORCHVISION
 from .adversary_connector import *
 from .eval_mode import *
 from .gradients import *
+from .logging import *
+from .metrics import *
 from .no_grad_mode import *
 from .progress_bar import *
 
