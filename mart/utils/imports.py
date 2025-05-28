@@ -4,17 +4,19 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+import logging
 from importlib.util import find_spec
 
-from .pylogger import get_pylogger
-
-logger = get_pylogger(__name__)
+# Avoid importing .pylogger when checking imports before running other code.
+logger = logging.getLogger(__name__)
 
 
 def has(module_name):
     module = find_spec(module_name)
     if module is None:
-        logger.warn(f"{module_name} is not installed, so some features in MART are unavailable.")
+        logger.warning(
+            f"{module_name} is not installed, so some features in MART are unavailable."
+        )
         return False
     else:
         return True
