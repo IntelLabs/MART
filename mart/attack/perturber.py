@@ -9,7 +9,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Iterable, Sequence
 
 import torch
-from lightning.pytorch.utilities.exceptions import MisconfigurationException
 
 from .projector import Projector
 
@@ -85,21 +84,19 @@ class Perturber(torch.nn.Module):
 
     def named_parameters(self, *args, **kwargs):
         if self.perturbation is None:
-            raise MisconfigurationException("You need to call configure_perturbation before fit.")
+            raise RuntimeError("You need to call configure_perturbation before fit.")
 
         return super().named_parameters(*args, **kwargs)
 
     def parameters(self, *args, **kwargs):
         if self.perturbation is None:
-            raise MisconfigurationException("You need to call configure_perturbation before fit.")
+            raise RuntimeError("You need to call configure_perturbation before fit.")
 
         return super().parameters(*args, **kwargs)
 
     def forward(self, **batch):
         if self.perturbation is None:
-            raise MisconfigurationException(
-                "You need to call the configure_perturbation before forward."
-            )
+            raise RuntimeError("You need to call the configure_perturbation before forward.")
 
         self.projector_(self.perturbation, **batch)
         # We need to register the hook at every forward pass.
