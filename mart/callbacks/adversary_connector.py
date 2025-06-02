@@ -12,8 +12,7 @@ from typing import Any, Callable
 import torch
 from lightning.pytorch.callbacks import Callback
 
-from ..utils import MonkeyPatch
-from ..utils.pylogger import get_pylogger
+from ..utils import MonkeyPatch, get_pylogger
 
 logger = get_pylogger(__name__)
 
