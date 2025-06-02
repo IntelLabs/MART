@@ -11,7 +11,7 @@ from omegaconf import DictConfig
 
 from mart import utils
 
-log = utils.get_pylogger(__name__)
+log = utils.pylogger.get_pylogger(__name__)
 
 # project root setup
 # uses the current working directory as root.
@@ -46,7 +46,7 @@ def main(cfg: DictConfig) -> float:
     # imports can be nested inside @hydra.main to optimize tab completion
     # https://github.com/facebookresearch/hydra/issues/934
     from mart.tasks.lightning import lightning
-    from mart.utils import get_metric_value, get_resume_checkpoint
+    from mart.utils.lightning import get_metric_value, get_resume_checkpoint
 
     # Resume and modify configs at the earliest point.
     # The actual checkpoint path is in cfg.ckpt_path
