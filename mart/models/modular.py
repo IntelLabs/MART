@@ -13,7 +13,7 @@ from lightning.pytorch import LightningModule
 
 from ..nn import SequentialDict
 from ..optim import OptimizerFactory
-from ..utils import flatten_dict
+from ..utils.lightning import flatten_dict
 from ..utils.optimization import configure_optimizers
 
 logger = logging.getLogger(__name__)
