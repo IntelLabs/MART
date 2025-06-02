@@ -4,15 +4,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-from functools import partial
 from unittest.mock import Mock
 
 import pytest
-import torch
-from lightning.pytorch.utilities.exceptions import MisconfigurationException
-from torch.optim import SGD
 
-import mart
 from mart.attack import Perturber
 
 
@@ -36,10 +31,10 @@ def test_misconfiguration(input_data, target_data):
 
     perturber = Perturber(initializer=initializer, projector=projector)
 
-    with pytest.raises(MisconfigurationException):
+    with pytest.raises(RuntimeError):
         perturber(input=input_data, target=target_data)
 
-    with pytest.raises(MisconfigurationException):
+    with pytest.raises(RuntimeError):
         perturber.parameters()
 
 
