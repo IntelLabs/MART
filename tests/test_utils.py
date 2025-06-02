@@ -6,7 +6,7 @@
 
 import pytest
 
-from mart.utils.lightning import flatten_dict
+from mart.utils import flatten_dict
 
 
 def test_flatten_dict():
