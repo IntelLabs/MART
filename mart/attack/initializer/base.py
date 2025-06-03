@@ -10,10 +10,6 @@ from typing import Iterable
 
 import torch
 
-from mart.utils import pylogger
-
-logger = pylogger.get_pylogger(__name__)
-
 
 class Initializer:
     """Initializer base class."""

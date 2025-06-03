@@ -4,14 +4,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
+import logging
+
 import torch
 import torchvision
 import torchvision.transforms.functional as F
 
-from ...utils import pylogger
 from .base import Initializer
 
-logger = pylogger.get_pylogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Image(Initializer):
