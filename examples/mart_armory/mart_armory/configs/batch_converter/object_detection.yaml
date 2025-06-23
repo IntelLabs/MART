@@ -1,0 +1,76 @@
+# Convert Armory data batch to the format that is comprehensible by torchvision RCNN.
+_target_: mart_armory.batch_converter.ObjectDetectionBatchConverter
+_convert_: partial
+input_key: "x"
+target_keys:
+  y: ["area", "boxes", "id", "image_id", "is_crowd", "labels"]
+  y_patch_metadata:
+    ["avg_patch_depth", "gs_coords", "mask", "max_depth_perturb_meters"]
+
+batch_transform:
+  # np.ndarray -> torch.Tensor, on a device.
+  _target_: mart.transforms.tensor_array.convert
+  _partial_: true
+
+batch_untransform:
+  # torch.Tensor -> np.ndarray
+  _target_: mart.transforms.tensor_array.convert
+  _partial_: true
+
+transform:
+  # armory format -> torchvision format.
+  _target_: torchvision.transforms.Compose
+  transforms: # NHWC -> NCHW, the PyTorch format.
+    - _target_: torch.permute
+      _partial_: true
+      dims: [0, 3, 1, 2]
+    - _target_: builtins.tuple
+      _partial_: true
+
+untransform:
+  # torchvision format -> armory format.
+  _target_: torchvision.transforms.Compose
+  transforms: # NCHW -> NHWC, the TensorFlow format used in ART.
+    - _target_: torch.stack
+      _partial_: true
+      dim: 0
+    - _target_: torch.permute
+      _partial_: true
+      dims: [0, 2, 3, 1]
+
+target_transform:
+  _target_: mart.transforms.TupleTransforms
+  transforms:
+    _target_: mart_armory.batch_converter.SelectKeyTransform
+    # Apply this to target["mask"] only
+    key: "mask"
+    rename: "perturbable_mask"
+    transform:
+      _target_: torchvision.transforms.Compose
+      transforms:
+        # HWC -> CHW
+        - _target_: torch.permute
+          _partial_: true
+          dims: [2, 0, 1]
+        # Normalize() does not work with uint8.
+        - _target_: mart_armory.batch_converter.Method
+          name: div
+          _args_: [255]
+
+target_untransform:
+  _target_: mart.transforms.TupleTransforms
+  transforms:
+    _target_: mart_armory.batch_converter.SelectKeyTransform
+    # Apply this to target["mask"] only
+    key: "perturbable_mask"
+    rename: "mask"
+    transform:
+      _target_: torchvision.transforms.Compose
+      transforms:
+        - _target_: mart_armory.batch_converter.Method
+          name: mul
+          _args_: [255]
+        # CHW -> HWC
+        - _target_: torch.permute
+          _partial_: true
+          dims: [1, 2, 0]
