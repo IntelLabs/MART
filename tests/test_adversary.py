@@ -216,7 +216,12 @@ def test_forward_with_model(input_data, target_data):
 
     perturbation = input_data - input_adv
 
-    torch.testing.assert_close(perturbation.unique(), torch.Tensor([-1, 0, 1]))
+    # torch.unique() does not approximate floating number with threshold. So do it manually with 1e-6.
+    expansion = torch.tensor([19.9316])  # 1 / (2 ** 19.9316) = 1e-6
+    unique_int = perturbation.ldexp(expansion).round().unique()
+    unique = unique_int.ldexp(-expansion)
+
+    torch.testing.assert_close(unique, torch.Tensor([-1, 0, 1]))
 
 
 def test_configure_optimizers():

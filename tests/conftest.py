@@ -64,7 +64,7 @@ def cfg_experiment(request) -> DictConfig:
 @pytest.fixture(scope="function")
 def input_data():
     image_size = (3, 32, 32)
-    return torch.randint(0, 256, image_size, dtype=torch.float)
+    return torch.rand(image_size, dtype=torch.float)
 
 
 @pytest.fixture(scope="function")
@@ -76,5 +76,5 @@ def target_data():
 @pytest.fixture(scope="function")
 def perturbation():
     torch.manual_seed(0)
-    perturbation = torch.randint(0, 256, (3, 32, 32), dtype=torch.float)
+    perturbation = torch.rand((3, 32, 32), dtype=torch.float)
     return perturbation
