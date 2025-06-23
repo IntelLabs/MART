@@ -38,8 +38,9 @@ tags: ["dev"]
 # Train it or not.
 fit: True
 
-# check performance on test set, using the best model achieved during training
+# check performance on validation and test set, using the best model achieved during training
 # lightning chooses best model based on metric specified in checkpoint callback
+validate: False
 test: True
 
 # Whether to resume training using configuration and checkpoint in specified directory
