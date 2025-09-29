@@ -77,6 +77,11 @@ def lightning(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     train_metrics = trainer.callback_metrics
 
+    # Evaluate model on validation set, using the best model achieved during training
+    if cfg.get("validate"):
+        log.info("Starting validation!")
+        trainer.validate(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
+
     # Evaluate model on test set, using the best model achieved during training
     if cfg.get("test"):
         log.info("Starting testing!")
