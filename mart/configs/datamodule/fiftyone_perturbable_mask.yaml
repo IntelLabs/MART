@@ -16,16 +16,6 @@ train_dataset:
       - _target_: mart.transforms.RandomHorizontalFlip
         p: 0.5
       - _target_: mart.transforms.ConvertInstanceSegmentationToPerturbable
-      - _target_: mart.transforms.Denormalize
-        center: 0
-        scale: 255
-      - _target_: torch.fake_quantize_per_tensor_affine
-        _partial_: true
-        # (x/1+0).round().clamp(0, 255) * 1
-        scale: 1
-        zero_point: 0
-        quant_min: 0
-        quant_max: 255
 
 val_dataset:
   _target_: mart.datamodules.fiftyone.FiftyOneDataset
@@ -40,16 +30,6 @@ val_dataset:
       # ConvertCocoPolysToMask must be prior to ConvertInstanceSegmentationToPerturbable.
       - _target_: mart.transforms.ConvertCocoPolysToMask
       - _target_: mart.transforms.ConvertInstanceSegmentationToPerturbable
-      - _target_: mart.transforms.Denormalize
-        center: 0
-        scale: 255
-      - _target_: torch.fake_quantize_per_tensor_affine
-        _partial_: true
-        # (x/1+0).round().clamp(0, 255) * 1
-        scale: 1
-        zero_point: 0
-        quant_min: 0
-        quant_max: 255
 
 test_dataset:
   _target_: mart.datamodules.fiftyone.FiftyOneDataset
@@ -64,13 +44,3 @@ test_dataset:
       # ConvertCocoPolysToMask must be prior to ConvertInstanceSegmentationToPerturbable.
       - _target_: mart.transforms.ConvertCocoPolysToMask
       - _target_: mart.transforms.ConvertInstanceSegmentationToPerturbable
-      - _target_: mart.transforms.Denormalize
-        center: 0
-        scale: 255
-      - _target_: torch.fake_quantize_per_tensor_affine
-        _partial_: true
-        # (x/1+0).round().clamp(0, 255) * 1
-        scale: 1
-        zero_point: 0
-        quant_min: 0
-        quant_max: 255

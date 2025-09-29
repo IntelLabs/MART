@@ -4,7 +4,7 @@ defaults:
 
 modules:
   preprocessor:
-    # Normalize [0, 255] input.
+    # Normalize [0, 1] input.
     _target_: torchvision.transforms.Normalize
-    mean: [125.307, 122.961, 113.8575]
-    std: [51.5865, 50.847, 51.255]
+    mean: [0.4914, 0.4822, 0.4465]
+    std: [0.2023, 0.1994, 0.2010]
